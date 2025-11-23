@@ -16,19 +16,20 @@ interface ChartCardProps {
 
 export const ChartCard = React.forwardRef<HTMLDivElement, ChartCardProps>(
   ({ title, description, children, onFullscreen, className }, ref) => {
-    const cardRef = React.useRef<HTMLDivElement>(null)
-    const combinedRef = (node: HTMLDivElement) => {
+    const internalRef = React.useRef<HTMLDivElement | null>(null)
+    
+    const combinedRef = React.useCallback((node: HTMLDivElement | null) => {
+      internalRef.current = node
       if (typeof ref === 'function') {
         ref(node)
-      } else if (ref) {
-        ref.current = node
+      } else if (ref && 'current' in ref) {
+        (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
       }
-      cardRef.current = node
-    }
+    }, [ref])
 
     const handleFullscreen = () => {
-      if (onFullscreen && cardRef.current) {
-        onFullscreen(cardRef.current)
+      if (onFullscreen && internalRef.current) {
+        onFullscreen(internalRef.current)
       }
     }
 

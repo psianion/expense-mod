@@ -128,7 +128,7 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
     <>
       <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
         <ChartCard
-          ref={(el) => (cardRefs.current['spending-trends'] = el)}
+          ref={(el) => { cardRefs.current['spending-trends'] = el }}
           title="Spending trends"
           description="Compare expenses and inflows over time"
           onFullscreen={handleFullscreen('spending-trends')}
@@ -138,7 +138,7 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
         </ChartCard>
 
         <ChartCard
-          ref={(el) => (cardRefs.current['category-distribution'] = el)}
+          ref={(el) => { cardRefs.current['category-distribution'] = el }}
           title="Category distribution"
           description="Breakdown by expense categories"
           onFullscreen={handleFullscreen('category-distribution')}
@@ -147,7 +147,7 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
         </ChartCard>
 
         <ChartCard
-          ref={(el) => (cardRefs.current['category-trends'] = el)}
+          ref={(el) => { cardRefs.current['category-trends'] = el }}
           title="Category trends"
           description="Track spending by category over time"
           onFullscreen={handleFullscreen('category-trends')}
@@ -160,7 +160,7 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
         </ChartCard>
 
         <ChartCard
-          ref={(el) => (cardRefs.current['platform-breakdown'] = el)}
+          ref={(el) => { cardRefs.current['platform-breakdown'] = el }}
           title="Platform breakdown"
           description="Spending by platform"
           onFullscreen={handleFullscreen('platform-breakdown')}
