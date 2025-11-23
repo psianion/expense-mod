@@ -1,17 +1,21 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import Head from 'next/head'
-import { Header } from '../components/Header'
+import { AppSidebar } from '../components/app-sidebar'
+import { SiteHeader } from '../components/site-header'
+import { SectionCards } from '../components/section-cards'
 import { QuickAdd } from '../components/QuickAdd'
 import { PreviewModal } from '../components/PreviewModal'
-import { ExpensesList } from '../components/ExpensesList'
+import { DataTable } from '../components/data-table'
 import { FloatingActionButton } from '../components/FloatingActionButton'
 import { ManualExpenseForm } from '../components/ManualExpenseForm'
 import { AnalyticsDashboard } from '../components/AnalyticsDashboard'
 import { Drawer } from '../components/ui/drawer'
+import { SidebarProvider, SidebarInset } from '../components/ui/sidebar'
 import { supabase } from '../lib/supabaseClient'
 import { Expense, ParsedExpense, ParseExpenseRequest, ParseExpenseResponse } from '../types'
 import { startOfMonth, endOfMonth } from 'date-fns'
 import { toUTC, fromUTC, getLocalISO } from '../lib/datetime'
+import { getSummaryTotals } from '../lib/analytics'
 
 export default function Home() {
   const [expenses, setExpenses] = useState<Expense[]>([])
@@ -225,6 +229,8 @@ export default function Home() {
     }
   }
 
+  const summary = useMemo(() => getSummaryTotals(expenses), [expenses])
+
   return (
     <>
       <Head>
@@ -234,50 +240,61 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-          <Header
-            monthlyTotal={monthlyTotal}
-            currency="₹"
-            view={dashboardView}
-            onViewChange={setDashboardView}
-          />
-
-          {dashboardView === 'analytics' ? (
-            <AnalyticsDashboard expenses={expenses} isLoading={isLoadingExpenses} currency="₹" />
-          ) : (
-            <>
-              <QuickAdd onParse={handleParse} isLoading={isParsing} />
-
-              <ExpensesList expenses={expenses} isLoading={isLoadingExpenses} />
-            </>
-          )}
+      <SidebarProvider>
+        <AppSidebar
+          currentView={dashboardView}
+          onViewChange={setDashboardView}
+          onAddExpense={() => setManualDrawerOpen(true)}
+        />
+        <SidebarInset>
+          <SiteHeader currentView={dashboardView} />
+          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+            <div className="@container/main flex flex-1 flex-col gap-4">
+              <SectionCards
+                expenseTotal={summary.expenseTotal}
+                inflowTotal={summary.inflowTotal}
+                net={summary.net}
+                currency="₹"
+              />
+              
+              {dashboardView === 'analytics' ? (
+                <AnalyticsDashboard expenses={expenses} isLoading={isLoadingExpenses} currency="₹" />
+              ) : (
+                <>
+                  <QuickAdd onParse={handleParse} isLoading={isParsing} />
+                  <DataTable expenses={expenses} isLoading={isLoadingExpenses} currency="₹" />
+                </>
+              )}
+            </div>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
           
-          <PreviewModal
-            open={previewDrawerOpen}
-            onOpenChange={setPreviewDrawerOpen}
-            parsedExpense={parsedExpense}
-            onSave={handleSave}
-            isLoading={isSaving}
-          />
-          
-          <Drawer
-            open={manualDrawerOpen}
-            onOpenChange={setManualDrawerOpen}
-            title="Add Manual Expense"
-            description="Enter expense details manually"
-          >
-            <ManualExpenseForm
-              onSave={handleManualSave}
-              isLoading={isSaving}
-            />
-          </Drawer>
-          
-          <FloatingActionButton
-            onClick={() => setManualDrawerOpen(true)}
-          />
-        </div>
-      </main>
+      <PreviewModal
+        open={previewDrawerOpen}
+        onOpenChange={setPreviewDrawerOpen}
+        parsedExpense={parsedExpense}
+        onSave={handleSave}
+        isLoading={isSaving}
+      />
+      
+      <Drawer
+        open={manualDrawerOpen}
+        onOpenChange={setManualDrawerOpen}
+        title="Add Manual Expense"
+        description="Enter expense details manually"
+      >
+        <ManualExpenseForm
+          onSave={handleManualSave}
+          isLoading={isSaving}
+        />
+      </Drawer>
+      
+      {dashboardView === 'expenses' && (
+        <FloatingActionButton
+          onClick={() => setManualDrawerOpen(true)}
+        />
+      )}
     </>
   )
 }
