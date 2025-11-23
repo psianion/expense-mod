@@ -9,7 +9,8 @@ import { ManualExpenseForm } from '../components/ManualExpenseForm'
 import { Drawer } from '../components/ui/drawer'
 import { supabase } from '../lib/supabaseClient'
 import { Expense, ParsedExpense, ParseExpenseRequest, ParseExpenseResponse } from '../types'
-import { format, startOfMonth, endOfMonth } from 'date-fns'
+import { startOfMonth, endOfMonth } from 'date-fns'
+import { toUTC, fromUTC, getLocalISO } from '../lib/datetime'
 
 export default function Home() {
   const [expenses, setExpenses] = useState<Expense[]>([])
@@ -28,7 +29,22 @@ export default function Home() {
 
   // Calculate monthly total when expenses change
   useEffect(() => {
-    calculateMonthlyTotal()
+    const now = new Date()
+    const startOfCurrentMonth = startOfMonth(now)
+    const endOfCurrentMonth = endOfMonth(now)
+
+    // Expenses are already in local time format, parse them correctly
+    const monthlyExpenses = expenses.filter((expense) => {
+      // Parse local time string to Date object
+      const expenseDate = new Date(expense.datetime)
+      return expenseDate >= startOfCurrentMonth && expenseDate <= endOfCurrentMonth
+    })
+
+    const total = monthlyExpenses.reduce((sum, expense) => {
+      return sum + (expense.type === 'expense' ? -expense.amount : expense.amount)
+    }, 0)
+
+    setMonthlyTotal(total)
   }, [expenses])
 
   const fetchExpenses = async () => {
@@ -57,7 +73,14 @@ export default function Home() {
       }
 
       console.log('Successfully fetched expenses:', data?.length || 0)
-      setExpenses(data || [])
+      
+      // Convert UTC datetimes from database to local time for UI
+      const expensesWithLocalTime = (data || []).map((expense) => ({
+        ...expense,
+        datetime: fromUTC(expense.datetime)
+      }))
+      
+      setExpenses(expensesWithLocalTime)
     } catch (error) {
       console.error('Unexpected error fetching expenses:', error)
     } finally {
@@ -65,22 +88,6 @@ export default function Home() {
     }
   }
 
-  const calculateMonthlyTotal = () => {
-    const now = new Date()
-    const startOfCurrentMonth = startOfMonth(now)
-    const endOfCurrentMonth = endOfMonth(now)
-
-    const monthlyExpenses = expenses.filter(expense => {
-      const expenseDate = new Date(expense.datetime)
-      return expenseDate >= startOfCurrentMonth && expenseDate <= endOfCurrentMonth
-    })
-
-    const total = monthlyExpenses.reduce((sum, expense) => {
-      return sum + (expense.type === 'expense' ? -expense.amount : expense.amount)
-    }, 0)
-
-    setMonthlyTotal(total)
-  }
 
   const handleParse = async (text: string) => {
     try {
@@ -119,11 +126,15 @@ export default function Home() {
         return
       }
 
+      // Convert local time to UTC for database storage
+      const localDateTime = expense.datetime || getLocalISO()
+      const utcDateTime = toUTC(localDateTime)
+
       const expenseData = {
         user_id: null, // TODO: Set to actual user ID when auth is implemented
         amount: expense.amount,
         currency: expense.currency || 'INR',
-        datetime: expense.datetime || new Date().toISOString(),
+        datetime: utcDateTime,
         category: expense.category,
         platform: expense.platform,
         payment_method: expense.payment_method,
@@ -171,11 +182,14 @@ export default function Home() {
     try {
       setIsSaving(true)
       
+      // Convert local time to UTC for database storage
+      const utcDateTime = toUTC(expenseData.datetime)
+
       const data = {
         user_id: null,
         amount: expenseData.amount,
         currency: expenseData.currency,
-        datetime: expenseData.datetime,
+        datetime: utcDateTime,
         category: expenseData.category,
         platform: expenseData.platform,
         payment_method: expenseData.payment_method,

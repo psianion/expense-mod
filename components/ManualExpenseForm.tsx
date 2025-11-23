@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 import { Loader2, CalendarIcon } from 'lucide-react'
 import dayjs from 'dayjs'
 import { cn } from '../lib/utils'
+import { getLocalISO, localISOToDate, dateToLocalISO } from '../lib/datetime'
 
 interface ManualExpenseFormProps {
   onSave: (expense: {
@@ -27,7 +28,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
   const [formData, setFormData] = useState({
     amount: '',
     currency: 'INR',
-    datetime: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
+    datetime: getLocalISO(),
     category: '',
     platform: '',
     payment_method: '',
@@ -36,19 +37,8 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
     notes: ''
   })
 
-  // Helper to get local time from stored datetime (treat as local time)
-  const getLocalTime = (storedDateTime: string) => {
-    return dayjs(storedDateTime)
-  }
-
-  // Helper to store datetime as local time string
-  const storeLocalTime = (localDayjs: dayjs.Dayjs) => {
-    return localDayjs.format('YYYY-MM-DDTHH:mm:ss')
-  }
-
-
   const updateField = (field: string, value: string | Date | null) => {
-    const updatedValue = value instanceof Date ? storeLocalTime(dayjs(value)) : value
+    const updatedValue = value instanceof Date ? dateToLocalISO(value) : value
     setFormData(prev => ({ ...prev, [field]: updatedValue }))
   }
 
@@ -74,7 +64,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
     setFormData({
       amount: '',
       currency: 'INR',
-      datetime: new Date().toISOString(),
+      datetime: getLocalISO(),
       category: '',
       platform: '',
       payment_method: '',
@@ -169,7 +159,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {formData.datetime 
-                    ? getLocalTime(formData.datetime).format("MMM DD, YYYY")
+                    ? dayjs(formData.datetime).format("MMM DD, YYYY")
                     : "Pick a date"
                   }
                 </Button>
@@ -177,14 +167,12 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={formData.datetime ? getLocalTime(formData.datetime).toDate() : undefined}
+                  selected={formData.datetime ? localISOToDate(formData.datetime) : undefined}
                   onSelect={(date) => {
                     if (date) {
-                      const currentTime = formData.datetime ? getLocalTime(formData.datetime) : dayjs()
-                      const newDateTime = dayjs(date)
-                        .hour(currentTime.hour())
-                        .minute(currentTime.minute())
-                      updateField('datetime', storeLocalTime(newDateTime))
+                      const currentTime = formData.datetime ? localISOToDate(formData.datetime) : new Date()
+                      const newDateTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), currentTime.getHours(), currentTime.getMinutes())
+                      updateField('datetime', newDateTime)
                     }
                   }}
                   disabled={(date) => date > new Date()}
@@ -194,13 +182,13 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
             </Popover>
             <Input
               type="time"
-              value={formData.datetime ? getLocalTime(formData.datetime).format("HH:mm") : dayjs().format("HH:mm")}
+              value={formData.datetime ? dayjs(formData.datetime).format("HH:mm") : dayjs().format("HH:mm")}
               onChange={(e) => {
                 if (formData.datetime) {
                   const [hours, minutes] = e.target.value.split(":").map(Number)
-                  const currentDate = getLocalTime(formData.datetime)
-                  const newDateTime = currentDate.hour(hours).minute(minutes)
-                  updateField('datetime', storeLocalTime(newDateTime))
+                  const currentDate = localISOToDate(formData.datetime)
+                  const newDateTime = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), hours, minutes)
+                  updateField('datetime', newDateTime)
                 }
               }}
               className="w-32"

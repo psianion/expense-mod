@@ -1,17 +1,27 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import OpenAI from 'openai'
 import { ParseExpenseRequest, ParseExpenseResponse, ParsedExpense } from '../../types'
+import { getCurrentDateTimeContext, parseAIDateTime } from '../../lib/datetime'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-const systemPrompt = `You are an assistant that extracts structured expense data from short free-text lines. 
+const getSystemPrompt = (currentDateTime: string) => `You are an assistant that extracts structured expense data from short free-text lines. 
 Respond ONLY with valid JSON and nothing else.
+
+IMPORTANT: ${currentDateTime}
+
+When parsing dates:
+- Relative dates like "yesterday", "today", "last week" should be calculated based on the current date/time above
+- Return dates in ISO8601 format (YYYY-MM-DDTHH:mm:ss) representing the LOCAL time (not UTC)
+- For relative dates, calculate from the current date/time provided above
+- If no date is mentioned, return null for datetime
+
 Keys:
 - amount (number or null)
 - currency (string, default "INR" if ambiguous)
-- datetime (ISO8601 string or null)
+- datetime (ISO8601 string in local time format YYYY-MM-DDTHH:mm:ss, or null)
 - category (string or null)
 - platform (string or null)
 - payment_method (string or null)
@@ -48,13 +58,31 @@ const examples = [
     content: JSON.stringify({
       amount: 2500,
       currency: "INR",
-      datetime: "2024-12-15T00:00:00.000Z",
+      datetime: "2024-12-15T00:00:00",
       category: "Accommodation",
       platform: null,
       payment_method: null,
       type: "expense",
       event: null,
       notes: "Hotel booking Mumbai"
+    })
+  },
+  {
+    role: 'user' as const,
+    content: 'Coffee 50 yesterday morning'
+  },
+  {
+    role: 'assistant' as const,
+    content: JSON.stringify({
+      amount: 50,
+      currency: "INR",
+      datetime: null, // Will be calculated based on current date
+      category: "Food",
+      platform: null,
+      payment_method: null,
+      type: "expense",
+      event: null,
+      notes: "Coffee yesterday morning"
     })
   },
   {
@@ -146,6 +174,10 @@ export default async function handler(
       return res.status(400).json({ error: 'Text is required' })
     }
 
+    // Get current date/time context for the AI prompt
+    const currentDateTime = getCurrentDateTimeContext()
+    const systemPrompt = getSystemPrompt(currentDateTime)
+
     const messages = [
       { role: 'system' as const, content: systemPrompt },
       ...examples,
@@ -195,6 +227,29 @@ export default async function handler(
 
     if (!parsed.type) {
       parsed.type = 'expense'
+    }
+
+    // Post-process datetime: convert AI response to proper local time format
+    // Handle relative dates like "yesterday" by parsing the text directly
+    if (!parsed.datetime) {
+      // Try to extract relative dates from the text
+      const lowerText = text.toLowerCase()
+      const now = new Date()
+      
+      if (lowerText.includes('yesterday')) {
+        const yesterday = new Date(now)
+        yesterday.setDate(yesterday.getDate() - 1)
+        parsed.datetime = parseAIDateTime(null, yesterday)
+      } else if (lowerText.includes('today') || lowerText.includes('this morning') || lowerText.includes('this afternoon')) {
+        parsed.datetime = parseAIDateTime(null, now)
+      } else if (lowerText.includes('last week')) {
+        const lastWeek = new Date(now)
+        lastWeek.setDate(lastWeek.getDate() - 7)
+        parsed.datetime = parseAIDateTime(null, lastWeek)
+      }
+    } else {
+      // Parse and normalize the AI-returned datetime
+      parsed.datetime = parseAIDateTime(parsed.datetime, new Date())
     }
 
     return res.status(200).json({

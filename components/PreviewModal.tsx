@@ -9,6 +9,7 @@ import { ParsedExpense } from '../types'
 import { Loader2, CalendarIcon, Clock } from 'lucide-react'
 import dayjs from 'dayjs'
 import { cn } from '../lib/utils'
+import { getLocalISO, localISOToDate, dateToLocalISO } from '../lib/datetime'
 
 interface PreviewModalProps {
   open: boolean
@@ -30,27 +31,13 @@ export function PreviewModal({
   React.useEffect(() => {
     if (parsedExpense) {
       // Default to current date/time if no datetime provided
-      const now = new Date()
       const expenseWithDefaults = {
         ...parsedExpense,
-        datetime: parsedExpense.datetime || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`
+        datetime: parsedExpense.datetime || getLocalISO()
       }
       setEditedExpense(expenseWithDefaults)
     }
   }, [parsedExpense])
-
-  // Simple helper to parse datetime string
-  const parseDateTime = (dateTimeStr: string) => {
-    const [datePart, timePart] = dateTimeStr.split('T')
-    const [year, month, day] = datePart.split('-')
-    const [hours, minutes] = timePart.split(':')
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes))
-  }
-
-  // Simple helper to format datetime string
-  const formatDateTime = (date: Date) => {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:00`
-  }
 
 
   const handleSave = async () => {
@@ -61,7 +48,7 @@ export function PreviewModal({
 
   const updateField = (field: keyof ParsedExpense, value: string | number | null | Date) => {
     if (!editedExpense) return
-    const updatedValue = value instanceof Date ? formatDateTime(value) : value
+    const updatedValue = value instanceof Date ? dateToLocalISO(value) : value
     setEditedExpense({ ...editedExpense, [field]: updatedValue })
   }
 
@@ -160,7 +147,7 @@ export function PreviewModal({
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {editedExpense.datetime 
-                      ? parseDateTime(editedExpense.datetime).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                      ? localISOToDate(editedExpense.datetime).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                       : "Pick a date"
                     }
                   </Button>
@@ -168,10 +155,10 @@ export function PreviewModal({
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={editedExpense.datetime ? parseDateTime(editedExpense.datetime) : undefined}
+                    selected={editedExpense.datetime ? localISOToDate(editedExpense.datetime) : undefined}
                     onSelect={(date) => {
                       if (date) {
-                        const currentTime = editedExpense.datetime ? parseDateTime(editedExpense.datetime) : new Date()
+                        const currentTime = editedExpense.datetime ? localISOToDate(editedExpense.datetime) : new Date()
                         const newDateTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), currentTime.getHours(), currentTime.getMinutes())
                         updateField('datetime', newDateTime)
                       }
@@ -183,11 +170,11 @@ export function PreviewModal({
               </Popover>
               <Input
                 type="time"
-                value={editedExpense.datetime ? parseDateTime(editedExpense.datetime).toTimeString().slice(0, 5) : new Date().toTimeString().slice(0, 5)}
+                value={editedExpense.datetime ? dayjs(editedExpense.datetime).format('HH:mm') : dayjs().format('HH:mm')}
                 onChange={(e) => {
                   if (editedExpense.datetime) {
                     const [hours, minutes] = e.target.value.split(":").map(Number)
-                    const currentDate = parseDateTime(editedExpense.datetime)
+                    const currentDate = localISOToDate(editedExpense.datetime)
                     const newDateTime = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), hours, minutes)
                     updateField('datetime', newDateTime)
                   }
