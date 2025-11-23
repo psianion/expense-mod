@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import { useTheme } from "next-themes"
+import { Moon, Sun } from "lucide-react"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,6 +12,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
 import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
@@ -19,9 +22,14 @@ interface SiteHeaderProps {
 }
 
 export function SiteHeader({ currentView = "expenses" }: SiteHeaderProps) {
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => setMounted(true), [])
+
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-      <div className="flex items-center gap-2 px-4">
+      <div className="flex items-center gap-2 px-4 flex-1">
         <SidebarTrigger className="-ml-1" />
         <Separator
           orientation="vertical"
@@ -43,6 +51,18 @@ export function SiteHeader({ currentView = "expenses" }: SiteHeaderProps) {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
+      {mounted && (
+        <div className="px-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
+        </div>
+      )}
     </header>
   )
 }
