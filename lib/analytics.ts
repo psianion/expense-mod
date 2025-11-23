@@ -26,6 +26,11 @@ export type SummaryTotals = {
   net: number
 }
 
+export type CategoryTrendPoint = {
+  label: string
+  [category: string]: string | number
+}
+
 const round = (value: number) => Number(value.toFixed(2))
 
 const safeKey = (value: string | null, fallback: string) =>
@@ -150,5 +155,96 @@ export const getSummaryTotals = (expenses: Expense[]): SummaryTotals => {
     inflowTotal: round(summary.inflowTotal),
     net: round(summary.inflowTotal - summary.expenseTotal),
   }
+}
+
+export const getAvailableCategories = (expenses: Expense[]): string[] => {
+  const categories = new Set<string>()
+  expenses.forEach((expense) => {
+    if (expense.type === 'expense' && expense.category) {
+      categories.add(safeKey(expense.category, 'Uncategorized'))
+    }
+  })
+  return Array.from(categories).sort()
+}
+
+export const getCategoryTrend = (
+  expenses: Expense[],
+  period: TrendPeriod,
+  selectedCategories?: string[]
+): CategoryTrendPoint[] => {
+  const buckets = new Map<
+    number,
+    {
+      label: string
+      [category: string]: string | number
+    }
+  >()
+
+  // Filter expenses by selected categories if provided
+  const filteredExpenses = selectedCategories && selectedCategories.length > 0
+    ? expenses.filter((expense) => {
+        if (expense.type !== 'expense' || !expense.category) return false
+        const categoryKey = safeKey(expense.category, 'Uncategorized')
+        return selectedCategories.includes(categoryKey)
+      })
+    : expenses.filter((expense) => expense.type === 'expense')
+
+  // Get all unique categories from filtered expenses
+  const categories = new Set<string>()
+  filteredExpenses.forEach((expense) => {
+    if (expense.category) {
+      categories.add(safeKey(expense.category, 'Uncategorized'))
+    }
+  })
+
+  filteredExpenses.forEach((expense) => {
+    if (!expense.datetime || !expense.category) return
+
+    const parsedDate = new Date(expense.datetime)
+    if (Number.isNaN(parsedDate.getTime())) return
+
+    const bucket = bucketForDate(parsedDate, period)
+    const categoryKey = safeKey(expense.category, 'Uncategorized')
+    
+    const existing = buckets.get(bucket.timestamp) ?? {
+      label: bucket.label,
+    }
+    
+    // Initialize all categories to 0 for this bucket
+    categories.forEach((cat) => {
+      if (!(cat in existing)) {
+        existing[cat] = 0
+      }
+    })
+    
+    existing[categoryKey] = (existing[categoryKey] as number || 0) + expense.amount
+    buckets.set(bucket.timestamp, existing)
+  })
+
+  return Array.from(buckets.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([, bucket]) => {
+      const result: CategoryTrendPoint = { label: bucket.label }
+      categories.forEach((cat) => {
+        result[cat] = round((bucket[cat] as number) || 0)
+      })
+      return result
+    })
+}
+
+export const getFilteredSpendingTrend = (
+  expenses: Expense[],
+  period: TrendPeriod,
+  selectedCategories?: string[]
+): TrendPoint[] => {
+  const filteredExpenses = selectedCategories && selectedCategories.length > 0
+    ? expenses.filter((expense) => {
+        if (expense.type !== 'expense' || !expense.category) return false
+        const categoryKey = safeKey(expense.category, 'Uncategorized')
+        return selectedCategories.includes(categoryKey)
+      })
+    : expenses
+
+  return getSpendingTrend(filteredExpenses, period)
 }
 

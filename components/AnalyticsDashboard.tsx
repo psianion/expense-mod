@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { TrendPeriod, getCategoryTotals, getPaymentMethodStats, getPlatformStats, getSpendingTrend, getSummaryTotals } from '../lib/analytics'
+import { TrendPeriod, getCategoryTotals, getCategoryTrend, getAvailableCategories, getPaymentMethodStats, getPlatformStats, getFilteredSpendingTrend, getSummaryTotals } from '../lib/analytics'
 import { Expense } from '../types'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
@@ -8,6 +8,8 @@ import { CategoryPieChart } from './charts/CategoryPieChart'
 import { PlatformBarChart } from './charts/PlatformBarChart'
 import { PaymentMethodChart } from './charts/PaymentMethodChart'
 import { SpendingTrendChart } from './charts/SpendingTrendChart'
+import { CategoryTrendsChart } from './charts/CategoryTrendsChart'
+import { MultiSelect } from './ui/multi-select'
 
 type AnalyticsDashboardProps = {
   expenses: Expense[]
@@ -23,12 +25,28 @@ const periodLabels: Record<TrendPeriod, string> = {
 
 export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsDashboardProps) {
   const [trendPeriod, setTrendPeriod] = React.useState<TrendPeriod>('daily')
+  const [selectedCategories, setSelectedCategories] = React.useState<string[]>([])
 
   const summary = React.useMemo(() => getSummaryTotals(expenses), [expenses])
   const categoryTotals = React.useMemo(() => getCategoryTotals(expenses), [expenses])
   const platformStats = React.useMemo(() => getPlatformStats(expenses), [expenses])
   const paymentStats = React.useMemo(() => getPaymentMethodStats(expenses), [expenses])
-  const trendData = React.useMemo(() => getSpendingTrend(expenses, trendPeriod), [expenses, trendPeriod])
+  const availableCategories = React.useMemo(() => getAvailableCategories(expenses), [expenses])
+  
+  const trendData = React.useMemo(
+    () => getFilteredSpendingTrend(expenses, trendPeriod, selectedCategories.length > 0 ? selectedCategories : undefined),
+    [expenses, trendPeriod, selectedCategories]
+  )
+
+  const categoryTrendData = React.useMemo(
+    () => getCategoryTrend(expenses, trendPeriod, selectedCategories.length > 0 ? selectedCategories : undefined),
+    [expenses, trendPeriod, selectedCategories]
+  )
+
+  const categoryOptions = React.useMemo(
+    () => availableCategories.map((cat) => ({ label: cat, value: cat })),
+    [availableCategories]
+  )
 
   const topCategories = categoryTotals.slice(0, 3).map((item) => ({
     name: item.name,
@@ -87,10 +105,48 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
       </Card>
 
       <Card>
+        <CardHeader className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle>Spending trends</CardTitle>
+              <p className="text-sm text-muted-foreground">Compare expenses and inflows over time.</p>
+            </div>
+            <div className="flex gap-2">
+              {(Object.keys(periodLabels) as TrendPeriod[]).map((period) => (
+                <Button
+                  key={period}
+                  variant={trendPeriod === period ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTrendPeriod(period)}
+                >
+                  {periodLabels[period]}
+                </Button>
+              ))}
+            </div>
+          </div>
+          {availableCategories.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Filter by category:</span>
+              <MultiSelect
+                options={categoryOptions}
+                selected={selectedCategories}
+                onChange={setSelectedCategories}
+                placeholder="All categories"
+                className="w-full max-w-xs"
+              />
+            </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          <SpendingTrendChart data={trendData} />
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle>Spending trends</CardTitle>
-            <p className="text-sm text-muted-foreground">Compare expenses and inflows over time.</p>
+            <CardTitle>Category trends</CardTitle>
+            <p className="text-sm text-muted-foreground">Track spending by category over time.</p>
           </div>
           <div className="flex gap-2">
             {(Object.keys(periodLabels) as TrendPeriod[]).map((period) => (
@@ -106,7 +162,10 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
           </div>
         </CardHeader>
         <CardContent>
-          <SpendingTrendChart data={trendData} />
+          <CategoryTrendsChart 
+            data={categoryTrendData} 
+            categories={selectedCategories.length > 0 ? selectedCategories : availableCategories}
+          />
         </CardContent>
       </Card>
 
