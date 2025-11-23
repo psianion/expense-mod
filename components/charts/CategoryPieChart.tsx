@@ -17,26 +17,23 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
     setMounted(true)
   }, [])
 
-  const chartData = React.useMemo(() => {
-    return data.map((item, index) => ({
-      ...item,
-      fill: `var(--chart-${(index % 5) + 1})`,
-    }))
-  }, [data])
-
   const chartConfig = React.useMemo(() => {
     const config: ChartConfig = {
-      amount: {
+      value: {
         label: "Amount",
       },
     }
     data.forEach((item, index) => {
       config[item.name] = {
         label: item.name,
-        color: `var(--chart-${(index % 5) + 1})`,
+        color: `hsl(var(--chart-${(index % 5) + 1}))`,
       }
     })
     return config
+  }, [data])
+
+  const COLORS = React.useMemo(() => {
+    return data.map((_, index) => `hsl(var(--chart-${(index % 5) + 1}))`)
   }, [data])
 
   if (!mounted) {
@@ -59,12 +56,15 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
     <ChartContainer config={chartConfig} className="min-h-[260px] w-full">
       <PieChart>
         <Pie 
-          data={chartData} 
+          data={data} 
           dataKey="value" 
           nameKey="name" 
           innerRadius={60} 
           strokeWidth={5}
         >
+          {data.map((entry, index) => (
+            <Cell key={`cell-${entry.name}`} fill={COLORS[index]} />
+          ))}
         </Pie>
         <ChartTooltip content={<ChartTooltipContent hideLabel />} />
         <Legend />
