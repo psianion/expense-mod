@@ -82,7 +82,7 @@ export function ExpensesList({ expenses, isLoading }: ExpensesListProps) {
                   <div className="text-sm text-muted-foreground">
                     {expense.platform && `${expense.platform} • `}
                     {expense.payment_method && `${expense.payment_method} • `}
-                    {dayjs(expense.datetime).format('MMM DD, YYYY HH:mm')}
+                    {dayjs(expense.datetime).isValid() ? dayjs(expense.datetime).format('MMM DD, YYYY HH:mm') : expense.datetime}
                   </div>
                   {(expense.event || expense.notes) && (
                     <div className="text-sm text-muted-foreground mt-1">

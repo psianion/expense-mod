@@ -104,6 +104,8 @@ export const getSpendingTrend = (expenses: Expense[], period: TrendPeriod): Tren
   expenses.forEach((expense) => {
     if (!expense.datetime) return
 
+    // Parse datetime string (already in local time format from database conversion)
+    // Use Date constructor which interprets the string in local timezone
     const parsedDate = new Date(expense.datetime)
     if (Number.isNaN(parsedDate.getTime())) return
 
