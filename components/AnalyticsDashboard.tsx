@@ -90,19 +90,7 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Spending overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 md:grid-cols-3">
-            <SummaryStat label="Total expenses" value={summary.expenseTotal} currency={currency} tone="expense" />
-            <SummaryStat label="Total inflows" value={summary.inflowTotal} currency={currency} tone="inflow" />
-            <SummaryStat label="Net balance" value={summary.net} currency={currency} tone={summary.net >= 0 ? 'inflow' : 'expense'} />
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-4">
 
       <Card>
         <CardHeader className="flex flex-col gap-4">

@@ -1,0 +1,153 @@
+"use client"
+
+import * as React from "react"
+import {
+  Wallet,
+  BarChart3,
+  Settings,
+  Plus,
+  Home,
+} from "lucide-react"
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarRail,
+} from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+
+const menuItems = [
+  {
+    title: "Expenses",
+    icon: Wallet,
+    href: "#expenses",
+    id: "expenses",
+  },
+  {
+    title: "Analytics",
+    icon: BarChart3,
+    href: "#analytics",
+    id: "analytics",
+  },
+]
+
+const secondaryItems = [
+  {
+    title: "Settings",
+    icon: Settings,
+    href: "#settings",
+    id: "settings",
+  },
+]
+
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  currentView?: "expenses" | "analytics"
+  onViewChange?: (view: "expenses" | "analytics") => void
+  onAddExpense?: () => void
+}
+
+export function AppSidebar({ currentView = "expenses", onViewChange, onAddExpense, ...props }: AppSidebarProps) {
+  return (
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <a href="#">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <Wallet className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Expense Tracker</span>
+                  <span className="truncate text-xs">AI-Powered</span>
+                </div>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={currentView === item.id}
+                    onClick={() => onViewChange?.(item.id as "expenses" | "analytics")}
+                  >
+                    <a href={item.href}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Actions</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <Button
+                  variant="default"
+                  className="w-full justify-start"
+                  onClick={onAddExpense}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span>Add Expense</span>
+                </Button>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Settings</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {secondaryItems.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton asChild>
+                    <a href={item.href}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="flex items-center gap-2 px-2 py-1.5 text-sm">
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-muted">
+                <Home className="size-4" />
+              </div>
+              <div className="grid flex-1 text-left text-xs leading-tight">
+                <span className="truncate font-semibold">Expense Tracker</span>
+                <span className="truncate text-muted-foreground">v1.1.0</span>
+              </div>
+            </div>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  )
+}
+
