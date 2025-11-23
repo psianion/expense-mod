@@ -6,6 +6,7 @@ import { PreviewModal } from '../components/PreviewModal'
 import { ExpensesList } from '../components/ExpensesList'
 import { FloatingActionButton } from '../components/FloatingActionButton'
 import { ManualExpenseForm } from '../components/ManualExpenseForm'
+import { AnalyticsDashboard } from '../components/AnalyticsDashboard'
 import { Drawer } from '../components/ui/drawer'
 import { supabase } from '../lib/supabaseClient'
 import { Expense, ParsedExpense, ParseExpenseRequest, ParseExpenseResponse } from '../types'
@@ -21,6 +22,7 @@ export default function Home() {
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false)
   const [manualDrawerOpen, setManualDrawerOpen] = useState(false)
   const [parsedExpense, setParsedExpense] = useState<ParsedExpense | null>(null)
+  const [dashboardView, setDashboardView] = useState<'expenses' | 'analytics'>('expenses')
 
   // Fetch expenses on component mount
   useEffect(() => {
@@ -87,7 +89,6 @@ export default function Home() {
       setIsLoadingExpenses(false)
     }
   }
-
 
   const handleParse = async (text: string) => {
     try {
@@ -235,17 +236,22 @@ export default function Home() {
 
       <main className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-          <Header monthlyTotal={monthlyTotal} currency="₹" />
-          
-          <QuickAdd 
-            onParse={handleParse}
-            isLoading={isParsing}
+          <Header
+            monthlyTotal={monthlyTotal}
+            currency="₹"
+            view={dashboardView}
+            onViewChange={setDashboardView}
           />
-          
-          <ExpensesList 
-            expenses={expenses}
-            isLoading={isLoadingExpenses}
-          />
+
+          {dashboardView === 'analytics' ? (
+            <AnalyticsDashboard expenses={expenses} isLoading={isLoadingExpenses} currency="₹" />
+          ) : (
+            <>
+              <QuickAdd onParse={handleParse} isLoading={isParsing} />
+
+              <ExpensesList expenses={expenses} isLoading={isLoadingExpenses} />
+            </>
+          )}
           
           <PreviewModal
             open={previewDrawerOpen}

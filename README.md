@@ -4,7 +4,7 @@ A modern, AI-powered expense tracking application built with Next.js, TypeScript
 
 ## 🚀 Tech Stack
 
-**Frontend:** Next.js 14, TypeScript, React 18, Tailwind CSS, shadcn/ui (Radix UI), Lucide Icons, date-fns, dayjs, Sonner
+**Frontend:** Next.js 14, TypeScript, React 18, Tailwind CSS, shadcn/ui (Radix UI), Recharts, Lucide Icons, date-fns, dayjs, Sonner
 
 **Backend & Database:** Supabase (PostgreSQL), Next.js API Routes
 
@@ -15,6 +15,7 @@ A modern, AI-powered expense tracking application built with Next.js, TypeScript
 - **AI-Powered Expense Parsing**: Enter expenses in natural language (e.g., "20 rupees chips Swiggy Kerala trip by card") and let AI extract structured data
 - **Manual Expense Entry**: Traditional form-based expense entry with full control
 - **Real-time Dashboard**: View monthly totals and recent expenses with live updates
+- **Interactive Analytics**: Visualize category, platform, payment method, and trend insights with responsive charts
 - **Responsive Design**: Mobile-first design with adaptive drawer UI (right sidebar on desktop, bottom sheet on mobile)
 - **Comprehensive Data**: Track amount, currency, date/time, category, platform, payment method, expense type, events, and notes
 
