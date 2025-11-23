@@ -15,6 +15,7 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLe
 
 type SpendingTrendChartProps = {
   data: TrendPoint[]
+  compact?: boolean
 }
 
 const chartConfig = {
@@ -28,7 +29,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function SpendingTrendChart({ data }: SpendingTrendChartProps) {
+export function SpendingTrendChart({ data, compact = false }: SpendingTrendChartProps) {
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -52,7 +53,7 @@ export function SpendingTrendChart({ data }: SpendingTrendChartProps) {
   }
 
   return (
-    <ChartContainer config={chartConfig} className="min-h-[320px] w-full">
+    <ChartContainer config={chartConfig} className={compact ? "min-h-[240px] w-full" : "min-h-[320px] w-full"}>
       <LineChart 
         data={data} 
         margin={{ top: 10, right: 20, left: 0, bottom: 0 }}

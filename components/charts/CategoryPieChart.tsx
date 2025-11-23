@@ -8,9 +8,10 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '
 
 type CategoryPieChartProps = {
   data: SimpleDatum[]
+  compact?: boolean
 }
 
-export function CategoryPieChart({ data }: CategoryPieChartProps) {
+export function CategoryPieChart({ data, compact = false }: CategoryPieChartProps) {
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -53,7 +54,7 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
   }
 
   return (
-    <ChartContainer config={chartConfig} className="min-h-[260px] w-full">
+    <ChartContainer config={chartConfig} className={compact ? "min-h-[200px] w-full" : "min-h-[260px] w-full"}>
       <PieChart>
         <Pie 
           data={data} 

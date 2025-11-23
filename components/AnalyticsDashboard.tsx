@@ -3,12 +3,13 @@ import * as React from 'react'
 import { TrendPeriod, getCategoryTotals, getCategoryTrend, getAvailableCategories, getPaymentMethodStats, getPlatformStats, getFilteredSpendingTrend, getSummaryTotals } from '../lib/analytics'
 import { Expense } from '../types'
 import { Button } from './ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { CategoryPieChart } from './charts/CategoryPieChart'
 import { PlatformBarChart } from './charts/PlatformBarChart'
 import { PaymentMethodChart } from './charts/PaymentMethodChart'
 import { SpendingTrendChart } from './charts/SpendingTrendChart'
 import { CategoryTrendsChart } from './charts/CategoryTrendsChart'
+import { ChartCard } from './charts/ChartCard'
+import { ChartFullscreen } from './charts/ChartFullscreen'
 import { MultiSelect } from './ui/multi-select'
 
 type AnalyticsDashboardProps = {
@@ -26,6 +27,7 @@ const periodLabels: Record<TrendPeriod, string> = {
 export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsDashboardProps) {
   const [trendPeriod, setTrendPeriod] = React.useState<TrendPeriod>('daily')
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([])
+  const [fullscreenChart, setFullscreenChart] = React.useState<string | null>(null)
 
   const summary = React.useMemo(() => getSummaryTotals(expenses), [expenses])
   const categoryTotals = React.useMemo(() => getCategoryTotals(expenses), [expenses])
@@ -60,147 +62,141 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Analytics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-40 items-center justify-center">
-            <div className="flex items-center space-x-3 text-muted-foreground">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <span>Crunching the numbers...</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex h-40 items-center justify-center">
+        <div className="flex items-center space-x-3 text-muted-foreground">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span>Crunching the numbers...</span>
+        </div>
+      </div>
     )
   }
 
   if (!expenses.length) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Analytics</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Start by adding a few expenses to unlock insights.
-        </CardContent>
-      </Card>
+      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+        Start by adding a few expenses to unlock insights.
+      </div>
     )
   }
 
+  const renderPeriodFilters = () => (
+    <div className="flex gap-2">
+      {(Object.keys(periodLabels) as TrendPeriod[]).map((period) => (
+        <Button
+          key={period}
+          variant={trendPeriod === period ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setTrendPeriod(period)}
+        >
+          {periodLabels[period]}
+        </Button>
+      ))}
+    </div>
+  )
+
+  const renderCategoryFilter = () => (
+    availableCategories.length > 0 && (
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium">Filter by category:</span>
+        <MultiSelect
+          options={categoryOptions}
+          selected={selectedCategories}
+          onChange={setSelectedCategories}
+          placeholder="All categories"
+          className="w-full max-w-xs"
+        />
+      </div>
+    )
+  )
+
   return (
-    <div className="space-y-4">
+    <>
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+        <ChartCard
+          title="Spending trends"
+          description="Compare expenses and inflows over time"
+          onFullscreen={() => setFullscreenChart('spending-trends')}
+        >
+          <SpendingTrendChart data={trendData} compact />
+        </ChartCard>
 
-      <Card>
-        <CardHeader className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <CardTitle>Spending trends</CardTitle>
-              <p className="text-sm text-muted-foreground">Compare expenses and inflows over time.</p>
-            </div>
-            <div className="flex gap-2">
-              {(Object.keys(periodLabels) as TrendPeriod[]).map((period) => (
-                <Button
-                  key={period}
-                  variant={trendPeriod === period ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTrendPeriod(period)}
-                >
-                  {periodLabels[period]}
-                </Button>
-              ))}
-            </div>
-          </div>
-          {availableCategories.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Filter by category:</span>
-              <MultiSelect
-                options={categoryOptions}
-                selected={selectedCategories}
-                onChange={setSelectedCategories}
-                placeholder="All categories"
-                className="w-full max-w-xs"
-              />
-            </div>
-          )}
-        </CardHeader>
-        <CardContent>
-          <SpendingTrendChart data={trendData} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle>Category trends</CardTitle>
-            <p className="text-sm text-muted-foreground">Track spending by category over time.</p>
-          </div>
-          <div className="flex gap-2">
-            {(Object.keys(periodLabels) as TrendPeriod[]).map((period) => (
-              <Button
-                key={period}
-                variant={trendPeriod === period ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTrendPeriod(period)}
-              >
-                {periodLabels[period]}
-              </Button>
-            ))}
-          </div>
-        </CardHeader>
-        <CardContent>
+        <ChartCard
+          title="Category trends"
+          description="Track spending by category over time"
+          onFullscreen={() => setFullscreenChart('category-trends')}
+        >
           <CategoryTrendsChart 
             data={categoryTrendData} 
             categories={selectedCategories.length > 0 ? selectedCategories : availableCategories}
+            compact
           />
-        </CardContent>
-      </Card>
+        </ChartCard>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Category distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CategoryPieChart data={categoryTotals} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Platform breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PlatformBarChart data={platformStats} />
-          </CardContent>
-        </Card>
+        <ChartCard
+          title="Category distribution"
+          description="Breakdown by expense categories"
+          onFullscreen={() => setFullscreenChart('category-distribution')}
+        >
+          <CategoryPieChart data={categoryTotals} compact />
+        </ChartCard>
+
+        <ChartCard
+          title="Platform breakdown"
+          description="Spending by platform"
+          onFullscreen={() => setFullscreenChart('platform-breakdown')}
+        >
+          <PlatformBarChart data={platformStats} compact />
+        </ChartCard>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Payment methods</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PaymentMethodChart data={paymentStats} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick highlights</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm">
-            <HighlightsList title="Top categories" items={topCategories} currency={currency} emptyLabel="No categories yet." />
-            <HighlightsList title="Top platforms" items={topPlatforms} currency={currency} emptyLabel="No platform data yet." />
-            <div className="rounded-md bg-muted/60 p-3 text-muted-foreground">
-              <p>
-                Tracking {expenses.length} transaction{expenses.length !== 1 ? 's' : ''} this period.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      {/* Fullscreen Modals */}
+      <ChartFullscreen
+        open={fullscreenChart === 'spending-trends'}
+        onOpenChange={(open) => !open && setFullscreenChart(null)}
+        title="Spending Trends"
+        filters={
+          <>
+            {renderPeriodFilters()}
+            {renderCategoryFilter()}
+          </>
+        }
+      >
+        <SpendingTrendChart data={trendData} />
+      </ChartFullscreen>
+
+      <ChartFullscreen
+        open={fullscreenChart === 'category-trends'}
+        onOpenChange={(open) => !open && setFullscreenChart(null)}
+        title="Category Trends"
+        filters={
+          <>
+            {renderPeriodFilters()}
+            {renderCategoryFilter()}
+          </>
+        }
+      >
+        <CategoryTrendsChart 
+          data={categoryTrendData} 
+          categories={selectedCategories.length > 0 ? selectedCategories : availableCategories}
+        />
+      </ChartFullscreen>
+
+      <ChartFullscreen
+        open={fullscreenChart === 'category-distribution'}
+        onOpenChange={(open) => !open && setFullscreenChart(null)}
+        title="Category Distribution"
+      >
+        <CategoryPieChart data={categoryTotals} />
+      </ChartFullscreen>
+
+      <ChartFullscreen
+        open={fullscreenChart === 'platform-breakdown'}
+        onOpenChange={(open) => !open && setFullscreenChart(null)}
+        title="Platform Breakdown"
+      >
+        <PlatformBarChart data={platformStats} />
+      </ChartFullscreen>
+    </>
   )
 }
 

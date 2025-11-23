@@ -40,8 +40,8 @@ const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
           ref={ref}
           className={cn(
             "fixed z-50 bg-background border shadow-lg",
-            // Mobile: slide from bottom
-            "bottom-0 left-0 right-0 h-[85vh] rounded-t-lg",
+            // Mobile: slide from bottom, 70% height
+            "bottom-0 left-0 right-0 h-[70vh] rounded-t-lg",
             // Desktop: slide from right
             "md:bottom-auto md:top-0 md:right-0 md:left-auto md:h-full md:w-[500px] md:rounded-none md:rounded-l-lg"
           )}

@@ -15,9 +15,10 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLe
 type CategoryTrendsChartProps = {
   data: CategoryTrendPoint[]
   categories: string[]
+  compact?: boolean
 }
 
-export function CategoryTrendsChart({ data, categories }: CategoryTrendsChartProps) {
+export function CategoryTrendsChart({ data, categories, compact = false }: CategoryTrendsChartProps) {
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -56,7 +57,7 @@ export function CategoryTrendsChart({ data, categories }: CategoryTrendsChartPro
   }
 
   return (
-    <ChartContainer config={chartConfig} className="min-h-[320px] w-full">
+    <ChartContainer config={chartConfig} className={compact ? "min-h-[240px] w-full" : "min-h-[320px] w-full"}>
       <AreaChart 
         data={data} 
         margin={{ top: 10, right: 20, left: 0, bottom: 0 }}

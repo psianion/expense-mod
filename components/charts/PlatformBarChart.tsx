@@ -9,6 +9,7 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '
 type PlatformBarChartProps = {
   data: ComparisonDatum[]
   title?: string
+  compact?: boolean
 }
 
 const chartConfig = {
@@ -18,7 +19,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function PlatformBarChart({ data, title = 'Platform spend' }: PlatformBarChartProps) {
+export function PlatformBarChart({ data, title = 'Platform spend', compact = false }: PlatformBarChartProps) {
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -40,7 +41,7 @@ export function PlatformBarChart({ data, title = 'Platform spend' }: PlatformBar
   }
 
   return (
-    <ChartContainer config={chartConfig} className="min-h-[260px] w-full">
+    <ChartContainer config={chartConfig} className={compact ? "min-h-[200px] w-full" : "min-h-[260px] w-full"}>
       <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 50 }}>
         <CartesianGrid vertical={false} />
         <XAxis 

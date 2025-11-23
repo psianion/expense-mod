@@ -8,6 +8,7 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '
 
 type PaymentMethodChartProps = {
   data: ComparisonDatum[]
+  compact?: boolean
 }
 
 const chartConfig = {
@@ -17,7 +18,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function PaymentMethodChart({ data }: PaymentMethodChartProps) {
+export function PaymentMethodChart({ data, compact = false }: PaymentMethodChartProps) {
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -39,7 +40,7 @@ export function PaymentMethodChart({ data }: PaymentMethodChartProps) {
   }
 
   return (
-    <ChartContainer config={chartConfig} className="min-h-[260px] w-full">
+    <ChartContainer config={chartConfig} className={compact ? "min-h-[200px] w-full" : "min-h-[260px] w-full"}>
       <BarChart 
         data={data} 
         layout="vertical" 
