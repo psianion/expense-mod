@@ -4,8 +4,7 @@ import * as React from 'react'
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 
 import { SimpleDatum } from '../../lib/analytics'
-
-const COLORS = ['#2563eb', '#f97316', '#10b981', '#a855f7', '#f43f5e', '#14b8a6', '#facc15']
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '../ui/chart'
 
 type CategoryPieChartProps = {
   data: SimpleDatum[]
@@ -17,6 +16,28 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  const chartData = React.useMemo(() => {
+    return data.map((item, index) => ({
+      ...item,
+      fill: `var(--chart-${(index % 5) + 1})`,
+    }))
+  }, [data])
+
+  const chartConfig = React.useMemo(() => {
+    const config: ChartConfig = {
+      amount: {
+        label: "Amount",
+      },
+    }
+    data.forEach((item, index) => {
+      config[item.name] = {
+        label: item.name,
+        color: `var(--chart-${(index % 5) + 1})`,
+      }
+    })
+    return config
+  }, [data])
 
   if (!mounted) {
     return (
@@ -35,17 +56,20 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ChartContainer config={chartConfig} className="min-h-[260px] w-full">
       <PieChart>
-        <Pie data={data} dataKey="value" nameKey="name" innerRadius={50} outerRadius={100} paddingAngle={4}>
-          {data.map((entry, index) => (
-            <Cell key={`category-${entry.name}`} fill={COLORS[index % COLORS.length]} />
-          ))}
+        <Pie 
+          data={chartData} 
+          dataKey="value" 
+          nameKey="name" 
+          innerRadius={60} 
+          strokeWidth={5}
+        >
         </Pie>
-        <Tooltip />
+        <ChartTooltip content={<ChartTooltipContent hideLabel />} />
         <Legend />
       </PieChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   )
 }
 

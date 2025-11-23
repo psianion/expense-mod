@@ -1,14 +1,22 @@
 'use client'
 
 import * as React from 'react'
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
 import { ComparisonDatum } from '../../lib/analytics'
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '../ui/chart'
 
 type PlatformBarChartProps = {
   data: ComparisonDatum[]
   title?: string
 }
+
+const chartConfig = {
+  expense: {
+    label: "Expense",
+    color: "hsl(var(--chart-1))",
+  },
+} satisfies ChartConfig
 
 export function PlatformBarChart({ data, title = 'Platform spend' }: PlatformBarChartProps) {
   const [mounted, setMounted] = React.useState(false)
@@ -32,15 +40,32 @@ export function PlatformBarChart({ data, title = 'Platform spend' }: PlatformBar
   }
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ChartContainer config={chartConfig} className="min-h-[260px] w-full">
       <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 50 }}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" interval={0} angle={-20} textAnchor="end" height={60} />
-        <YAxis />
-        <Tooltip />
-        <Bar dataKey="expense" name={title} fill="#2563eb" radius={[4, 4, 0, 0]} />
+        <CartesianGrid vertical={false} />
+        <XAxis 
+          dataKey="name" 
+          tickLine={false}
+          tickMargin={10}
+          axisLine={false}
+          angle={-20} 
+          textAnchor="end" 
+          height={60} 
+        />
+        <YAxis 
+          tickLine={false}
+          axisLine={false}
+          tickMargin={10}
+        />
+        <ChartTooltip content={<ChartTooltipContent />} />
+        <Bar 
+          dataKey="expense" 
+          name={title} 
+          fill="var(--color-expense)" 
+          radius={[4, 4, 0, 0]} 
+        />
       </BarChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   )
 }
 
