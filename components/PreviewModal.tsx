@@ -1,0 +1,232 @@
+import React, { useState } from 'react'
+import { Drawer } from './ui/drawer'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Textarea } from './ui/textarea'
+import { Calendar } from './ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { ParsedExpense } from '../types'
+import { Loader2, CalendarIcon, Clock } from 'lucide-react'
+import dayjs from 'dayjs'
+import { cn } from '../lib/utils'
+
+interface PreviewModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  parsedExpense: ParsedExpense | null
+  onSave: (expense: ParsedExpense) => Promise<void>
+  isLoading: boolean
+}
+
+export function PreviewModal({ 
+  open, 
+  onOpenChange, 
+  parsedExpense, 
+  onSave, 
+  isLoading 
+}: PreviewModalProps) {
+  const [editedExpense, setEditedExpense] = useState<ParsedExpense | null>(null)
+
+  React.useEffect(() => {
+    if (parsedExpense) {
+      // Default to current date/time if no datetime provided
+      const now = new Date()
+      const expenseWithDefaults = {
+        ...parsedExpense,
+        datetime: parsedExpense.datetime || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`
+      }
+      setEditedExpense(expenseWithDefaults)
+    }
+  }, [parsedExpense])
+
+  // Simple helper to parse datetime string
+  const parseDateTime = (dateTimeStr: string) => {
+    const [datePart, timePart] = dateTimeStr.split('T')
+    const [year, month, day] = datePart.split('-')
+    const [hours, minutes] = timePart.split(':')
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hours), parseInt(minutes))
+  }
+
+  // Simple helper to format datetime string
+  const formatDateTime = (date: Date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:00`
+  }
+
+
+  const handleSave = async () => {
+    if (!editedExpense) return
+    await onSave(editedExpense)
+    onOpenChange(false)
+  }
+
+  const updateField = (field: keyof ParsedExpense, value: string | number | null | Date) => {
+    if (!editedExpense) return
+    const updatedValue = value instanceof Date ? formatDateTime(value) : value
+    setEditedExpense({ ...editedExpense, [field]: updatedValue })
+  }
+
+  if (!editedExpense) return null
+
+  if (!open) return null
+
+  return (
+    <Drawer 
+      open={open} 
+      onOpenChange={onOpenChange}
+      title="Preview & Edit Expense"
+      description="Review the parsed data and make any necessary changes before saving."
+    >
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Amount *</label>
+            <Input
+              type="number"
+              step="0.01"
+              value={editedExpense.amount || ''}
+              onChange={(e) => updateField('amount', e.target.value ? parseFloat(e.target.value) : null)}
+              placeholder="0.00"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Currency</label>
+            <Input
+              value={editedExpense.currency || ''}
+              onChange={(e) => updateField('currency', e.target.value || null)}
+              placeholder="INR"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Category</label>
+            <Input
+              value={editedExpense.category || ''}
+              onChange={(e) => updateField('category', e.target.value || null)}
+              placeholder="Food, Transport, etc."
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Platform</label>
+            <Input
+              value={editedExpense.platform || ''}
+              onChange={(e) => updateField('platform', e.target.value || null)}
+              placeholder="Swiggy, Amazon, etc."
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Payment Method</label>
+            <Input
+              value={editedExpense.payment_method || ''}
+              onChange={(e) => updateField('payment_method', e.target.value || null)}
+              placeholder="Card, UPI, Cash, etc."
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Type</label>
+            <select
+              value={editedExpense.type}
+              onChange={(e) => updateField('type', e.target.value as 'expense' | 'inflow')}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="expense">Expense</option>
+              <option value="inflow">Inflow</option>
+            </select>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Event</label>
+            <Input
+              value={editedExpense.event || ''}
+              onChange={(e) => updateField('event', e.target.value || null)}
+              placeholder="Trip, Meeting, etc."
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Date & Time</label>
+            <div className="flex space-x-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !editedExpense.datetime && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {editedExpense.datetime 
+                      ? parseDateTime(editedExpense.datetime).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                      : "Pick a date"
+                    }
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={editedExpense.datetime ? parseDateTime(editedExpense.datetime) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        const currentTime = editedExpense.datetime ? parseDateTime(editedExpense.datetime) : new Date()
+                        const newDateTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), currentTime.getHours(), currentTime.getMinutes())
+                        updateField('datetime', newDateTime)
+                      }
+                    }}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <Input
+                type="time"
+                value={editedExpense.datetime ? parseDateTime(editedExpense.datetime).toTimeString().slice(0, 5) : new Date().toTimeString().slice(0, 5)}
+                onChange={(e) => {
+                  if (editedExpense.datetime) {
+                    const [hours, minutes] = e.target.value.split(":").map(Number)
+                    const currentDate = parseDateTime(editedExpense.datetime)
+                    const newDateTime = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), hours, minutes)
+                    updateField('datetime', newDateTime)
+                  }
+                }}
+                className="w-32"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Notes</label>
+            <Textarea
+              value={editedExpense.notes || ''}
+              onChange={(e) => updateField('notes', e.target.value || null)}
+              placeholder="Additional notes..."
+              rows={3}
+            />
+          </div>
+        </div>
+        
+        <div className="flex justify-end space-x-2 pt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave} 
+            disabled={!editedExpense.amount || isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Expense'
+            )}
+          </Button>
+        </div>
+      </div>
+    </Drawer>
+  )
+}
