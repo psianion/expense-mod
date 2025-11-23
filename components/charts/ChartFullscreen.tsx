@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Drawer } from "@/components/ui/drawer"
+import { useCardTransition } from "@/hooks/use-card-transition"
 
 interface ChartFullscreenProps {
   open: boolean
@@ -16,6 +17,7 @@ interface ChartFullscreenProps {
   title: string
   children: React.ReactNode
   filters?: React.ReactNode
+  initialRect?: DOMRect | null
 }
 
 export function ChartFullscreen({
@@ -24,8 +26,16 @@ export function ChartFullscreen({
   title,
   children,
   filters,
+  initialRect: externalInitialRect,
 }: ChartFullscreenProps) {
   const isMobile = useIsMobile()
+  const [internalInitialRect, setInternalInitialRect] = React.useState<DOMRect | null>(null)
+  const initialRect = externalInitialRect || internalInitialRect
+
+  const { contentRef, isAnimating } = useCardTransition({
+    isOpen: open,
+    initialRect,
+  })
 
   if (isMobile) {
     return (
@@ -50,7 +60,13 @@ export function ChartFullscreen({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[600px] h-[500px] max-w-[600px] max-h-[500px] flex flex-col p-0">
+      <DialogContent 
+        className="w-[600px] h-[500px] max-w-[600px] max-h-[500px] flex flex-col p-0"
+        style={{ 
+          animation: 'none',
+          opacity: isAnimating ? 1 : undefined 
+        }}
+      >
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -60,7 +76,7 @@ export function ChartFullscreen({
               {filters}
             </div>
           )}
-          <div className="flex-1 p-6 overflow-auto">
+          <div ref={contentRef} className="flex-1 p-6 overflow-auto">
             {children}
           </div>
         </div>

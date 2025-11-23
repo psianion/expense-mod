@@ -28,6 +28,9 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
   const [trendPeriod, setTrendPeriod] = React.useState<TrendPeriod>('daily')
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([])
   const [fullscreenChart, setFullscreenChart] = React.useState<string | null>(null)
+  const [initialRect, setInitialRect] = React.useState<DOMRect | null>(null)
+  
+  const cardRefs = React.useRef<{ [key: string]: HTMLDivElement | null }>({})
 
   const summary = React.useMemo(() => getSummaryTotals(expenses), [expenses])
   const categoryTotals = React.useMemo(() => getCategoryTotals(expenses), [expenses])
@@ -109,21 +112,45 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
     )
   )
 
+  const handleFullscreen = (chartId: string) => (element: HTMLElement) => {
+    const rect = element.getBoundingClientRect()
+    setInitialRect(rect)
+    setFullscreenChart(chartId)
+  }
+
+  const handleCloseFullscreen = () => {
+    setFullscreenChart(null)
+    // Clear initialRect after animation completes
+    setTimeout(() => setInitialRect(null), 300)
+  }
+
   return (
     <>
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
         <ChartCard
+          ref={(el) => (cardRefs.current['spending-trends'] = el)}
           title="Spending trends"
           description="Compare expenses and inflows over time"
-          onFullscreen={() => setFullscreenChart('spending-trends')}
+          onFullscreen={handleFullscreen('spending-trends')}
+          className="md:col-span-2"
         >
           <SpendingTrendChart data={trendData} compact />
         </ChartCard>
 
         <ChartCard
+          ref={(el) => (cardRefs.current['category-distribution'] = el)}
+          title="Category distribution"
+          description="Breakdown by expense categories"
+          onFullscreen={handleFullscreen('category-distribution')}
+        >
+          <CategoryPieChart data={categoryTotals} compact />
+        </ChartCard>
+
+        <ChartCard
+          ref={(el) => (cardRefs.current['category-trends'] = el)}
           title="Category trends"
           description="Track spending by category over time"
-          onFullscreen={() => setFullscreenChart('category-trends')}
+          onFullscreen={handleFullscreen('category-trends')}
         >
           <CategoryTrendsChart 
             data={categoryTrendData} 
@@ -133,17 +160,11 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
         </ChartCard>
 
         <ChartCard
-          title="Category distribution"
-          description="Breakdown by expense categories"
-          onFullscreen={() => setFullscreenChart('category-distribution')}
-        >
-          <CategoryPieChart data={categoryTotals} compact />
-        </ChartCard>
-
-        <ChartCard
+          ref={(el) => (cardRefs.current['platform-breakdown'] = el)}
           title="Platform breakdown"
           description="Spending by platform"
-          onFullscreen={() => setFullscreenChart('platform-breakdown')}
+          onFullscreen={handleFullscreen('platform-breakdown')}
+          className="md:col-span-2"
         >
           <PlatformBarChart data={platformStats} compact />
         </ChartCard>
@@ -152,8 +173,9 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
       {/* Fullscreen Modals */}
       <ChartFullscreen
         open={fullscreenChart === 'spending-trends'}
-        onOpenChange={(open) => !open && setFullscreenChart(null)}
+        onOpenChange={(open) => !open && handleCloseFullscreen()}
         title="Spending Trends"
+        initialRect={initialRect}
         filters={
           <>
             {renderPeriodFilters()}
@@ -166,8 +188,9 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
 
       <ChartFullscreen
         open={fullscreenChart === 'category-trends'}
-        onOpenChange={(open) => !open && setFullscreenChart(null)}
+        onOpenChange={(open) => !open && handleCloseFullscreen()}
         title="Category Trends"
+        initialRect={initialRect}
         filters={
           <>
             {renderPeriodFilters()}
@@ -183,16 +206,18 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
 
       <ChartFullscreen
         open={fullscreenChart === 'category-distribution'}
-        onOpenChange={(open) => !open && setFullscreenChart(null)}
+        onOpenChange={(open) => !open && handleCloseFullscreen()}
         title="Category Distribution"
+        initialRect={initialRect}
       >
         <CategoryPieChart data={categoryTotals} />
       </ChartFullscreen>
 
       <ChartFullscreen
         open={fullscreenChart === 'platform-breakdown'}
-        onOpenChange={(open) => !open && setFullscreenChart(null)}
+        onOpenChange={(open) => !open && handleCloseFullscreen()}
         title="Platform Breakdown"
+        initialRect={initialRect}
       >
         <PlatformBarChart data={platformStats} />
       </ChartFullscreen>
