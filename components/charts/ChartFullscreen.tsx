@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Drawer } from "@/components/ui/drawer"
-import { useCardTransition } from "@/hooks/use-card-transition"
 
 interface ChartFullscreenProps {
   open: boolean
@@ -30,55 +29,69 @@ export function ChartFullscreen({
 }: ChartFullscreenProps) {
   const isMobile = useIsMobile()
   const dialogContentRef = React.useRef<HTMLDivElement>(null)
-
-  const { contentRef, isAnimating } = useCardTransition({
-    isOpen: open,
-    initialRect,
-  })
+  const [isAnimating, setIsAnimating] = React.useState(false)
 
   React.useEffect(() => {
-    if (!open || !initialRect || !dialogContentRef.current) return
+    if (!open || !initialRect) {
+      setIsAnimating(false)
+      return
+    }
 
-    // Wait for Dialog to render
-    const timeoutId = setTimeout(() => {
+    // Wait for dialog to be in DOM
+    const checkAndAnimate = () => {
       const dialogContent = dialogContentRef.current
-      if (!dialogContent) return
+      if (!dialogContent) {
+        requestAnimationFrame(checkAndAnimate)
+        return
+      }
 
-      const finalRect = dialogContent.getBoundingClientRect()
+      setIsAnimating(true)
+      
+      // Get final position (centered)
       const centerX = window.innerWidth / 2
       const centerY = window.innerHeight / 2
       
-      // Calculate deltas from card position to center
-      const deltaX = initialRect.left + initialRect.width / 2 - centerX
-      const deltaY = initialRect.top + initialRect.height / 2 - centerY
-      const deltaW = initialRect.width / finalRect.width
-      const deltaH = initialRect.height / finalRect.height
+      // Calculate card center
+      const cardCenterX = initialRect.left + initialRect.width / 2
+      const cardCenterY = initialRect.top + initialRect.height / 2
+      
+      // Calculate deltas
+      const deltaX = cardCenterX - centerX
+      const deltaY = cardCenterY - centerY
+      const deltaW = initialRect.width / 600 // Dialog width is 600px
+      const deltaH = initialRect.height / 500 // Dialog height is 500px
 
-      // Set initial transform - start from card position
+      // Set initial state BEFORE it's visible - positioned at card location
       dialogContent.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px)) scale(${deltaW}, ${deltaH})`
       dialogContent.style.opacity = '0'
+      dialogContent.style.willChange = 'transform, opacity'
+      dialogContent.style.pointerEvents = 'none'
 
-      // Force reflow
+      // Force layout recalculation
       void dialogContent.offsetWidth
 
-      // Animate to final position (centered)
+      // Animate to final position
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          dialogContent.style.transition = 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1), opacity 400ms cubic-bezier(0.4, 0, 0.2, 1)'
+          dialogContent.style.transition = 'transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 500ms cubic-bezier(0.4, 0, 0.2, 1)'
           dialogContent.style.transform = 'translate(-50%, -50%) scale(1, 1)'
           dialogContent.style.opacity = '1'
+          dialogContent.style.pointerEvents = 'auto'
           
           const handleTransitionEnd = () => {
+            setIsAnimating(false)
             dialogContent.style.transition = ''
+            dialogContent.style.willChange = ''
             dialogContent.removeEventListener('transitionend', handleTransitionEnd)
           }
           
           dialogContent.addEventListener('transitionend', handleTransitionEnd, { once: true })
         })
       })
-    }, 10)
+    }
 
-    return () => clearTimeout(timeoutId)
+    // Start checking immediately
+    requestAnimationFrame(checkAndAnimate)
   }, [open, initialRect])
 
   if (isMobile) {
@@ -120,7 +133,7 @@ export function ChartFullscreen({
               {filters}
             </div>
           )}
-          <div ref={contentRef} className="flex-1 p-6 overflow-auto">
+          <div className="flex-1 p-6 overflow-auto">
             {children}
           </div>
         </div>
