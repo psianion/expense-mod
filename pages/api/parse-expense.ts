@@ -25,7 +25,7 @@ Keys:
 - category (string or null)
 - platform (string or null)
 - payment_method (string or null)
-- type ("expense" or "inflow")
+- type ("EXPENSE" or "INFLOW")
 - event (string or null)
 - notes (string or null)
 If value unknown, return null. Normalize merchant/platform names (e.g., "swiggy" -> "Swiggy").`
@@ -44,7 +44,7 @@ const examples = [
       category: "Food",
       platform: "Swiggy",
       payment_method: "Card",
-      type: "expense",
+      type: "EXPENSE",
       event: "Kerala trip",
       notes: "chips"
     })
@@ -62,7 +62,7 @@ const examples = [
       category: "Accommodation",
       platform: null,
       payment_method: null,
-      type: "expense",
+      type: "EXPENSE",
       event: null,
       notes: "Hotel booking Mumbai"
     })
@@ -80,7 +80,7 @@ const examples = [
       category: "Food",
       platform: null,
       payment_method: null,
-      type: "expense",
+      type: "EXPENSE",
       event: null,
       notes: "Coffee yesterday morning"
     })
@@ -98,7 +98,7 @@ const examples = [
       category: "Income",
       platform: null,
       payment_method: "UPI",
-      type: "inflow",
+      type: "INFLOW",
       event: null,
       notes: "salary"
     })
@@ -116,7 +116,7 @@ const examples = [
       category: "Refund",
       platform: "Amazon",
       payment_method: null,
-      type: "inflow",
+      type: "INFLOW",
       event: null,
       notes: "order cancelled"
     })
@@ -134,7 +134,7 @@ const examples = [
       category: "Food",
       platform: "Starbucks",
       payment_method: "Cash",
-      type: "expense",
+      type: "EXPENSE",
       event: null,
       notes: "Coffee"
     })
@@ -152,7 +152,7 @@ const examples = [
       category: "Transport",
       platform: null,
       payment_method: null,
-      type: "expense",
+      type: "EXPENSE",
       event: null,
       notes: "Metro card recharge"
     })
@@ -207,7 +207,7 @@ export default async function handler(
         category: null,
         platform: null,
         payment_method: null,
-        type: 'expense',
+      type: 'EXPENSE',
         event: null,
         notes: text
       }
@@ -225,9 +225,7 @@ export default async function handler(
       parsed.currency = 'INR'
     }
 
-    if (!parsed.type) {
-      parsed.type = 'expense'
-    }
+    parsed.type = (parsed.type || 'EXPENSE').toString().toUpperCase() as ParsedExpense['type']
 
     // Post-process datetime: convert AI response to proper local time format
     // Handle relative dates like "yesterday" by parsing the text directly

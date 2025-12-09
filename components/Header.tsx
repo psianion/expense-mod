@@ -2,17 +2,18 @@ import React from 'react'
 import dayjs from 'dayjs'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
+import { View } from '../types'
 
 interface HeaderProps {
   monthlyTotal: number
   currency: string
-  view: 'expenses' | 'analytics'
-  onViewChange: (view: 'expenses' | 'analytics') => void
+  view: View
+  onViewChange: (view: View) => void
 }
 
 export function Header({ monthlyTotal, currency, view, onViewChange }: HeaderProps) {
   const currentMonth = dayjs().format('MMMM YYYY')
-  const viewOptions = ['expenses', 'analytics'] as const
+  const viewOptions: View[] = ['EXPENSES', 'ANALYTICS']
   
   return (
     <Card className="mb-6">
@@ -42,7 +43,7 @@ export function Header({ monthlyTotal, currency, view, onViewChange }: HeaderPro
                 size="sm"
                 onClick={() => onViewChange(option)}
               >
-                {option === 'expenses' ? 'Expenses' : 'Analytics'}
+                {option === 'EXPENSES' ? 'Expenses' : 'Analytics'}
               </Button>
             ))}
           </div>

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Badge } from './ui/badge'
 import { Expense } from '../types'
 import dayjs from 'dayjs'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
@@ -58,11 +59,11 @@ export function ExpensesList({ expenses, isLoading }: ExpensesListProps) {
             >
               <div className="flex items-center space-x-3">
                 <div className={`p-2 rounded-full ${
-                  expense.type === 'expense' 
+                  expense.type === 'EXPENSE' 
                     ? 'bg-red-100 text-red-600' 
                     : 'bg-green-100 text-green-600'
                 }`}>
-                  {expense.type === 'expense' ? (
+                  {expense.type === 'EXPENSE' ? (
                     <ArrowDownRight className="h-4 w-4" />
                   ) : (
                     <ArrowUpRight className="h-4 w-4" />
@@ -78,6 +79,9 @@ export function ExpensesList({ expenses, isLoading }: ExpensesListProps) {
                         {expense.category}
                       </span>
                     )}
+                  {expense.source === 'RECURRING' && (
+                    <Badge variant="secondary">Recurring</Badge>
+                  )}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {expense.platform && `${expense.platform} • `}
@@ -95,9 +99,9 @@ export function ExpensesList({ expenses, isLoading }: ExpensesListProps) {
               </div>
               <div className="text-right">
                 <div className={`text-sm font-medium ${
-                  expense.type === 'expense' ? 'text-red-600' : 'text-green-600'
+                  expense.type === 'EXPENSE' ? 'text-red-600' : 'text-green-600'
                 }`}>
-                  {expense.type === 'expense' ? '-' : '+'}{expense.currency} {expense.amount.toLocaleString()}
+                  {expense.type === 'EXPENSE' ? '-' : '+'}{expense.currency} {expense.amount.toLocaleString()}
                 </div>
                 {expense.parsed_by_ai && (
                   <div className="text-xs text-muted-foreground">AI Parsed</div>

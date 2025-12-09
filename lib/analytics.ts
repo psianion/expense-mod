@@ -2,7 +2,7 @@ import { format, startOfDay, startOfMonth, startOfWeek } from 'date-fns'
 
 import { Expense } from '../types'
 
-export type TrendPeriod = 'daily' | 'weekly' | 'monthly'
+export type TrendPeriod = 'DAILY' | 'WEEKLY' | 'MONTHLY'
 
 export type TrendPoint = {
   label: string
@@ -37,12 +37,12 @@ const safeKey = (value: string | null, fallback: string) =>
   (value?.trim() || fallback).replace(/\s+/g, ' ')
 
 const bucketForDate = (date: Date, period: TrendPeriod) => {
-  if (period === 'daily') {
+  if (period === 'DAILY') {
     const day = startOfDay(date)
     return { timestamp: day.getTime(), label: format(day, 'MMM dd') }
   }
 
-  if (period === 'weekly') {
+  if (period === 'WEEKLY') {
     const week = startOfWeek(date, { weekStartsOn: 1 })
     return { timestamp: week.getTime(), label: `${format(week, "'W'w")} ${format(week, 'yyyy')}` }
   }
@@ -55,7 +55,7 @@ export const getCategoryTotals = (expenses: Expense[]): SimpleDatum[] => {
   const totals = new Map<string, number>()
 
   expenses.forEach((expense) => {
-    if (expense.type !== 'expense') return
+    if (expense.type !== 'EXPENSE') return
 
     const key = safeKey(expense.category, 'Uncategorized')
     totals.set(key, (totals.get(key) ?? 0) + expense.amount)
@@ -70,7 +70,7 @@ export const getPlatformStats = (expenses: Expense[]): ComparisonDatum[] => {
   const totals = new Map<string, number>()
 
   expenses.forEach((expense) => {
-    if (expense.type !== 'expense') return
+    if (expense.type !== 'EXPENSE') return
 
     const key = safeKey(expense.platform, 'Unknown platform')
     totals.set(key, (totals.get(key) ?? 0) + expense.amount)
@@ -85,7 +85,7 @@ export const getPaymentMethodStats = (expenses: Expense[]): ComparisonDatum[] =>
   const totals = new Map<string, number>()
 
   expenses.forEach((expense) => {
-    if (expense.type !== 'expense') return
+    if (expense.type !== 'EXPENSE') return
 
     const key = safeKey(expense.payment_method, 'Unknown method')
     totals.set(key, (totals.get(key) ?? 0) + expense.amount)
@@ -119,7 +119,7 @@ export const getSpendingTrend = (expenses: Expense[], period: TrendPeriod): Tren
       inflow: 0,
     }
 
-    if (expense.type === 'expense') {
+    if (expense.type === 'EXPENSE') {
       existing.expense += expense.amount
     } else {
       existing.inflow += expense.amount
@@ -140,7 +140,7 @@ export const getSpendingTrend = (expenses: Expense[], period: TrendPeriod): Tren
 export const getSummaryTotals = (expenses: Expense[]): SummaryTotals => {
   const summary = expenses.reduce(
     (acc, expense) => {
-      if (expense.type === 'expense') {
+      if (expense.type === 'EXPENSE') {
         acc.expenseTotal += expense.amount
       } else {
         acc.inflowTotal += expense.amount
@@ -160,7 +160,7 @@ export const getSummaryTotals = (expenses: Expense[]): SummaryTotals => {
 export const getAvailableCategories = (expenses: Expense[]): string[] => {
   const categories = new Set<string>()
   expenses.forEach((expense) => {
-    if (expense.type === 'expense' && expense.category) {
+    if (expense.type === 'EXPENSE' && expense.category) {
       categories.add(safeKey(expense.category, 'Uncategorized'))
     }
   })
@@ -183,11 +183,11 @@ export const getCategoryTrend = (
   // Filter expenses by selected categories if provided
   const filteredExpenses = selectedCategories && selectedCategories.length > 0
     ? expenses.filter((expense) => {
-        if (expense.type !== 'expense' || !expense.category) return false
+        if (expense.type !== 'EXPENSE' || !expense.category) return false
         const categoryKey = safeKey(expense.category, 'Uncategorized')
         return selectedCategories.includes(categoryKey)
       })
-    : expenses.filter((expense) => expense.type === 'expense')
+    : expenses.filter((expense) => expense.type === 'EXPENSE')
 
   // Get all unique categories from filtered expenses
   const categories = new Set<string>()
@@ -239,7 +239,7 @@ export const getFilteredSpendingTrend = (
 ): TrendPoint[] => {
   const filteredExpenses = selectedCategories && selectedCategories.length > 0
     ? expenses.filter((expense) => {
-        if (expense.type !== 'expense' || !expense.category) return false
+        if (expense.type !== 'EXPENSE' || !expense.category) return false
         const categoryKey = safeKey(expense.category, 'Uncategorized')
         return selectedCategories.includes(categoryKey)
       })

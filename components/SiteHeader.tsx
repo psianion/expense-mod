@@ -10,18 +10,26 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import { Button } from "@/components/ui/button"
+} from "./ui/breadcrumb"
+import { Separator } from "./ui/separator"
+import { Button } from "./ui/button"
 import {
   SidebarTrigger,
-} from "@/components/ui/sidebar"
+} from "./ui/sidebar"
+import { View } from "../types"
 
 interface SiteHeaderProps {
-  currentView?: "expenses" | "analytics"
+  currentView?: View
 }
 
-export function SiteHeader({ currentView = "expenses" }: SiteHeaderProps) {
+const viewLabels: Record<View, string> = {
+  EXPENSES: "Expenses",
+  ANALYTICS: "Analytics",
+  BILLS: "Bills",
+  SETTINGS: "Settings",
+}
+
+export function SiteHeader({ currentView = "EXPENSES" }: SiteHeaderProps) {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
@@ -45,7 +53,7 @@ export function SiteHeader({ currentView = "expenses" }: SiteHeaderProps) {
             <BreadcrumbSeparator className="hidden md:block" />
             <BreadcrumbItem>
               <BreadcrumbPage>
-                {currentView === "analytics" ? "Analytics" : "Expenses"}
+                {viewLabels[currentView]}
               </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>

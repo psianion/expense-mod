@@ -18,6 +18,8 @@ A modern, AI-powered expense tracking application built with Next.js, TypeScript
 - **Interactive Analytics**: Visualize category, platform, payment method, and trend insights with responsive charts
 - **Responsive Design**: Mobile-first design with adaptive drawer UI (right sidebar on desktop, bottom sheet on mobile)
 - **Comprehensive Data**: Track amount, currency, date/time, category, platform, payment method, expense type, events, and notes
+- **Recurring bills & salary**: Configure recurring income/bill templates, auto-post fixed bills, and confirm variable charges from the Settings or Bills views
+- **Pending confirmations**: Review bill instances, edit amounts, confirm or skip, with traceability back to expenses
 
 ## 📁 Project Structure
 
@@ -38,6 +40,13 @@ expense-tracker/
 2. **Environment variables**: Copy `env.local.example` to `.env.local` and add your Supabase and OpenAI credentials
 3. **Database**: Run `sql/init.sql` in your Supabase SQL Editor
 4. **Run**: `npm run dev`
+5. **Cron (optional)**: Set `CRON_SECRET` and schedule a daily call to `/api/cron/bills` (e.g., Vercel cron) with header `x-cron-secret: $CRON_SECRET`
+
+### Vercel Cron example
+
+- Path: `/api/cron/bills`
+- Schedule: `0 5 * * *` (daily at 05:00 UTC)
+- Header: `x-cron-secret: $CRON_SECRET`
 
 ## 🏗️ Architecture Highlights
 
@@ -45,6 +54,7 @@ expense-tracker/
 - **Auth-Ready Schema**: `user_id` column prepared for future authentication with RLS support
 - **Type Safety**: Full TypeScript coverage with aligned database schema
 - **Component Architecture**: Modular, reusable components with Radix UI for accessibility
+- **Recurring Engine**: `lib/recurring.ts` shared helpers for bill generation, cron safety, and expense creation with source tracking
 
 ## 🔒 Security
 
