@@ -1,20 +1,21 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import Head from 'next/head'
+"use client"
+
+import { useEffect, useMemo, useState } from 'react'
 import { RefreshCw, Check, X, Plus } from 'lucide-react'
 import dayjs from 'dayjs'
 
-import { AppSidebar } from '../components/AppSidebar'
-import { SiteHeader } from '../components/SiteHeader'
-import { SidebarProvider, SidebarInset } from '../components/ui/sidebar'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
-import { Badge } from '../components/ui/badge'
-import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
-import { Drawer } from '../components/ui/drawer'
-import { Label } from '../components/ui/label'
-import { Bill, BillInstance } from '../types'
+import { AppSidebar } from '@/components/AppSidebar'
+import { SiteHeader } from '@/components/SiteHeader'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Drawer } from '@/components/ui/drawer'
+import { Label } from '@/components/ui/label'
+import { Bill, BillInstance } from '@/types'
 
 const statusOptions = ['ALL', 'DUE', 'PAID', 'SKIPPED'] as const
 type StatusFilter = (typeof statusOptions)[number]
@@ -207,9 +208,6 @@ export default function BillsPage() {
 
   return (
     <>
-      <Head>
-        <title>Bills & Instances</title>
-      </Head>
       <SidebarProvider>
         <AppSidebar currentView="BILLS" />
         <SidebarInset>
@@ -234,9 +232,11 @@ export default function BillsPage() {
                     <SelectValue placeholder="Flow" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">All</SelectItem>
-                    <SelectItem value="OUTFLOW">Bills</SelectItem>
-                    <SelectItem value="INFLOW">Income</SelectItem>
+                    {viewOptions.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt === 'ALL' ? 'All' : opt === 'INFLOW' ? 'Income' : 'Bills'}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>

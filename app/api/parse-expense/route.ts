@@ -1,8 +1,10 @@
-import { NextApiRequest, NextApiResponse } from 'next'
+import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { ParseExpenseRequest, ParseExpenseResponse, ParsedExpense, BillMatchCandidate, Bill } from '../../types'
-import { getCurrentDateTimeContext, parseAIDateTime } from '../../lib/datetime'
-import { supabase } from '../../lib/supabaseClient'
+import { ParseExpenseRequest, ParseExpenseResponse, ParsedExpense, BillMatchCandidate, Bill } from '@/types'
+import { getCurrentDateTimeContext, parseAIDateTime } from '@/lib/datetime'
+import { supabase } from '@/lib/supabaseClient'
+
+export const dynamic = 'force-dynamic'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -86,155 +88,147 @@ If value unknown, return null. Normalize merchant/platform names (e.g., "swiggy"
 const examples = [
   {
     role: 'user' as const,
-    content: '20 rupees chips Swiggy Kerala trip by card'
+    content: '20 rupees chips Swiggy Kerala trip by card',
   },
   {
     role: 'assistant' as const,
     content: JSON.stringify({
       amount: 20,
-      currency: "INR",
+      currency: 'INR',
       datetime: null,
-      category: "Food",
-      platform: "Swiggy",
-      payment_method: "Card",
-      type: "EXPENSE",
-      event: "Kerala trip",
-      notes: "chips"
-    })
+      category: 'Food',
+      platform: 'Swiggy',
+      payment_method: 'Card',
+      type: 'EXPENSE',
+      event: 'Kerala trip',
+      notes: 'chips',
+    }),
   },
   {
     role: 'user' as const,
-    content: 'Hotel booking 2500 INR Mumbai 15th Dec'
+    content: 'Hotel booking 2500 INR Mumbai 15th Dec',
   },
   {
     role: 'assistant' as const,
     content: JSON.stringify({
       amount: 2500,
-      currency: "INR",
-      datetime: "2024-12-15T00:00:00",
-      category: "Accommodation",
+      currency: 'INR',
+      datetime: '2024-12-15T00:00:00',
+      category: 'Accommodation',
       platform: null,
       payment_method: null,
-      type: "EXPENSE",
+      type: 'EXPENSE',
       event: null,
-      notes: "Hotel booking Mumbai"
-    })
+      notes: 'Hotel booking Mumbai',
+    }),
   },
   {
     role: 'user' as const,
-    content: 'Coffee 50 yesterday morning'
+    content: 'Coffee 50 yesterday morning',
   },
   {
     role: 'assistant' as const,
     content: JSON.stringify({
       amount: 50,
-      currency: "INR",
+      currency: 'INR',
       datetime: null, // Will be calculated based on current date
-      category: "Food",
+      category: 'Food',
       platform: null,
       payment_method: null,
-      type: "EXPENSE",
+      type: 'EXPENSE',
       event: null,
-      notes: "Coffee yesterday morning"
-    })
+      notes: 'Coffee yesterday morning',
+    }),
   },
   {
     role: 'user' as const,
-    content: 'Got salary 50000 UPI transfer'
+    content: 'Got salary 50000 UPI transfer',
   },
   {
     role: 'assistant' as const,
     content: JSON.stringify({
       amount: 50000,
-      currency: "INR",
+      currency: 'INR',
       datetime: null,
-      category: "Income",
+      category: 'Income',
       platform: null,
-      payment_method: "UPI",
-      type: "INFLOW",
+      payment_method: 'UPI',
+      type: 'INFLOW',
       event: null,
-      notes: "salary"
-    })
+      notes: 'salary',
+    }),
   },
   {
     role: 'user' as const,
-    content: 'Refund 1500 Amazon order cancelled'
+    content: 'Refund 1500 Amazon order cancelled',
   },
   {
     role: 'assistant' as const,
     content: JSON.stringify({
       amount: 1500,
-      currency: "INR",
+      currency: 'INR',
       datetime: null,
-      category: "Refund",
-      platform: "Amazon",
+      category: 'Refund',
+      platform: 'Amazon',
       payment_method: null,
-      type: "INFLOW",
+      type: 'INFLOW',
       event: null,
-      notes: "order cancelled"
-    })
+      notes: 'order cancelled',
+    }),
   },
   {
     role: 'user' as const,
-    content: 'Coffee 120 cash Starbucks'
+    content: 'Coffee 120 cash Starbucks',
   },
   {
     role: 'assistant' as const,
     content: JSON.stringify({
       amount: 120,
-      currency: "INR",
+      currency: 'INR',
       datetime: null,
-      category: "Food",
-      platform: "Starbucks",
-      payment_method: "Cash",
-      type: "EXPENSE",
+      category: 'Food',
+      platform: 'Starbucks',
+      payment_method: 'Cash',
+      type: 'EXPENSE',
       event: null,
-      notes: "Coffee"
-    })
+      notes: 'Coffee',
+    }),
   },
   {
     role: 'user' as const,
-    content: 'Metro card recharge 500'
+    content: 'Metro card recharge 500',
   },
   {
     role: 'assistant' as const,
     content: JSON.stringify({
       amount: 500,
-      currency: "INR",
+      currency: 'INR',
       datetime: null,
-      category: "Transport",
+      category: 'Transport',
       platform: null,
       payment_method: null,
-      type: "EXPENSE",
+      type: 'EXPENSE',
       event: null,
-      notes: "Metro card recharge"
-    })
-  }
+      notes: 'Metro card recharge',
+    }),
+  },
 ]
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<ParseExpenseResponse | { error: string }>
-) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const { text }: ParseExpenseRequest = req.body
+    const { text }: ParseExpenseRequest = await request.json()
 
     if (!text || typeof text !== 'string') {
-      return res.status(400).json({ error: 'Text is required' })
+      return NextResponse.json({ error: 'Text is required' }, { status: 400 })
     }
 
-    // Get current date/time context for the AI prompt
     const currentDateTime = getCurrentDateTimeContext()
     const systemPrompt = getSystemPrompt(currentDateTime)
 
     const messages = [
       { role: 'system' as const, content: systemPrompt },
       ...examples,
-      { role: 'user' as const, content: text }
+      { role: 'user' as const, content: text },
     ]
 
     const completion = await openai.chat.completions.create({
@@ -246,12 +240,10 @@ export default async function handler(
 
     const rawModelOutput = completion.choices[0]?.message?.content || ''
 
-    // Parse the JSON response
     let parsed: ParsedExpense
     try {
       parsed = JSON.parse(rawModelOutput)
     } catch (parseError) {
-      // Fallback heuristics if JSON parsing fails
       const amountMatch = text.match(/(\d+(?:\.\d+)?)/)
       parsed = {
         amount: amountMatch ? parseFloat(amountMatch[1]) : null,
@@ -260,13 +252,12 @@ export default async function handler(
         category: null,
         platform: null,
         payment_method: null,
-      type: 'EXPENSE',
+        type: 'EXPENSE',
         event: null,
-        notes: text
+        notes: text,
       }
     }
 
-    // Apply fallback heuristics
     if (!parsed.amount) {
       const amountMatch = text.match(/(\d+(?:\.\d+)?)/)
       if (amountMatch) {
@@ -280,13 +271,10 @@ export default async function handler(
 
     parsed.type = (parsed.type || 'EXPENSE').toString().toUpperCase() as ParsedExpense['type']
 
-    // Post-process datetime: convert AI response to proper local time format
-    // Handle relative dates like "yesterday" by parsing the text directly
     if (!parsed.datetime) {
-      // Try to extract relative dates from the text
       const lowerText = text.toLowerCase()
       const now = new Date()
-      
+
       if (lowerText.includes('yesterday')) {
         const yesterday = new Date(now)
         yesterday.setDate(yesterday.getDate() - 1)
@@ -299,20 +287,19 @@ export default async function handler(
         parsed.datetime = parseAIDateTime(null, lastWeek)
       }
     } else {
-      // Parse and normalize the AI-returned datetime
       parsed.datetime = parseAIDateTime(parsed.datetime, new Date())
     }
 
     const billMatch = await detectBillMatch(text, parsed)
 
-    return res.status(200).json({
+    return NextResponse.json({
       parsed,
       raw_model_output: rawModelOutput,
       bill_match: billMatch,
-    })
-
+    } as ParseExpenseResponse)
   } catch (error) {
     console.error('OpenAI API error:', error)
-    return res.status(500).json({ error: 'Failed to parse expense' })
+    return NextResponse.json({ error: 'Failed to parse expense' }, { status: 500 })
   }
 }
+

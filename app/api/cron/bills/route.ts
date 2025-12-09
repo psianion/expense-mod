@@ -1,30 +1,25 @@
-import { NextApiRequest, NextApiResponse } from 'next'
+import { NextRequest, NextResponse } from 'next/server'
 import dayjs from 'dayjs'
 
-import { supabase } from '../../../lib/supabaseClient'
-import { ensureInstanceForCurrentPeriod } from '../../../lib/recurring'
-import { Bill } from '../../../types'
+import { supabase } from '@/lib/supabaseClient'
+import { ensureInstanceForCurrentPeriod } from '@/lib/recurring'
+import { Bill } from '@/types'
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<{ error?: string; results?: any[] }>
-) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
+export const dynamic = 'force-dynamic'
 
-  const headerSecret = req.headers['x-cron-secret']
-  const querySecret = req.query.secret
+export async function POST(request: NextRequest) {
+  const headerSecret = request.headers.get('x-cron-secret')
+  const querySecret = request.nextUrl.searchParams.get('secret')
   const secret = headerSecret || querySecret
 
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const { data: bills, error } = await supabase.from('bills').select('*')
 
   if (error) {
-    return res.status(500).json({ error: error.message })
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
   const now = dayjs()
@@ -45,6 +40,6 @@ export default async function handler(
     })
   }
 
-  return res.status(200).json({ results })
+  return NextResponse.json({ results })
 }
 

@@ -1,22 +1,23 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import Head from 'next/head'
+"use client"
+
+import { useEffect, useMemo, useState } from 'react'
 import { z } from 'zod'
 import { CalendarClock, Check, X } from 'lucide-react'
 
-import { AppSidebar } from '../components/AppSidebar'
-import { SiteHeader } from '../components/SiteHeader'
-import { SidebarProvider, SidebarInset } from '../components/ui/sidebar'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
-import { Label } from '../components/ui/label'
-import { Textarea } from '../components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
-import { Checkbox } from '../components/ui/checkbox'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
-import { Badge } from '../components/ui/badge'
-import { Bill, BillInstance, BillType, BillFrequency } from '../types'
+import { AppSidebar } from '@/components/AppSidebar'
+import { SiteHeader } from '@/components/SiteHeader'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Bill, BillInstance, BillType, BillFrequency } from '@/types'
 
 type TabValue = 'INCOME' | 'BILLS' | 'INSTANCES'
 
@@ -33,14 +34,14 @@ const billFormSchema = z
     auto_post: z.boolean(),
     notes: z.string().nullable().optional(),
   })
-  .refine(
-  (values) => values.frequency !== 'MONTHLY' || values.day_of_month !== null && values.day_of_month !== undefined,
-  { message: 'Day of month is required for monthly bills', path: ['day_of_month'] }
-  )
-  .refine(
-  (values) => values.frequency !== 'WEEKLY' || values.day_of_week !== null && values.day_of_week !== undefined,
-  { message: 'Day of week is required for weekly bills', path: ['day_of_week'] }
-  )
+  .refine((values) => values.frequency !== 'MONTHLY' || (values.day_of_month !== null && values.day_of_month !== undefined), {
+    message: 'Day of month is required for monthly bills',
+    path: ['day_of_month'],
+  })
+  .refine((values) => values.frequency !== 'WEEKLY' || (values.day_of_week !== null && values.day_of_week !== undefined), {
+    message: 'Day of week is required for weekly bills',
+    path: ['day_of_week'],
+  })
 
 type BillFormValues = z.infer<typeof billFormSchema>
 
@@ -271,11 +272,7 @@ function BillForm({
           </div>
           <div className="space-y-2">
             <Label>Start date</Label>
-            <Input
-              type="date"
-              value={form.start_date ?? ''}
-              onChange={(e) => handleChange('start_date', e.target.value || null)}
-            />
+            <Input type="date" value={form.start_date ?? ''} onChange={(e) => handleChange('start_date', e.target.value || null)} />
           </div>
           <div className="space-y-2">
             <Label>End date</Label>
@@ -283,16 +280,12 @@ function BillForm({
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label>Notes</Label>
-            <Textarea
-              value={form.notes ?? ''}
-              onChange={(e) => handleChange('notes', e.target.value)}
-              placeholder="Optional description or tags"
-            />
+            <Textarea value={form.notes ?? ''} onChange={(e) => handleChange('notes', e.target.value)} placeholder="Optional description or tags" />
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="auto_post"
-          checked={form.auto_post}
+              checked={form.auto_post}
               onCheckedChange={(checked) => handleChange('auto_post', Boolean(checked))}
             />
             <Label htmlFor="auto_post">Auto post to expenses</Label>
@@ -357,11 +350,7 @@ function BillsTable({ bills }: { bills: Bill[] }) {
                   </TableCell>
                   <TableCell>{bill.amount !== null && bill.amount !== undefined ? bill.amount.toFixed(2) : 'Variable'}</TableCell>
                   <TableCell>
-                  {bill.auto_post ? (
-                    <Badge variant="secondary">Auto</Badge>
-                  ) : (
-                    <Badge variant="outline">Manual</Badge>
-                  )}
+                    {bill.auto_post ? <Badge variant="secondary">Auto</Badge> : <Badge variant="outline">Manual</Badge>}
                   </TableCell>
                   <TableCell>{formatDate(bill.updated_at)}</TableCell>
                 </TableRow>
@@ -430,57 +419,54 @@ function PendingTable({
                 const inflow = isInflow(instance.bill)
                 const label = statusLabel(instance)
                 return (
-                <TableRow key={instance.id}>
-                  <TableCell className="font-medium">
-                    {instance.bill?.name ?? 'Recurring item'}
-                    {instance.bill?.type && (
-                      <div className="text-xs text-muted-foreground capitalize">{instance.bill.type}</div>
-                    )}
-                  </TableCell>
-                  <TableCell>{instance.due_date}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        instance.status === 'DUE'
-                          ? 'secondary'
-                          : instance.status === 'PAID'
-                          ? 'default'
-                          : 'outline'
-                      }
-                    >
-                      {label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      defaultValue={instance.amount}
-                      onChange={(e) =>
-                        setPendingUpdates((prev) => ({ ...prev, [instance.id]: Number(e.target.value) }))
-                      }
-                    />
-                  </TableCell>
-                  <TableCell className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => handleConfirm(instance.id)}
-                      disabled={isUpdating || instance.status !== 'DUE'}
-                    >
-                      <Check className="mr-1 h-4 w-4" /> {inflow ? 'Mark received' : 'Mark paid'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleSkip(instance.id)}
-                      disabled={isUpdating || instance.status !== 'DUE'}
-                    >
-                      <X className="mr-1 h-4 w-4" /> Skip
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              )})}
+                  <TableRow key={instance.id}>
+                    <TableCell className="font-medium">
+                      {instance.bill?.name ?? 'Recurring item'}
+                      {instance.bill?.type && <div className="text-xs text-muted-foreground capitalize">{instance.bill.type}</div>}
+                    </TableCell>
+                    <TableCell>{instance.due_date}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          instance.status === 'DUE'
+                            ? 'secondary'
+                            : instance.status === 'PAID'
+                            ? 'default'
+                            : 'outline'
+                        }
+                      >
+                        {label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        defaultValue={instance.amount}
+                        onChange={(e) => setPendingUpdates((prev) => ({ ...prev, [instance.id]: Number(e.target.value) }))}
+                      />
+                    </TableCell>
+                    <TableCell className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => handleConfirm(instance.id)}
+                        disabled={isUpdating || instance.status !== 'DUE'}
+                      >
+                        <Check className="mr-1 h-4 w-4" /> {inflow ? 'Mark received' : 'Mark paid'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleSkip(instance.id)}
+                        disabled={isUpdating || instance.status !== 'DUE'}
+                      >
+                        <X className="mr-1 h-4 w-4" /> Skip
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
@@ -535,9 +521,6 @@ export default function SettingsPage() {
 
   return (
     <>
-      <Head>
-        <title>Settings - Recurring bills</title>
-      </Head>
       <SidebarProvider>
         <AppSidebar currentView="SETTINGS" />
         <SidebarInset>
@@ -548,9 +531,7 @@ export default function SettingsPage() {
                 <h2 className="text-2xl font-semibold flex items-center gap-2">
                   <CalendarClock className="h-5 w-5" /> Recurring settings
                 </h2>
-                <p className="text-sm text-muted-foreground">
-                  Manage salaries, bills, and pending confirmations.
-                </p>
+                <p className="text-sm text-muted-foreground">Manage salaries, bills, and pending confirmations.</p>
               </div>
             </div>
 
@@ -558,7 +539,7 @@ export default function SettingsPage() {
               <TabsList>
                 <TabsTrigger value="INCOME">Income</TabsTrigger>
                 <TabsTrigger value="BILLS">Bills & Loans</TabsTrigger>
-              <TabsTrigger value="INSTANCES">Bill instances</TabsTrigger>
+                <TabsTrigger value="INSTANCES">Bill instances</TabsTrigger>
               </TabsList>
 
               <TabsContent value="INCOME" className="space-y-4">
