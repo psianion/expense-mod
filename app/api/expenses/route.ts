@@ -1,11 +1,13 @@
-import { NextApiRequest, NextApiResponse } from 'next'
+import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import dayjs from 'dayjs'
 
-import { supabase } from '../../lib/supabaseClient'
-import { Bill, BillMatchCandidate, BillType } from '../../types'
-import { toUTC, getLocalISO } from '../../lib/datetime'
-import { billToExpenseType, findInstanceForPeriod } from '../../lib/recurring'
+import { supabase } from '@/lib/supabaseClient'
+import { Bill, BillMatchCandidate, BillType } from '@/types'
+import { toUTC, getLocalISO } from '@/lib/datetime'
+import { billToExpenseType, findInstanceForPeriod } from '@/lib/recurring'
+
+export const dynamic = 'force-dynamic'
 
 const billTypes: [BillType, ...BillType[]] = ['BILL', 'EMI', 'CREDITCARD', 'SUBSCRIPTION', 'SALARY', 'INCOME']
 
@@ -94,16 +96,9 @@ const findBestBill = (bills: Bill[], haystack: string, hint?: BillMatchCandidate
   return best.bill
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<{ error: string } | { expense: any; matchedInstanceId?: string | null }>
-) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const parsed = requestSchema.parse(req.body)
+    const parsed = requestSchema.parse(await request.json())
     const expenseInput = parsed.expense
     const billHint: BillMatchCandidate | null = parsed.billMatch ?? null
     const source = parsed.source
@@ -113,7 +108,7 @@ export default async function handler(
 
     const { data: billsData, error: billsError } = await supabase.from('bills').select('*')
     if (billsError) {
-      return res.status(500).json({ error: billsError.message })
+      return NextResponse.json({ error: billsError.message }, { status: 500 })
     }
 
     const normalizedBills = (billsData || []).map(normalizeBill)
@@ -154,7 +149,7 @@ export default async function handler(
       .single()
 
     if (expenseError) {
-      return res.status(500).json({ error: expenseError.message })
+      return NextResponse.json({ error: expenseError.message }, { status: 500 })
     }
 
     if (matchedInstanceId) {
@@ -168,10 +163,10 @@ export default async function handler(
         .eq('id', matchedInstanceId)
     }
 
-    return res.status(200).json({ expense, matchedInstanceId })
+    return NextResponse.json({ expense, matchedInstanceId })
   } catch (err: any) {
     const message = err?.issues?.[0]?.message || err.message || 'Invalid payload'
-    return res.status(400).json({ error: message })
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 }
 

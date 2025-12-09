@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import Head from 'next/head'
-import { AppSidebar } from '../components/AppSidebar'
-import { SiteHeader } from '../components/SiteHeader'
-import { SectionCards } from '../components/SectionCards'
-import { QuickAdd } from '../components/QuickAdd'
-import { PreviewModal } from '../components/PreviewModal'
-import { DataTable } from '../components/DataTable'
-import { FloatingActionButton } from '../components/FloatingActionButton'
-import { ManualExpenseForm } from '../components/ManualExpenseForm'
-import { AnalyticsDashboard } from '../components/AnalyticsDashboard'
-import { Drawer } from '../components/ui/drawer'
-import { SidebarProvider, SidebarInset } from '../components/ui/sidebar'
-import { supabase } from '../lib/supabaseClient'
+"use client"
+
+import { useEffect, useMemo, useState } from 'react'
+import { AppSidebar } from '@/components/AppSidebar'
+import { SiteHeader } from '@/components/SiteHeader'
+import { SectionCards } from '@/components/SectionCards'
+import { QuickAdd } from '@/components/QuickAdd'
+import { PreviewModal } from '@/components/PreviewModal'
+import { DataTable } from '@/components/DataTable'
+import { FloatingActionButton } from '@/components/FloatingActionButton'
+import { ManualExpenseForm } from '@/components/ManualExpenseForm'
+import { AnalyticsDashboard } from '@/components/AnalyticsDashboard'
+import { Drawer } from '@/components/ui/drawer'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { supabase } from '@/lib/supabaseClient'
 import {
   BillMatchCandidate,
   Expense,
@@ -21,14 +22,12 @@ import {
   ParseExpenseRequest,
   ParseExpenseResponse,
   View,
-} from '../types'
-import { startOfMonth, endOfMonth } from 'date-fns'
-import { fromUTC, getLocalISO } from '../lib/datetime'
-import { getSummaryTotals } from '../lib/analytics'
+} from '@/types'
+import { fromUTC, getLocalISO } from '@/lib/datetime'
+import { getSummaryTotals } from '@/lib/analytics'
 
-export default function Home() {
+export default function HomePage() {
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const [monthlyTotal, setMonthlyTotal] = useState(0)
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(true)
   const [isParsing, setIsParsing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -45,39 +44,20 @@ export default function Home() {
     }
   }
 
-  // Fetch expenses on component mount
   useEffect(() => {
     fetchExpenses()
   }, [])
 
-  // Calculate monthly total when expenses change
   useEffect(() => {
-    const now = new Date()
-    const startOfCurrentMonth = startOfMonth(now)
-    const endOfCurrentMonth = endOfMonth(now)
-
-    // Expenses are already in local time format, parse them correctly
-    const monthlyExpenses = expenses.filter((expense) => {
-      // Parse local time string to Date object
-      const expenseDate = new Date(expense.datetime)
-      return expenseDate >= startOfCurrentMonth && expenseDate <= endOfCurrentMonth
-    })
-
-    const total = monthlyExpenses.reduce((sum, expense) => {
-      return sum + (expense.type === 'EXPENSE' ? -expense.amount : expense.amount)
-    }, 0)
-
-    setMonthlyTotal(total)
-  }, [expenses])
+    if (typeof window !== 'undefined' && window.location.hash === '#analytics') {
+      setDashboardView('ANALYTICS')
+    }
+  }, [])
 
   const fetchExpenses = async () => {
     try {
       setIsLoadingExpenses(true)
-      
-      // Test Supabase connection
-      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
-      console.log('Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-      
+
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
@@ -90,22 +70,19 @@ export default function Home() {
           message: error.message,
           details: error.details,
           hint: error.hint,
-          code: error.code
+          code: error.code,
         })
         return
       }
 
-      console.log('Successfully fetched expenses:', data?.length || 0)
-      
-      // Convert UTC datetimes from database to local time for UI
       const expensesWithLocalTime = (data || []).map((expense) => ({
         ...expense,
         datetime: fromUTC(expense.datetime),
         type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
         source: (expense.source?.toUpperCase?.() as ExpenseSource) || 'MANUAL',
-        bill_instance_id: expense.bill_instance_id ?? null
+        bill_instance_id: expense.bill_instance_id ?? null,
       }))
-      
+
       setExpenses(expensesWithLocalTime)
     } catch (error) {
       console.error('Unexpected error fetching expenses:', error)
@@ -118,7 +95,7 @@ export default function Home() {
     try {
       setIsParsing(true)
       setRawText(text)
-      
+
       const response = await fetch('/api/parse-expense', {
         method: 'POST',
         headers: {
@@ -146,8 +123,7 @@ export default function Home() {
   const handleSave = async (expense: ParsedExpense) => {
     try {
       setIsSaving(true)
-      
-      // Validate required fields
+
       if (!expense.amount || expense.amount <= 0) {
         alert('Please enter a valid amount.')
         return
@@ -179,7 +155,6 @@ export default function Home() {
         return
       }
 
-      // Refresh expenses list
       await fetchExpenses()
       setPreviewDrawerOpen(false)
       setParsedExpense(null)
@@ -219,7 +194,6 @@ export default function Home() {
         return
       }
 
-      console.log('Successfully saved manual expense:', body)
       await fetchExpenses()
       setManualDrawerOpen(false)
     } catch (error) {
@@ -234,13 +208,6 @@ export default function Home() {
 
   return (
     <>
-      <Head>
-        <title>Expense Tracker</title>
-        <meta name="description" content="AI-powered expense tracking app" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
       <SidebarProvider>
         <AppSidebar
           currentView={dashboardView}
@@ -257,7 +224,7 @@ export default function Home() {
                 net={summary.net}
                 currency="₹"
               />
-              
+
               {dashboardView === 'ANALYTICS' ? (
                 <AnalyticsDashboard expenses={expenses} isLoading={isLoadingExpenses} currency="₹" />
               ) : (
@@ -270,7 +237,7 @@ export default function Home() {
           </div>
         </SidebarInset>
       </SidebarProvider>
-          
+
       <PreviewModal
         open={previewDrawerOpen}
         onOpenChange={setPreviewDrawerOpen}
@@ -279,24 +246,18 @@ export default function Home() {
         isLoading={isSaving}
         billMatch={billMatch}
       />
-      
+
       <Drawer
         open={manualDrawerOpen}
         onOpenChange={setManualDrawerOpen}
         title="Add Manual Expense"
         description="Enter expense details manually"
       >
-        <ManualExpenseForm
-          onSave={handleManualSave}
-          isLoading={isSaving}
-        />
+        <ManualExpenseForm onSave={handleManualSave} isLoading={isSaving} />
       </Drawer>
-      
-      {dashboardView === 'EXPENSES' && (
-        <FloatingActionButton
-          onClick={() => setManualDrawerOpen(true)}
-        />
-      )}
+
+      {dashboardView === 'EXPENSES' && <FloatingActionButton onClick={() => setManualDrawerOpen(true)} />}
     </>
   )
 }
+

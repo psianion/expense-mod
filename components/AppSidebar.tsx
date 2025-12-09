@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import {
   Wallet,
   BarChart3,
@@ -69,7 +70,7 @@ export function AppSidebar({ currentView = "EXPENSES", onViewChange, onAddExpens
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+                  <Link href="/" prefetch>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Wallet className="size-4" />
                 </div>
@@ -77,7 +78,7 @@ export function AppSidebar({ currentView = "EXPENSES", onViewChange, onAddExpens
                   <span className="truncate font-semibold">Expense Tracker</span>
                   <span className="truncate text-xs">AI-Powered</span>
                 </div>
-              </a>
+                  </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -98,10 +99,10 @@ export function AppSidebar({ currentView = "EXPENSES", onViewChange, onAddExpens
                       }
                     }}
                   >
-                    <a href={item.href}>
+                    <Link href={item.href} prefetch>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -132,10 +133,10 @@ export function AppSidebar({ currentView = "EXPENSES", onViewChange, onAddExpens
               {secondaryItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton asChild>
-                    <a href={item.href}>
+                    <Link href={item.href} prefetch>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
