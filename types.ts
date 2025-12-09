@@ -38,11 +38,6 @@ export type ParseExpenseRequest = {
   text: string;
 };
 
-export type ParseExpenseResponse = {
-  parsed: ParsedExpense;
-  raw_model_output: string;
-};
-
 export type BillType = 'BILL' | 'EMI' | 'CREDITCARD' | 'SUBSCRIPTION' | 'SALARY' | 'INCOME';
 export type BillFrequency = 'MONTHLY' | 'WEEKLY' | 'YEARLY';
 
@@ -57,7 +52,6 @@ export type Bill = {
   start_date: string | null;
   end_date: string | null;
   amount: number | null;
-  is_variable: boolean;
   auto_post: boolean;
   notes: string | null;
   last_generated_at: string | null;
@@ -66,7 +60,7 @@ export type Bill = {
   updated_at: string;
 };
 
-export type BillInstanceStatus = 'PENDING' | 'POSTED' | 'SKIPPED';
+export type BillInstanceStatus = 'DUE' | 'PAID' | 'SKIPPED';
 
 export type BillInstance = {
   id: string;
@@ -78,4 +72,16 @@ export type BillInstance = {
   posted_expense_id: string | null;
   created_at: string;
   bill?: Bill;
+};
+
+export type BillMatchCandidate = {
+  bill_id?: string;
+  bill_name?: string;
+  bill_type?: BillType;
+};
+
+export type ParseExpenseResponse = {
+  parsed: ParsedExpense;
+  raw_model_output: string;
+  bill_match?: BillMatchCandidate | null;
 };

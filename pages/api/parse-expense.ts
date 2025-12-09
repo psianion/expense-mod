@@ -1,11 +1,64 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import OpenAI from 'openai'
-import { ParseExpenseRequest, ParseExpenseResponse, ParsedExpense } from '../../types'
+import { ParseExpenseRequest, ParseExpenseResponse, ParsedExpense, BillMatchCandidate, Bill } from '../../types'
 import { getCurrentDateTimeContext, parseAIDateTime } from '../../lib/datetime'
+import { supabase } from '../../lib/supabaseClient'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
+
+const keywordBuckets: Record<string, string[]> = {
+  rent: ['rent', 'rental', 'house', 'flat', 'apartment'],
+  electricity: ['electricity', 'power', 'eb bill'],
+  wifi: ['wifi', 'internet', 'broadband'],
+  salary: ['salary', 'payroll', 'pay cheque', 'paycheck', 'paycheque'],
+  emi: ['emi', 'loan', 'installment', 'instalment'],
+  card: ['card', 'credit card'],
+  maid: ['maid', 'househelp', 'house help', 'helper'],
+}
+
+const computeMatchScore = (bill: Bill, haystack: string, parsedType?: ParsedExpense['type']): number => {
+  const name = bill.name?.toLowerCase?.() || ''
+  const billType = bill.type?.toString?.().toUpperCase()
+  let score = 0
+  if (name && haystack.includes(name)) score += 3
+
+  const bucketKeys = Object.keys(keywordBuckets)
+  for (const key of bucketKeys) {
+    const keywords = keywordBuckets[key]
+    if (keywords.some((kw) => name.includes(kw) || haystack.includes(kw))) {
+      score += 2
+    }
+  }
+
+  if (billType === 'SALARY' && haystack.includes('salary')) score += 2
+  if (billType === 'INCOME' && haystack.includes('income')) score += 1
+  if (parsedType === 'INFLOW' && (billType === 'SALARY' || billType === 'INCOME')) score += 2
+  return score
+}
+
+const detectBillMatch = async (text: string, parsed: ParsedExpense): Promise<BillMatchCandidate | null> => {
+  const haystack = `${text} ${parsed.event || ''} ${parsed.notes || ''}`.toLowerCase()
+  const { data: bills, error } = await supabase.from('bills').select('id,name,type')
+  if (error || !bills) {
+    return null
+  }
+
+  let best: { bill: Bill; score: number } | null = null
+  for (const bill of bills as Bill[]) {
+    const score = computeMatchScore(bill, haystack, parsed.type)
+    if (!best || score > best.score) {
+      best = { bill, score }
+    }
+  }
+
+  if (!best || best.score < 2) {
+    return null
+  }
+
+  return { bill_id: best.bill.id, bill_name: best.bill.name, bill_type: best.bill.type }
+}
 
 const getSystemPrompt = (currentDateTime: string) => `You are an assistant that extracts structured expense data from short free-text lines. 
 Respond ONLY with valid JSON and nothing else.
@@ -250,9 +303,12 @@ export default async function handler(
       parsed.datetime = parseAIDateTime(parsed.datetime, new Date())
     }
 
+    const billMatch = await detectBillMatch(text, parsed)
+
     return res.status(200).json({
       parsed,
-      raw_model_output: rawModelOutput
+      raw_model_output: rawModelOutput,
+      bill_match: billMatch,
     })
 
   } catch (error) {

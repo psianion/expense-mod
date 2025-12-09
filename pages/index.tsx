@@ -12,9 +12,18 @@ import { AnalyticsDashboard } from '../components/AnalyticsDashboard'
 import { Drawer } from '../components/ui/drawer'
 import { SidebarProvider, SidebarInset } from '../components/ui/sidebar'
 import { supabase } from '../lib/supabaseClient'
-import { Expense, ExpenseSource, ExpenseType, ParsedExpense, ParseExpenseRequest, ParseExpenseResponse, View } from '../types'
+import {
+  BillMatchCandidate,
+  Expense,
+  ExpenseSource,
+  ExpenseType,
+  ParsedExpense,
+  ParseExpenseRequest,
+  ParseExpenseResponse,
+  View,
+} from '../types'
 import { startOfMonth, endOfMonth } from 'date-fns'
-import { toUTC, fromUTC, getLocalISO } from '../lib/datetime'
+import { fromUTC, getLocalISO } from '../lib/datetime'
 import { getSummaryTotals } from '../lib/analytics'
 
 export default function Home() {
@@ -26,6 +35,8 @@ export default function Home() {
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false)
   const [manualDrawerOpen, setManualDrawerOpen] = useState(false)
   const [parsedExpense, setParsedExpense] = useState<ParsedExpense | null>(null)
+  const [billMatch, setBillMatch] = useState<BillMatchCandidate | null>(null)
+  const [rawText, setRawText] = useState<string>('')
   const [dashboardView, setDashboardView] = useState<View>('EXPENSES')
 
   const handleSidebarViewChange = (view: View) => {
@@ -106,6 +117,7 @@ export default function Home() {
   const handleParse = async (text: string) => {
     try {
       setIsParsing(true)
+      setRawText(text)
       
       const response = await fetch('/api/parse-expense', {
         method: 'POST',
@@ -121,6 +133,7 @@ export default function Home() {
 
       const data: ParseExpenseResponse = await response.json()
       setParsedExpense(data.parsed)
+      setBillMatch(data.bill_match ?? null)
       setPreviewDrawerOpen(true)
     } catch (error) {
       console.error('Error parsing expense:', error)
@@ -140,52 +153,38 @@ export default function Home() {
         return
       }
 
-      // Convert local time to UTC for database storage
       const localDateTime = expense.datetime || getLocalISO()
-      const utcDateTime = toUTC(localDateTime)
-
-      const expenseData = {
-        user_id: null, // TODO: Set to actual user ID when auth is implemented
-        amount: expense.amount,
-        currency: expense.currency || 'INR',
-        datetime: utcDateTime,
-        category: expense.category,
-        platform: expense.platform,
-        payment_method: expense.payment_method,
-        type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
-        event: expense.event,
-        notes: expense.notes,
-        parsed_by_ai: true,
-        raw_text: null,
+      const payload = {
+        expense: {
+          ...expense,
+          currency: expense.currency || 'INR',
+          datetime: localDateTime,
+          type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
+        },
         source: 'AI' as ExpenseSource,
-        bill_instance_id: null,
+        billMatch: billMatch,
+        raw_text: rawText,
       }
 
-      console.log('Saving expense data:', expenseData)
+      const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
 
-      const { data, error } = await supabase
-        .from('expenses')
-        .insert([expenseData])
-        .select()
-
-      if (error) {
-        console.error('Supabase error:', error)
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        })
-        alert(`Failed to save expense: ${error.message}`)
+      const body = await response.json()
+      if (!response.ok) {
+        console.error('Failed to save expense:', body)
+        alert(body.error || 'Failed to save expense')
         return
       }
-
-      console.log('Successfully saved expense:', data)
 
       // Refresh expenses list
       await fetchExpenses()
       setPreviewDrawerOpen(false)
       setParsedExpense(null)
+      setBillMatch(null)
+      setRawText('')
     } catch (error) {
       console.error('Unexpected error saving expense:', error)
       alert(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -197,41 +196,30 @@ export default function Home() {
   const handleManualSave = async (expenseData: any) => {
     try {
       setIsSaving(true)
-      
-      // Convert local time to UTC for database storage
-      const utcDateTime = toUTC(expenseData.datetime)
 
-      const data = {
-        user_id: null,
-        amount: expenseData.amount,
-        currency: expenseData.currency,
-        datetime: utcDateTime,
-        category: expenseData.category,
-        platform: expenseData.platform,
-        payment_method: expenseData.payment_method,
-        type: (expenseData.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
-        event: expenseData.event,
-        notes: expenseData.notes,
-        parsed_by_ai: false,
-        raw_text: null,
+      const payload = {
+        expense: {
+          ...expenseData,
+          datetime: expenseData.datetime,
+          type: (expenseData.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
+        },
         source: 'MANUAL' as ExpenseSource,
-        bill_instance_id: null,
       }
 
-      console.log('Saving manual expense:', data)
+      const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
 
-      const { data: result, error } = await supabase
-        .from('expenses')
-        .insert([data])
-        .select()
-
-      if (error) {
-        console.error('Supabase error:', error)
-        alert(`Failed to save expense: ${error.message}`)
+      const body = await response.json()
+      if (!response.ok) {
+        console.error('Failed to save expense:', body)
+        alert(body.error || 'Failed to save expense')
         return
       }
 
-      console.log('Successfully saved manual expense:', result)
+      console.log('Successfully saved manual expense:', body)
       await fetchExpenses()
       setManualDrawerOpen(false)
     } catch (error) {
@@ -289,6 +277,7 @@ export default function Home() {
         parsedExpense={parsedExpense}
         onSave={handleSave}
         isLoading={isSaving}
+        billMatch={billMatch}
       />
       
       <Drawer

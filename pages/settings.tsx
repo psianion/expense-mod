@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge'
 import { Bill, BillInstance, BillType, BillFrequency } from '../types'
 
-type TabValue = 'INCOME' | 'BILLS' | 'PENDING'
+type TabValue = 'INCOME' | 'BILLS' | 'INSTANCES'
 
 const billFormSchema = z
   .object({
@@ -30,7 +30,6 @@ const billFormSchema = z
     start_date: z.string().nullable().optional(),
     end_date: z.string().nullable().optional(),
     amount: z.number().nonnegative().nullable().optional(),
-    is_variable: z.boolean(),
     auto_post: z.boolean(),
     notes: z.string().nullable().optional(),
   })
@@ -53,8 +52,7 @@ const defaultFormValues: BillFormValues = {
   day_of_week: null,
   start_date: null,
   end_date: null,
-  amount: 0,
-  is_variable: false,
+  amount: null,
   auto_post: false,
   notes: null,
 }
@@ -96,6 +94,17 @@ const computeEndDate = (start: string | null, frequency: BillFrequency): string 
   }
 
   return end.toISOString().slice(0, 10)
+}
+
+const normalizeInstanceStatus = (status: string | undefined): BillInstance['status'] =>
+  (status?.toString?.().toUpperCase() as BillInstance['status']) || 'DUE'
+
+const isInflow = (bill?: Bill | null) => bill && (bill.type === 'SALARY' || bill.type === 'INCOME')
+const statusLabel = (instance: BillInstance) => {
+  const inflow = isInflow(instance.bill)
+  if (instance.status === 'PAID') return inflow ? 'Received' : 'Paid'
+  if (instance.status === 'DUE') return inflow ? 'Expected' : 'Due'
+  return 'Skipped'
 }
 
 function BillForm({
@@ -282,17 +291,8 @@ function BillForm({
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
-              id="is_variable"
-              checked={form.is_variable}
-              onCheckedChange={(checked) => handleChange('is_variable', Boolean(checked))}
-            />
-            <Label htmlFor="is_variable">Variable amount</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
               id="auto_post"
-              checked={form.auto_post && !form.is_variable}
-              disabled={form.is_variable}
+          checked={form.auto_post}
               onCheckedChange={(checked) => handleChange('auto_post', Boolean(checked))}
             />
             <Label htmlFor="auto_post">Auto post to expenses</Label>
@@ -357,11 +357,11 @@ function BillsTable({ bills }: { bills: Bill[] }) {
                   </TableCell>
                   <TableCell>{bill.amount !== null && bill.amount !== undefined ? bill.amount.toFixed(2) : 'Variable'}</TableCell>
                   <TableCell>
-                    {bill.auto_post && !bill.is_variable ? (
-                      <Badge variant="secondary">Auto</Badge>
-                    ) : (
-                      <Badge variant="outline">Manual</Badge>
-                    )}
+                  {bill.auto_post ? (
+                    <Badge variant="secondary">Auto</Badge>
+                  ) : (
+                    <Badge variant="outline">Manual</Badge>
+                  )}
                   </TableCell>
                   <TableCell>{formatDate(bill.updated_at)}</TableCell>
                 </TableRow>
@@ -410,8 +410,8 @@ function PendingTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pending charges</CardTitle>
-        <CardDescription>Confirm, edit amount, or skip</CardDescription>
+        <CardTitle>Bill instances</CardTitle>
+        <CardDescription>Mark due items as paid or skip</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border overflow-hidden">
@@ -426,7 +426,10 @@ function PendingTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {instances.map((instance) => (
+              {instances.map((instance) => {
+                const inflow = isInflow(instance.bill)
+                const label = statusLabel(instance)
+                return (
                 <TableRow key={instance.id}>
                   <TableCell className="font-medium">
                     {instance.bill?.name ?? 'Recurring item'}
@@ -436,8 +439,16 @@ function PendingTable({
                   </TableCell>
                   <TableCell>{instance.due_date}</TableCell>
                   <TableCell>
-                    <Badge variant={instance.status === 'PENDING' ? 'secondary' : 'outline'}>
-                      {instance.status}
+                    <Badge
+                      variant={
+                        instance.status === 'DUE'
+                          ? 'secondary'
+                          : instance.status === 'PAID'
+                          ? 'default'
+                          : 'outline'
+                      }
+                    >
+                      {label}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -455,21 +466,21 @@ function PendingTable({
                       size="sm"
                       variant="default"
                       onClick={() => handleConfirm(instance.id)}
-                      disabled={isUpdating || instance.status !== 'PENDING'}
+                      disabled={isUpdating || instance.status !== 'DUE'}
                     >
-                      <Check className="mr-1 h-4 w-4" /> Confirm
+                      <Check className="mr-1 h-4 w-4" /> {inflow ? 'Mark received' : 'Mark paid'}
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleSkip(instance.id)}
-                      disabled={isUpdating || instance.status !== 'PENDING'}
+                      disabled={isUpdating || instance.status !== 'DUE'}
                     >
                       <X className="mr-1 h-4 w-4" /> Skip
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
             </TableBody>
           </Table>
         </div>
@@ -498,11 +509,11 @@ export default function SettingsPage() {
   }
 
   const fetchInstances = async () => {
-    const response = await fetch('/api/bill-instances?status=PENDING,POSTED')
+    const response = await fetch('/api/bill-instances?status=DUE,PAID')
     const body = await response.json()
     const normalizedInstances: BillInstance[] = (body.instances || []).map((instance: BillInstance) => ({
       ...instance,
-      status: (instance.status?.toUpperCase?.() as BillInstance['status']) || 'PENDING',
+      status: normalizeInstanceStatus(instance.status),
       bill: instance.bill
         ? {
             ...instance.bill,
@@ -547,7 +558,7 @@ export default function SettingsPage() {
               <TabsList>
                 <TabsTrigger value="INCOME">Income</TabsTrigger>
                 <TabsTrigger value="BILLS">Bills & Loans</TabsTrigger>
-                <TabsTrigger value="PENDING">Pending charges</TabsTrigger>
+              <TabsTrigger value="INSTANCES">Bill instances</TabsTrigger>
               </TabsList>
 
               <TabsContent value="INCOME" className="space-y-4">
@@ -570,7 +581,7 @@ export default function SettingsPage() {
                 <BillsTable bills={expenseBills} />
               </TabsContent>
 
-              <TabsContent value="PENDING" className="space-y-4">
+              <TabsContent value="INSTANCES" className="space-y-4">
                 <PendingTable instances={pendingInstances} onRefresh={refreshAll} />
               </TabsContent>
             </Tabs>

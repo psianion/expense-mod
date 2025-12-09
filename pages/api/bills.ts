@@ -23,7 +23,6 @@ const billSchema = z.object({
   start_date: z.string().nullable().optional(),
   end_date: z.string().nullable().optional(),
   amount: z.number().nonnegative().nullable().optional(),
-  is_variable: z.boolean().default(false),
   auto_post: z.boolean().default(false),
   notes: z.string().nullable().optional(),
 })
