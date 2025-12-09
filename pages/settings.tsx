@@ -20,25 +20,28 @@ import { Bill, BillInstance, BillType, BillFrequency } from '../types'
 
 type TabValue = 'INCOME' | 'BILLS' | 'PENDING'
 
-const billFormSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  type: z.enum(['BILL', 'EMI', 'CREDITCARD', 'SUBSCRIPTION', 'SALARY', 'INCOME']),
-  frequency: z.enum(['MONTHLY', 'WEEKLY', 'YEARLY']),
-  day_of_month: z.number().int().min(1).max(28).nullable().optional(),
-  day_of_week: z.number().int().min(0).max(6).nullable().optional(),
-  start_date: z.string().nullable().optional(),
-  end_date: z.string().nullable().optional(),
-  amount: z.number().nonnegative().nullable().optional(),
-  is_variable: z.boolean(),
-  auto_post: z.boolean(),
-  notes: z.string().nullable().optional(),
-}).refine(
+const billFormSchema = z
+  .object({
+    name: z.string().min(1, 'Name is required'),
+    type: z.enum(['BILL', 'EMI', 'CREDITCARD', 'SUBSCRIPTION', 'SALARY', 'INCOME']),
+    frequency: z.enum(['MONTHLY', 'WEEKLY', 'YEARLY']),
+    day_of_month: z.number().int().min(1).max(28).nullable().optional(),
+    day_of_week: z.number().int().min(0).max(6).nullable().optional(),
+    start_date: z.string().nullable().optional(),
+    end_date: z.string().nullable().optional(),
+    amount: z.number().nonnegative().nullable().optional(),
+    is_variable: z.boolean(),
+    auto_post: z.boolean(),
+    notes: z.string().nullable().optional(),
+  })
+  .refine(
   (values) => values.frequency !== 'MONTHLY' || values.day_of_month !== null && values.day_of_month !== undefined,
   { message: 'Day of month is required for monthly bills', path: ['day_of_month'] }
-).refine(
+  )
+  .refine(
   (values) => values.frequency !== 'WEEKLY' || values.day_of_week !== null && values.day_of_week !== undefined,
   { message: 'Day of week is required for weekly bills', path: ['day_of_week'] }
-)
+  )
 
 type BillFormValues = z.infer<typeof billFormSchema>
 
@@ -76,6 +79,25 @@ const formatDate = (value: string | null | undefined) => {
   return new Date(value).toLocaleDateString()
 }
 
+const computeEndDate = (start: string | null, frequency: BillFrequency): string | null => {
+  if (!start) return null
+  const date = new Date(start)
+  if (Number.isNaN(date.getTime())) return null
+
+  const end = new Date(date)
+  if (frequency === 'WEEKLY') {
+    end.setDate(end.getDate() + 6)
+  } else if (frequency === 'MONTHLY') {
+    end.setMonth(end.getMonth() + 1)
+    end.setDate(end.getDate() - 1)
+  } else if (frequency === 'YEARLY') {
+    end.setFullYear(end.getFullYear() + 1)
+    end.setDate(end.getDate() - 1)
+  }
+
+  return end.toISOString().slice(0, 10)
+}
+
 function BillForm({
   title,
   description,
@@ -95,10 +117,20 @@ function BillForm({
   const [error, setError] = useState<string | null>(null)
 
   const handleChange = (field: keyof BillFormValues, value: any) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        [field]: value,
+      }
+
+      if (field === 'start_date' || field === 'frequency') {
+        const nextStart = field === 'start_date' ? (value || null) : prev.start_date
+        const nextFrequency = field === 'frequency' ? (value as BillFrequency) : prev.frequency
+        next.end_date = computeEndDate(nextStart, nextFrequency)
+      }
+
+      return next
+    })
   }
 
   const handleSubmit = async () => {
@@ -238,11 +270,7 @@ function BillForm({
           </div>
           <div className="space-y-2">
             <Label>End date</Label>
-            <Input
-              type="date"
-              value={form.end_date ?? ''}
-              onChange={(e) => handleChange('end_date', e.target.value || null)}
-            />
+            <Input type="date" value={form.end_date ?? ''} disabled />
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label>Notes</Label>
