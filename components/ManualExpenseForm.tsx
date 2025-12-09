@@ -17,7 +17,7 @@ interface ManualExpenseFormProps {
     category: string | null
     platform: string | null
     payment_method: string | null
-    type: 'expense' | 'inflow'
+    type: 'EXPENSE' | 'INFLOW'
     event: string | null
     notes: string | null
   }) => Promise<void>
@@ -32,7 +32,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
     category: '',
     platform: '',
     payment_method: '',
-    type: 'expense' as 'expense' | 'inflow',
+    type: 'EXPENSE' as 'EXPENSE' | 'INFLOW',
     event: '',
     notes: ''
   })
@@ -68,7 +68,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
       category: '',
       platform: '',
       payment_method: '',
-      type: 'expense',
+      type: 'EXPENSE',
       event: '',
       notes: ''
     })
@@ -128,11 +128,11 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
           <label className="text-sm font-medium">Type</label>
           <select
             value={formData.type}
-            onChange={(e) => updateField('type', e.target.value as 'expense' | 'inflow')}
+            onChange={(e) => updateField('type', e.target.value as 'EXPENSE' | 'INFLOW')}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <option value="expense">Expense</option>
-            <option value="inflow">Inflow</option>
+            <option value="EXPENSE">Expense</option>
+            <option value="INFLOW">Inflow</option>
           </select>
         </div>
         

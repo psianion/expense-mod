@@ -74,6 +74,7 @@ export function DataTable({ expenses, isLoading, currency }: DataTableProps) {
                 <TableHead>Platform</TableHead>
                 <TableHead>Payment Method</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Notes</TableHead>
               </TableRow>
             </TableHeader>
@@ -87,8 +88,8 @@ export function DataTable({ expenses, isLoading, currency }: DataTableProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <span className={`${expense.type === 'expense' ? 'text-red-600' : 'text-green-600'}`}>
-                        {expense.type === 'expense' ? (
+                      <span className={`${expense.type === 'EXPENSE' ? 'text-red-600' : 'text-green-600'}`}>
+                        {expense.type === 'EXPENSE' ? (
                           <ArrowDownRight className="h-4 w-4 inline" />
                         ) : (
                           <ArrowUpRight className="h-4 w-4 inline" />
@@ -113,8 +114,13 @@ export function DataTable({ expenses, isLoading, currency }: DataTableProps) {
                     {expense.payment_method || <span className="text-muted-foreground">-</span>}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={expense.type === 'expense' ? 'destructive' : 'default'}>
+                    <Badge variant={expense.type === 'EXPENSE' ? 'destructive' : 'default'}>
                       {expense.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={expense.source === 'RECURRING' ? 'default' : 'secondary'}>
+                      {expense.source}
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate">

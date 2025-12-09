@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import Head from 'next/head'
-import { AppSidebar } from '../components/app-sidebar'
-import { SiteHeader } from '../components/site-header'
-import { SectionCards } from '../components/section-cards'
+import { AppSidebar } from '../components/AppSidebar'
+import { SiteHeader } from '../components/SiteHeader'
+import { SectionCards } from '../components/SectionCards'
 import { QuickAdd } from '../components/QuickAdd'
 import { PreviewModal } from '../components/PreviewModal'
-import { DataTable } from '../components/data-table'
+import { DataTable } from '../components/DataTable'
 import { FloatingActionButton } from '../components/FloatingActionButton'
 import { ManualExpenseForm } from '../components/ManualExpenseForm'
 import { AnalyticsDashboard } from '../components/AnalyticsDashboard'
 import { Drawer } from '../components/ui/drawer'
 import { SidebarProvider, SidebarInset } from '../components/ui/sidebar'
 import { supabase } from '../lib/supabaseClient'
-import { Expense, ParsedExpense, ParseExpenseRequest, ParseExpenseResponse } from '../types'
+import { Expense, ExpenseSource, ExpenseType, ParsedExpense, ParseExpenseRequest, ParseExpenseResponse, View } from '../types'
 import { startOfMonth, endOfMonth } from 'date-fns'
 import { toUTC, fromUTC, getLocalISO } from '../lib/datetime'
 import { getSummaryTotals } from '../lib/analytics'
@@ -26,7 +26,13 @@ export default function Home() {
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false)
   const [manualDrawerOpen, setManualDrawerOpen] = useState(false)
   const [parsedExpense, setParsedExpense] = useState<ParsedExpense | null>(null)
-  const [dashboardView, setDashboardView] = useState<'expenses' | 'analytics'>('expenses')
+  const [dashboardView, setDashboardView] = useState<View>('EXPENSES')
+
+  const handleSidebarViewChange = (view: View) => {
+    if (view === 'EXPENSES' || view === 'ANALYTICS') {
+      setDashboardView(view)
+    }
+  }
 
   // Fetch expenses on component mount
   useEffect(() => {
@@ -47,7 +53,7 @@ export default function Home() {
     })
 
     const total = monthlyExpenses.reduce((sum, expense) => {
-      return sum + (expense.type === 'expense' ? -expense.amount : expense.amount)
+      return sum + (expense.type === 'EXPENSE' ? -expense.amount : expense.amount)
     }, 0)
 
     setMonthlyTotal(total)
@@ -83,7 +89,10 @@ export default function Home() {
       // Convert UTC datetimes from database to local time for UI
       const expensesWithLocalTime = (data || []).map((expense) => ({
         ...expense,
-        datetime: fromUTC(expense.datetime)
+        datetime: fromUTC(expense.datetime),
+        type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
+        source: (expense.source?.toUpperCase?.() as ExpenseSource) || 'MANUAL',
+        bill_instance_id: expense.bill_instance_id ?? null
       }))
       
       setExpenses(expensesWithLocalTime)
@@ -143,11 +152,13 @@ export default function Home() {
         category: expense.category,
         platform: expense.platform,
         payment_method: expense.payment_method,
-        type: expense.type,
+        type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
         event: expense.event,
         notes: expense.notes,
         parsed_by_ai: true,
         raw_text: null,
+        source: 'AI' as ExpenseSource,
+        bill_instance_id: null,
       }
 
       console.log('Saving expense data:', expenseData)
@@ -198,11 +209,13 @@ export default function Home() {
         category: expenseData.category,
         platform: expenseData.platform,
         payment_method: expenseData.payment_method,
-        type: expenseData.type,
+        type: (expenseData.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
         event: expenseData.event,
         notes: expenseData.notes,
         parsed_by_ai: false,
         raw_text: null,
+        source: 'MANUAL' as ExpenseSource,
+        bill_instance_id: null,
       }
 
       console.log('Saving manual expense:', data)
@@ -243,7 +256,7 @@ export default function Home() {
       <SidebarProvider>
         <AppSidebar
           currentView={dashboardView}
-          onViewChange={setDashboardView}
+          onViewChange={handleSidebarViewChange}
           onAddExpense={() => setManualDrawerOpen(true)}
         />
         <SidebarInset>
@@ -257,7 +270,7 @@ export default function Home() {
                 currency="₹"
               />
               
-              {dashboardView === 'analytics' ? (
+              {dashboardView === 'ANALYTICS' ? (
                 <AnalyticsDashboard expenses={expenses} isLoading={isLoadingExpenses} currency="₹" />
               ) : (
                 <>
@@ -290,7 +303,7 @@ export default function Home() {
         />
       </Drawer>
       
-      {dashboardView === 'expenses' && (
+      {dashboardView === 'EXPENSES' && (
         <FloatingActionButton
           onClick={() => setManualDrawerOpen(true)}
         />

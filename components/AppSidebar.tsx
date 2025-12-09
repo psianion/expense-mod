@@ -7,6 +7,7 @@ import {
   Settings,
   Plus,
   Home,
+  CalendarClock,
 } from "lucide-react"
 
 import {
@@ -21,21 +22,28 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-} from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
+} from "./ui/sidebar"
+import { Button } from "./ui/button"
+import { View } from "../types"
 
 const menuItems = [
   {
     title: "Expenses",
     icon: Wallet,
-    href: "#expenses",
-    id: "expenses",
+    href: "/",
+    id: "EXPENSES" as View,
   },
   {
     title: "Analytics",
     icon: BarChart3,
-    href: "#analytics",
-    id: "analytics",
+    href: "/#analytics",
+    id: "ANALYTICS" as View,
+  },
+  {
+    title: "Bills",
+    icon: CalendarClock,
+    href: "/bills",
+    id: "BILLS" as View,
   },
 ]
 
@@ -43,18 +51,18 @@ const secondaryItems = [
   {
     title: "Settings",
     icon: Settings,
-    href: "#settings",
-    id: "settings",
+    href: "/settings",
+    id: "SETTINGS" as View,
   },
 ]
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  currentView?: "expenses" | "analytics"
-  onViewChange?: (view: "expenses" | "analytics") => void
+  currentView?: View
+  onViewChange?: (view: View) => void
   onAddExpense?: () => void
 }
 
-export function AppSidebar({ currentView = "expenses", onViewChange, onAddExpense, ...props }: AppSidebarProps) {
+export function AppSidebar({ currentView = "EXPENSES", onViewChange, onAddExpense, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -84,7 +92,11 @@ export function AppSidebar({ currentView = "expenses", onViewChange, onAddExpens
                   <SidebarMenuButton
                     asChild
                     isActive={currentView === item.id}
-                    onClick={() => onViewChange?.(item.id as "expenses" | "analytics")}
+                    onClick={() => {
+                      if (item.id === "EXPENSES" || item.id === "ANALYTICS") {
+                        onViewChange?.(item.id)
+                      }
+                    }}
                   >
                     <a href={item.href}>
                       <item.icon />

@@ -18,13 +18,13 @@ type AnalyticsDashboardProps = {
 }
 
 const periodLabels: Record<TrendPeriod, string> = {
-  daily: 'Daily',
-  weekly: 'Weekly',
-  monthly: 'Monthly',
+  DAILY: 'Daily',
+  WEEKLY: 'Weekly',
+  MONTHLY: 'Monthly',
 }
 
 export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsDashboardProps) {
-  const [trendPeriod, setTrendPeriod] = React.useState<TrendPeriod>('daily')
+  const [trendPeriod, setTrendPeriod] = React.useState<TrendPeriod>('DAILY')
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([])
 
   const summary = React.useMemo(() => getSummaryTotals(expenses), [expenses])
@@ -208,11 +208,11 @@ type SummaryStatProps = {
   label: string
   value: number
   currency: string
-  tone: 'expense' | 'inflow'
+  tone: 'EXPENSE' | 'INFLOW'
 }
 
 function SummaryStat({ label, value, currency, tone }: SummaryStatProps) {
-  const isExpense = tone === 'expense'
+  const isExpense = tone === 'EXPENSE'
   const formatted = `${currency} ${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   return (

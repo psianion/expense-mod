@@ -33,7 +33,8 @@ export function PreviewModal({
       // Default to current date/time if no datetime provided
       const expenseWithDefaults = {
         ...parsedExpense,
-        datetime: parsedExpense.datetime || getLocalISO()
+        datetime: parsedExpense.datetime || getLocalISO(),
+        type: (parsedExpense.type?.toUpperCase?.() as ParsedExpense['type']) || 'EXPENSE',
       }
       setEditedExpense(expenseWithDefaults)
     }
@@ -116,11 +117,11 @@ export function PreviewModal({
             <label className="text-sm font-medium">Type</label>
             <select
               value={editedExpense.type}
-              onChange={(e) => updateField('type', e.target.value as 'expense' | 'inflow')}
+              onChange={(e) => updateField('type', e.target.value as 'EXPENSE' | 'INFLOW')}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <option value="expense">Expense</option>
-              <option value="inflow">Inflow</option>
+              <option value="EXPENSE">Expense</option>
+              <option value="INFLOW">Inflow</option>
             </select>
           </div>
           
