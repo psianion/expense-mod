@@ -3,19 +3,23 @@ import { z } from 'zod'
 
 import { supabase } from '../../lib/supabaseClient'
 import { BillInstance, Bill } from '../../types'
-import { buildExpensePayload } from '../../lib/recurring'
+import { buildExpensePayload, computeDueDateForPeriod, createInstanceRecord, findInstanceForPeriod } from '../../lib/recurring'
+import dayjs from 'dayjs'
 
-const normalizeInstance = (instance: any): BillInstance => ({
-  ...instance,
-  status: (instance?.status?.toUpperCase?.() as BillInstance['status']) ?? instance?.status,
-  bill: instance?.bill
-    ? {
-        ...instance.bill,
-        type: instance.bill.type?.toUpperCase?.() as Bill['type'],
-        frequency: instance.bill.frequency?.toUpperCase?.() as Bill['frequency'],
-      }
-    : instance?.bill,
+const normalizeBill = (bill: any): Bill => ({
+  ...bill,
+  type: (bill?.type?.toUpperCase?.() as Bill['type']) ?? bill?.type,
+  frequency: (bill?.frequency?.toUpperCase?.() as Bill['frequency']) ?? bill?.frequency,
 })
+
+const normalizeInstance = (instance: any): BillInstance => {
+  const status = (instance?.status?.toUpperCase?.() as BillInstance['status']) || 'DUE'
+  return {
+    ...instance,
+    status,
+    bill: instance?.bill ? normalizeBill(instance.bill) : instance?.bill,
+  }
+}
 
 const updateSchema = z.discriminatedUnion('action', [
   z.object({
@@ -34,6 +38,27 @@ const updateSchema = z.discriminatedUnion('action', [
   }),
 ])
 
+const createSchema = z.object({
+  billId: z.string().uuid(),
+  amount: z.number().positive().optional(),
+  due_date: z.string().optional(),
+})
+const fetchLastInstanceAmount = async (billId: string): Promise<number | null> => {
+  const { data, error } = await supabase
+    .from('bill_instances')
+    .select('amount')
+    .eq('bill_id', billId)
+    .order('due_date', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching last bill instance', error)
+  }
+
+  return data?.amount ?? null
+}
+
 const fetchInstanceWithBill = async (id: string) => {
   const { data, error } = await supabase
     .from('bill_instances')
@@ -45,7 +70,7 @@ const fetchInstanceWithBill = async (id: string) => {
     throw new Error(error.message)
   }
 
-  return data as BillInstance & { bill: Bill }
+  return normalizeInstance(data) as BillInstance & { bill: Bill }
 }
 
 export default async function handler(
@@ -53,10 +78,11 @@ export default async function handler(
   res: NextApiResponse<{ error: string } | { instances: BillInstance[] } | { instance: BillInstance }>
 ) {
   if (req.method === 'GET') {
-    const statusFilter = (req.query.status as string | undefined)
+    const statusFilterInput = (req.query.status as string | undefined)
       ?.split(',')
-      .filter(Boolean)
-      .map((value) => value.toUpperCase())
+      .map((value) => value?.toString?.().toUpperCase())
+      .filter((value) => value && value !== 'ALL')
+    const statusFilter = statusFilterInput as BillInstance['status'][] | undefined
     let query = supabase.from('bill_instances').select('*, bill:bills(*)').order('due_date', { ascending: true })
     if (statusFilter && statusFilter.length > 0) {
       query = query.in('status', statusFilter)
@@ -69,6 +95,49 @@ export default async function handler(
 
     const normalized = (data || []).map(normalizeInstance)
     return res.status(200).json({ instances: normalized as BillInstance[] })
+  }
+
+  if (req.method === 'POST') {
+    try {
+      const payload = createSchema.parse(req.body)
+      const { data: bill, error: billError } = await supabase.from('bills').select('*').eq('id', payload.billId).single()
+      if (billError || !bill) {
+        return res.status(404).json({ error: billError?.message || 'Bill not found' })
+      }
+
+      const normalizedBill = normalizeBill(bill)
+      const existing = await findInstanceForPeriod(normalizedBill, normalizedBill.frequency, dayjs())
+      if (existing) {
+        return res.status(409).json({ error: 'Instance already exists for current period' })
+      }
+
+      const dueDate = payload.due_date && dayjs(payload.due_date).isValid()
+        ? dayjs(payload.due_date)
+        : computeDueDateForPeriod(normalizedBill, dayjs())
+      const lastAmount = await fetchLastInstanceAmount(normalizedBill.id)
+      const amount = payload.amount ?? normalizedBill.amount ?? lastAmount ?? 0
+
+      const created = await createInstanceRecord(normalizedBill, dueDate, {
+        amount,
+        status: 'DUE',
+      })
+
+      if (!created) {
+        return res.status(500).json({ error: 'Failed to create bill instance' })
+      }
+
+      const { data: instanceWithBill } = await supabase
+        .from('bill_instances')
+        .select('*, bill:bills(*)')
+        .eq('id', created.id)
+        .single()
+
+      const instance = normalizeInstance(instanceWithBill ?? created)
+      return res.status(200).json({ instance })
+    } catch (err: any) {
+      const message = err?.issues?.[0]?.message || err.message || 'Invalid payload'
+      return res.status(400).json({ error: message })
+    }
   }
 
   if (req.method === 'PATCH') {
@@ -131,7 +200,7 @@ export default async function handler(
         .from('bill_instances')
         .update({
           amount,
-          status: 'POSTED',
+          status: 'PAID',
           posted_expense_id: expense?.id,
         })
         .eq('id', parsed.id)

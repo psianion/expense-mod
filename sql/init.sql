@@ -33,7 +33,6 @@ CREATE TABLE bills (
   start_date date DEFAULT CURRENT_DATE,
   end_date date NULL,
   amount numeric(12,2) NULL,
-  is_variable boolean DEFAULT false,
   auto_post boolean DEFAULT false,
   notes text NULL,
   last_generated_at timestamptz NULL,
@@ -53,14 +52,14 @@ CREATE INDEX bills_frequency_idx ON bills (frequency);
 CREATE INDEX bills_start_date_idx ON bills (start_date);
 CREATE INDEX bills_end_date_idx ON bills (end_date);
 
--- Concrete bill instances (pending / posted / skipped)
+-- Concrete bill instances (due / paid / skipped)
 CREATE TABLE bill_instances (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   bill_id uuid NOT NULL REFERENCES bills(id) ON DELETE CASCADE,
   user_id uuid NULL,
   due_date date NOT NULL,
   amount numeric(12,2) NOT NULL,
-  status text NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'POSTED', 'SKIPPED')),
+  status text NOT NULL DEFAULT 'DUE' CHECK (status IN ('DUE', 'PAID', 'SKIPPED')),
   posted_expense_id uuid NULL REFERENCES expenses(id),
   created_at timestamptz DEFAULT now()
 );

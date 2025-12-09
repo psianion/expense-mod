@@ -3,16 +3,7 @@ import utc from 'dayjs/plugin/utc'
 
 import { supabase } from './supabaseClient'
 import { toUTC } from './datetime'
-import {
-  Bill,
-  BillFrequency,
-  BillInstance,
-  BillInstanceStatus,
-  BillType,
-  Expense,
-  ExpenseType,
-  ExpenseSource,
-} from '../types'
+import { Bill, BillFrequency, BillInstance, BillInstanceStatus, BillType, Expense, ExpenseType, ExpenseSource } from '../types'
 
 dayjs.extend(utc)
 
@@ -104,6 +95,32 @@ export const instanceExistsForPeriod = async (
   return Boolean(data && data.length > 0)
 }
 
+export const findInstanceForPeriod = async (
+  bill: Bill,
+  frequency: BillFrequency,
+  reference = dayjs()
+): Promise<BillInstance | null> => {
+  const { start, end } = getPeriodWindow(frequency, reference)
+  const { data, error } = await supabase
+    .from('bill_instances')
+    .select('*')
+    .eq('bill_id', bill.id)
+    .gte('due_date', formatDate(start))
+    .lte('due_date', formatDate(end))
+    .order('due_date', { ascending: true })
+    .limit(1)
+    .single()
+
+  if (error) {
+    if (error.code !== 'PGRST116') {
+      console.error('Error fetching bill_instances window', error)
+    }
+    return null
+  }
+
+  return data as BillInstance
+}
+
 type CreateInstanceOptions = {
   amount?: number | null
   status?: BillInstanceStatus
@@ -115,9 +132,7 @@ export const createInstanceRecord = async (
   options: CreateInstanceOptions = {}
 ): Promise<BillInstance | null> => {
   const amount = options.amount ?? bill.amount ?? 0
-  const status: BillInstanceStatus =
-    options.status ??
-    (bill.is_variable || !bill.auto_post ? 'PENDING' : 'POSTED')
+  const status: BillInstanceStatus = options.status ?? (bill.auto_post && amount > 0 ? 'PAID' : 'DUE')
 
   const insertPayload = {
     bill_id: bill.id,
@@ -225,8 +240,8 @@ export const ensureInstanceForCurrentPeriod = async (
   }
 
   const dueDate = computeDueDateForPeriod(bill, reference)
-  const canAutoPost = bill.auto_post && !bill.is_variable && (bill.amount ?? 0) > 0
-  const status: BillInstanceStatus = canAutoPost ? 'POSTED' : 'PENDING'
+  const canAutoPost = bill.auto_post && (bill.amount ?? 0) > 0
+  const status: BillInstanceStatus = canAutoPost ? 'PAID' : 'DUE'
 
   const instance = await createInstanceRecord(bill, dueDate, {
     status,
@@ -238,7 +253,7 @@ export const ensureInstanceForCurrentPeriod = async (
   }
 
   let expense: Expense | null = null
-  if (status === 'POSTED' && canAutoPost) {
+  if (status === 'PAID' && canAutoPost) {
     expense = await createExpenseForInstance(bill, instance, bill.amount ?? 0)
     if (expense) {
       await supabase

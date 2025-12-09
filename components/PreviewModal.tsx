@@ -5,7 +5,7 @@ import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
 import { Calendar } from './ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
-import { ParsedExpense } from '../types'
+import { BillMatchCandidate, ParsedExpense } from '../types'
 import { Loader2, CalendarIcon, Clock } from 'lucide-react'
 import dayjs from 'dayjs'
 import { cn } from '../lib/utils'
@@ -17,6 +17,7 @@ interface PreviewModalProps {
   parsedExpense: ParsedExpense | null
   onSave: (expense: ParsedExpense) => Promise<void>
   isLoading: boolean
+  billMatch?: BillMatchCandidate | null
 }
 
 export function PreviewModal({ 
@@ -24,7 +25,8 @@ export function PreviewModal({
   onOpenChange, 
   parsedExpense, 
   onSave, 
-  isLoading 
+  isLoading,
+  billMatch,
 }: PreviewModalProps) {
   const [editedExpense, setEditedExpense] = useState<ParsedExpense | null>(null)
 
@@ -65,6 +67,14 @@ export function PreviewModal({
       description="Review the parsed data and make any necessary changes before saving."
     >
       <div className="space-y-6">
+        {billMatch && (
+          <div className="rounded-md border p-3 text-sm">
+            Potential {billMatch.bill_type === 'SALARY' || billMatch.bill_type === 'INCOME' ? 'income' : 'bill'} match:{' '}
+            <span className="font-medium text-foreground">{billMatch.bill_name}</span>. Saving will mark this as{' '}
+            {billMatch.bill_type === 'SALARY' || billMatch.bill_type === 'INCOME' ? 'received' : 'paid'} for the current
+            period.
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Amount *</label>
