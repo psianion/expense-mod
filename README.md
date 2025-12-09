@@ -25,9 +25,9 @@ A modern, AI-powered expense tracking application built with Next.js, TypeScript
 
 ```
 expense-tracker/
-├── components/          # React components (UI, Header, QuickAdd, PreviewModal, etc.)
-├── lib/                # Utilities (Supabase client, helpers)
-├── pages/              # Next.js pages and API routes
+├── components/        # React components (UI, Header, QuickAdd, PreviewModal, etc.)
+├── lib/               # Utilities (Supabase client, helpers)
+├── pages/             # Next.js pages and API routes
 │   ├── api/           # OpenAI integration endpoint
 │   └── index.tsx      # Main dashboard
 ├── sql/               # Database schema
