@@ -26,3 +26,5 @@ export type CategoryTrendPoint = {
   label: string
   [category: string]: string | number
 }
+
+

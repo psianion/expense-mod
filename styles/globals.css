@@ -87,3 +87,28 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Accessibility: Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Performance optimizations for animations */
+@layer utilities {
+  .animate-will-change {
+    will-change: transform, opacity;
+  }
+
+  .animate-gpu {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+}

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { ThemeProvider } from 'next-themes'
+import { ExpenseProvider } from './expense-provider'
 
 type ProvidersProps = {
   children: ReactNode
@@ -10,7 +11,9 @@ type ProvidersProps = {
 export default function Providers({ children }: ProvidersProps) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      {children}
+      <ExpenseProvider>
+        {children}
+      </ExpenseProvider>
     </ThemeProvider>
   )
 }
