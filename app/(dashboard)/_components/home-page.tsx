@@ -1,18 +1,18 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
-import { AppSidebar } from '@/components/AppSidebar'
-import { SiteHeader } from '@/components/SiteHeader'
-import { SectionCards } from '@/components/SectionCards'
-import { QuickAdd } from '@/components/QuickAdd'
-import { PreviewModal } from '@/components/PreviewModal'
-import { DataTable } from '@/components/DataTable'
-import { FloatingActionButton } from '@/components/FloatingActionButton'
-import { ManualExpenseForm } from '@/components/ManualExpenseForm'
-import { AnalyticsDashboard } from '@/components/AnalyticsDashboard'
+import { AppSidebar } from '../../../components/layout/AppSidebar'
+import { SiteHeader } from '../../../components/layout/SiteHeader'
+import { SectionCards } from '../../../components/common/SectionCards'
+import { QuickAdd } from '../../../features/expenses/components/QuickAdd'
+import { PreviewModal } from '../../../features/expenses/components/PreviewModal'
+import { DataTable } from '../../../components/common/DataTable'
+import { FloatingActionButton } from '../../../components/common/FloatingActionButton'
+import { ManualExpenseForm } from '../../../features/expenses/components/ManualExpenseForm'
+import { AnalyticsDashboard } from '../../../features/analytics/components/AnalyticsDashboard'
 import { Drawer } from '@/components/ui/drawer'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase } from '../../../server/db/supabase'
 import {
   BillMatchCandidate,
   Expense,
@@ -22,7 +22,7 @@ import {
   ParseExpenseRequest,
   ParseExpenseResponse,
   View,
-} from '@/types'
+} from '../../../types'
 import { fromUTC, getLocalISO } from '@/lib/datetime'
 import { getSummaryTotals } from '@/lib/analytics'
 
