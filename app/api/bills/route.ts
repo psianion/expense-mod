@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { billService } from '../../../server/services/bill.service'
-import { createBillSchema, updateBillSchema } from '../../../server/validators/bill.schema'
+import { billService } from '@server/services/bill.service'
+import { createBillSchema, updateBillSchema } from '@server/validators/bill.schema'
 import { BillType } from '../../../types'
 
 export const dynamic = 'force-dynamic'

@@ -3,8 +3,8 @@
 import * as React from 'react'
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 
-import { SimpleDatum } from '../../../lib/analytics'
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '../../../components/ui/chart'
+import { SimpleDatum } from '@lib/analytics'
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@components/ui/chart'
 
 type CategoryPieChartProps = {
   data: SimpleDatum[]

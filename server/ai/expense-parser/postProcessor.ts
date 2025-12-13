@@ -1,5 +1,5 @@
-import { ParsedExpense } from '../../../types'
-import { parseAIDateTime } from '../../../lib/datetime'
+import { ParsedExpense } from '@types'
+import { parseAIDateTime } from '@lib/datetime'
 
 export function postProcessParsedExpense(text: string, rawModelOutput: string): ParsedExpense {
   let parsed: ParsedExpense

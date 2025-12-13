@@ -1,4 +1,4 @@
-import { ParsedExpense, BillMatchCandidate, Bill } from '../../../types'
+import { ParsedExpense, BillMatchCandidate, Bill } from '@types'
 import { supabase } from '../../db/supabase'
 import { openRouter, expenseSchema, getExpenseParsingSystemPrompt, expenseParsingExamples } from '../providers/openai'
 import { postProcessParsedExpense } from './postProcessor'

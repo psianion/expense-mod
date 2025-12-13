@@ -25,7 +25,7 @@ import {
   SidebarRail,
 } from "../ui/sidebar"
 import { Button } from "../ui/button"
-import { View } from "../../types"
+import { View } from "@types"
 
 const menuItems = [
   {

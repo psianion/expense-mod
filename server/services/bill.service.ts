@@ -1,8 +1,8 @@
 import dayjs from 'dayjs'
 import { billRepository } from '../db/repositories/bill.repo'
 import { CreateBillInput, UpdateBillInput } from '../validators/bill.schema'
-import { Bill, BillType } from '../../types'
-import { ensureInstanceForCurrentPeriod } from '../../lib/recurring'
+import { Bill, BillType } from '@types'
+import { ensureInstanceForCurrentPeriod } from '@lib/recurring'
 
 export class BillService {
   async getBills(typeFilter?: BillType[]): Promise<Bill[]> {

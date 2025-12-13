@@ -2,7 +2,7 @@ import React from 'react'
 import dayjs from 'dayjs'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
-import { View } from '../../types'
+import { View } from '@types'
 
 interface HeaderProps {
   monthlyTotal: number

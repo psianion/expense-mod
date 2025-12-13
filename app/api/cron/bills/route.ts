@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { billService } from '../../../../server/services/bill.service'
+import { billService } from '@server/services/bill.service'
 
 export const dynamic = 'force-dynamic'
 

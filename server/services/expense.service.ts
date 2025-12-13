@@ -2,9 +2,9 @@ import dayjs from 'dayjs'
 import { expenseRepository } from '../db/repositories/expense.repo'
 import { billRepository } from '../db/repositories/bill.repo'
 import { CreateExpenseInput } from '../validators/expense.schema'
-import { Bill, BillMatchCandidate, Expense } from '../../types'
-import { toUTC, getLocalISO } from '../../lib/datetime'
-import { billToExpenseType, findInstanceForPeriod } from '../../lib/recurring'
+import { Bill, BillMatchCandidate, Expense } from '@types'
+import { toUTC, getLocalISO } from '@lib/datetime'
+import { billToExpenseType, findInstanceForPeriod } from '@lib/recurring'
 
 export class ExpenseService {
   async createExpense(input: CreateExpenseInput): Promise<{ expense: Expense; matchedInstanceId: string | null }> {

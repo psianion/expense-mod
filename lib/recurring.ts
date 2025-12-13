@@ -1,9 +1,9 @@
 import dayjs, { Dayjs } from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 
-import { supabase } from '../server/db/supabase'
+import { supabase } from '@server/db/supabase'
 import { toUTC } from './datetime'
-import { Bill, BillFrequency, BillInstance, BillInstanceStatus, BillType, Expense, ExpenseType, ExpenseSource } from '../types'
+import { Bill, BillFrequency, BillInstance, BillInstanceStatus, BillType, Expense, ExpenseType, ExpenseSource } from '@types'
 
 dayjs.extend(utc)
 

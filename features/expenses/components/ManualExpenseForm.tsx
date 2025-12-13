@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
-import { Button } from '../../../components/ui/button'
-import { Input } from '../../../components/ui/input'
-import { Textarea } from '../../../components/ui/textarea'
-import { Calendar } from '../../../components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '../../../components/ui/popover'
+import { Button } from '@components/ui/button'
+import { Input } from '@components/ui/input'
+import { Textarea } from '@components/ui/textarea'
+import { Calendar } from '@components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/popover'
 import { Loader2, CalendarIcon } from 'lucide-react'
 import dayjs from 'dayjs'
-import { cn } from '../../../lib/utils'
-import { getLocalISO, localISOToDate, dateToLocalISO } from '../../../lib/datetime'
+import { cn } from '@lib/utils'
+import { getLocalISO, localISOToDate, dateToLocalISO } from '@lib/datetime'
 
 interface ManualExpenseFormProps {
   onSave: (expense: {

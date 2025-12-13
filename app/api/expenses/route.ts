@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { expenseService } from '../../../server/services/expense.service'
-import { createExpenseSchema } from '../../../server/validators/expense.schema'
+import { expenseService } from '@server/services/expense.service'
+import { createExpenseSchema } from '@server/validators/expense.schema'
 
 export const dynamic = 'force-dynamic'
 

@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import { Bill, BillType } from '../../../types'
+import { Bill, BillType } from '@types'
 
 export interface CreateBillData {
   name: string

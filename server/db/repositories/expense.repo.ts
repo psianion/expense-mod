@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import { Expense, ExpenseSource } from '../../../types'
+import { Expense, ExpenseSource } from '@types'
 
 export interface CreateExpenseData {
   user_id: string | null

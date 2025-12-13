@@ -3,8 +3,8 @@
 import * as React from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
-import { ComparisonDatum } from '../../../lib/analytics'
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '../../../components/ui/chart'
+import { ComparisonDatum } from '@lib/analytics'
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@components/ui/chart'
 
 type PlatformBarChartProps = {
   data: ComparisonDatum[]

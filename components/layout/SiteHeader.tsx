@@ -16,7 +16,7 @@ import { Button } from "../ui/button"
 import {
   SidebarTrigger,
 } from "../ui/sidebar"
-import { View } from "../../types"
+import { View } from "@types"
 
 interface SiteHeaderProps {
   currentView?: View

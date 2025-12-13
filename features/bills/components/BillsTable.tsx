@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { RefreshCw, Check, X, Plus } from 'lucide-react'
 import dayjs from 'dayjs'
 
-import { AppSidebar } from '../../../components/layout/AppSidebar'
-import { SiteHeader } from '../../../components/layout/SiteHeader'
+import { AppSidebar } from '@components/layout/AppSidebar'
+import { SiteHeader } from '@components/layout/SiteHeader'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Drawer } from '@/components/ui/drawer'
 import { Label } from '@/components/ui/label'
-import { Bill, BillInstance } from '../../../types'
+import { Bill, BillInstance } from '@types'
 
 const statusOptions = ['ALL', 'DUE', 'PAID', 'SKIPPED'] as const
 type StatusFilter = (typeof statusOptions)[number]

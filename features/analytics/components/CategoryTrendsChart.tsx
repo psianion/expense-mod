@@ -9,8 +9,8 @@ import {
   YAxis,
 } from 'recharts'
 
-import { CategoryTrendPoint } from '../../../lib/analytics'
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '../../../components/ui/chart'
+import { CategoryTrendPoint } from '@lib/analytics'
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@components/ui/chart'
 
 type CategoryTrendsChartProps = {
   data: CategoryTrendPoint[]

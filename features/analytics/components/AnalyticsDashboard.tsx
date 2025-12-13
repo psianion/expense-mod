@@ -1,15 +1,15 @@
 import * as React from 'react'
 
-import { TrendPeriod, getCategoryTotals, getCategoryTrend, getAvailableCategories, getPaymentMethodStats, getPlatformStats, getFilteredSpendingTrend, getSummaryTotals } from '../../../lib/analytics'
-import { Expense } from '../../../types'
-import { Button } from '../../../components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card'
+import { TrendPeriod, getCategoryTotals, getCategoryTrend, getAvailableCategories, getPaymentMethodStats, getPlatformStats, getFilteredSpendingTrend, getSummaryTotals } from '@lib/analytics'
+import { Expense } from '@types'
+import { Button } from '@components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card'
 import { CategoryPieChart } from './CategoryPieChart'
 import { PlatformBarChart } from './PlatformBarChart'
 import { PaymentMethodChart } from './PaymentMethodChart'
 import { SpendingTrendChart } from './SpendingTrendChart'
 import { CategoryTrendsChart } from './CategoryTrendsChart'
-import { MultiSelect } from '../../../components/ui/multi-select'
+import { MultiSelect } from '@components/ui/multi-select'
 
 type AnalyticsDashboardProps = {
   expenses: Expense[]

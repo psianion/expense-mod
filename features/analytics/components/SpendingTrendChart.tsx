@@ -10,8 +10,8 @@ import {
   YAxis,
 } from 'recharts'
 
-import { TrendPoint } from '../../../lib/analytics'
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '../../../components/ui/chart'
+import { TrendPoint } from '@lib/analytics'
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@components/ui/chart'
 
 type SpendingTrendChartProps = {
   data: TrendPoint[]

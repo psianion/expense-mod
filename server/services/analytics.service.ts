@@ -1,5 +1,5 @@
 import { format, startOfDay, startOfMonth, startOfWeek } from 'date-fns'
-import { Expense } from '../../types'
+import { Expense } from '@types'
 
 // Re-export utility functions from lib/analytics.ts
 export {
