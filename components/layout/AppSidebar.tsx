@@ -25,7 +25,8 @@ import {
   SidebarRail,
 } from "../ui/sidebar"
 import { Button } from "../ui/button"
-import { View } from "@types"
+import { View } from "@/types"
+import { useExpenseProvider } from "@/app/expense-provider"
 
 const menuItems = [
   {
@@ -60,10 +61,10 @@ const secondaryItems = [
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   currentView?: View
   onViewChange?: (view: View) => void
-  onAddExpense?: () => void
 }
 
-export function AppSidebar({ currentView = "EXPENSES", onViewChange, onAddExpense, ...props }: AppSidebarProps) {
+export function AppSidebar({ currentView = "EXPENSES", onViewChange, ...props }: AppSidebarProps) {
+  const { openExpenseDrawer } = useExpenseProvider()
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -117,7 +118,7 @@ export function AppSidebar({ currentView = "EXPENSES", onViewChange, onAddExpens
                 <Button
                   variant="default"
                   className="w-full justify-start"
-                  onClick={onAddExpense}
+                  onClick={openExpenseDrawer}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   <span>Add Expense</span>

@@ -1,15 +1,17 @@
 import * as React from 'react'
 
 import { TrendPeriod, getCategoryTotals, getCategoryTrend, getAvailableCategories, getPaymentMethodStats, getPlatformStats, getFilteredSpendingTrend, getSummaryTotals } from '@lib/analytics'
-import { Expense } from '@types'
+import { Expense } from '@/types'
 import { Button } from '@components/ui/button'
+import { AnimatedButton } from '@lib/animations'
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card'
-import { CategoryPieChart } from './CategoryPieChart'
+import { CategoryPieChart } from '@features/analytics/components/CategoryPieChart'
 import { PlatformBarChart } from './PlatformBarChart'
 import { PaymentMethodChart } from './PaymentMethodChart'
 import { SpendingTrendChart } from './SpendingTrendChart'
 import { CategoryTrendsChart } from './CategoryTrendsChart'
 import { MultiSelect } from '@components/ui/multi-select'
+import { StaggerContainer, StaggerItem, AnimatedCard, chartReveal } from '@lib/animations'
 
 type AnalyticsDashboardProps = {
   expenses: Expense[]
@@ -90,117 +92,124 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
   }
 
   return (
-    <div className="space-y-4">
+    <StaggerContainer className="space-y-4">
+      <StaggerItem>
+        <AnimatedCard hover={false}>
+          <CardHeader className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle>Spending trends</CardTitle>
+                <p className="text-sm text-muted-foreground">Compare expenses and inflows over time.</p>
+              </div>
+              <div className="flex gap-2">
+                {(Object.keys(periodLabels) as TrendPeriod[]).map((period) => (
+                  <AnimatedButton
+                    key={period}
+                    variant={trendPeriod === period ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTrendPeriod(period)}
+                  >
+                    {periodLabels[period]}
+                  </AnimatedButton>
+                ))}
+              </div>
+            </div>
+            {availableCategories.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Filter by category:</span>
+                <MultiSelect
+                  options={categoryOptions}
+                  selected={selectedCategories}
+                  onChange={setSelectedCategories}
+                  placeholder="All categories"
+                  className="w-full max-w-xs"
+                />
+              </div>
+            )}
+          </CardHeader>
+          <CardContent>
+            <SpendingTrendChart data={trendData} />
+          </CardContent>
+        </AnimatedCard>
+      </StaggerItem>
 
-      <Card>
-        <CardHeader className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <StaggerItem>
+        <AnimatedCard hover={false}>
+          <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <CardTitle>Spending trends</CardTitle>
-              <p className="text-sm text-muted-foreground">Compare expenses and inflows over time.</p>
+              <CardTitle>Category trends</CardTitle>
+              <p className="text-sm text-muted-foreground">Track spending by category over time.</p>
             </div>
-            <div className="flex gap-2">
-              {(Object.keys(periodLabels) as TrendPeriod[]).map((period) => (
-                <Button
-                  key={period}
-                  variant={trendPeriod === period ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTrendPeriod(period)}
-                >
-                  {periodLabels[period]}
-                </Button>
-              ))}
-            </div>
-          </div>
-          {availableCategories.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Filter by category:</span>
-              <MultiSelect
-                options={categoryOptions}
-                selected={selectedCategories}
-                onChange={setSelectedCategories}
-                placeholder="All categories"
-                className="w-full max-w-xs"
-              />
-            </div>
-          )}
-        </CardHeader>
-        <CardContent>
-          <SpendingTrendChart data={trendData} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle>Category trends</CardTitle>
-            <p className="text-sm text-muted-foreground">Track spending by category over time.</p>
-          </div>
           <div className="flex gap-2">
             {(Object.keys(periodLabels) as TrendPeriod[]).map((period) => (
-              <Button
+              <AnimatedButton
                 key={period}
                 variant={trendPeriod === period ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setTrendPeriod(period)}
               >
                 {periodLabels[period]}
-              </Button>
+              </AnimatedButton>
             ))}
           </div>
-        </CardHeader>
-        <CardContent>
-          <CategoryTrendsChart 
-            data={categoryTrendData} 
-            categories={selectedCategories.length > 0 ? selectedCategories : availableCategories}
-          />
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <CategoryTrendsChart
+              data={categoryTrendData}
+              categories={selectedCategories.length > 0 ? selectedCategories : availableCategories}
+            />
+          </CardContent>
+        </AnimatedCard>
+      </StaggerItem>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Category distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CategoryPieChart data={categoryTotals} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Platform breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PlatformBarChart data={platformStats} />
-          </CardContent>
-        </Card>
-      </div>
+      <StaggerItem>
+        <div className="grid gap-4 md:grid-cols-2">
+          <AnimatedCard hover={false}>
+            <CardHeader>
+              <CardTitle>Category distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CategoryPieChart data={categoryTotals} />
+            </CardContent>
+          </AnimatedCard>
+          <AnimatedCard hover={false}>
+            <CardHeader>
+              <CardTitle>Platform breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PlatformBarChart data={platformStats} />
+            </CardContent>
+          </AnimatedCard>
+        </div>
+      </StaggerItem>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Payment methods</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PaymentMethodChart data={paymentStats} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick highlights</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm">
-            <HighlightsList title="Top categories" items={topCategories} currency={currency} emptyLabel="No categories yet." />
-            <HighlightsList title="Top platforms" items={topPlatforms} currency={currency} emptyLabel="No platform data yet." />
-            <div className="rounded-md bg-muted/60 p-3 text-muted-foreground">
-              <p>
-                Tracking {expenses.length} transaction{expenses.length !== 1 ? 's' : ''} this period.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      <StaggerItem>
+        <div className="grid gap-4 md:grid-cols-2">
+          <AnimatedCard hover={false}>
+            <CardHeader>
+              <CardTitle>Payment methods</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PaymentMethodChart data={paymentStats} />
+            </CardContent>
+          </AnimatedCard>
+          <AnimatedCard hover={false}>
+            <CardHeader>
+              <CardTitle>Quick highlights</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <HighlightsList title="Top categories" items={topCategories} currency={currency} emptyLabel="No categories yet." />
+              <HighlightsList title="Top platforms" items={topPlatforms} currency={currency} emptyLabel="No platform data yet." />
+              <div className="rounded-md bg-muted/60 p-3 text-muted-foreground">
+                <p>
+                  Tracking {expenses.length} transaction{expenses.length !== 1 ? 's' : ''} this period.
+                </p>
+              </div>
+            </CardContent>
+          </AnimatedCard>
+        </div>
+      </StaggerItem>
+    </StaggerContainer>
   )
 }
 
