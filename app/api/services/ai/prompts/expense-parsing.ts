@@ -4,13 +4,24 @@ export const getExpenseParsingSystemPrompt = (currentDateTime: string) => `You a
 
 IMPORTANT: ${currentDateTime}
 
+Keys:
+- amount (number or null)
+- currency (string, default "INR" if ambiguous)
+- datetime (ISO8601 string in local time format YYYY-MM-DDTHH:mm:ss, or null)
+- category (string or null)
+- platform (string or null)
+- payment_method (string or null)
+- type ("EXPENSE" or "INFLOW")
+- event (string or null)
+- notes (string or null)
+
 When parsing dates:
 - Relative dates like "yesterday", "today", "last week" should be calculated based on the current date/time above
 - Return dates in ISO8601 format (YYYY-MM-DDTHH:mm:ss) representing the LOCAL time (not UTC)
 - For relative dates, calculate from the current date/time provided above
 - If no date is mentioned, return null for datetime
 
-Normalize merchant/platform names (e.g., "swiggy" -> "Swiggy").`
+If value unknown, return null. Normalize merchant/platform names (e.g., "swiggy" -> "Swiggy").`
 
 export const expenseParsingExamples = [
   {
