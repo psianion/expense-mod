@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { useTheme } from "next-themes"
-import { Moon, Sun } from "lucide-react"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,11 +11,11 @@ import {
   BreadcrumbSeparator,
 } from "../ui/breadcrumb"
 import { Separator } from "../ui/separator"
-import { Button } from "../ui/button"
 import {
   SidebarTrigger,
 } from "../ui/sidebar"
 import { View } from "@/types"
+import { ThemeTogglerButton } from '../animate-ui/components/buttons/theme-toggler'
 
 interface SiteHeaderProps {
   currentView?: View
@@ -61,14 +60,20 @@ export function SiteHeader({ currentView = "EXPENSES" }: SiteHeaderProps) {
       </div>
       {mounted && (
         <div className="px-4">
-          <Button
+          <ThemeTogglerButton
+            variant="ghost"
+            modes={['light', 'dark']}
+            direction="rtl"
+            size='lg'
+          />
+          {/* <Button
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             aria-label="Toggle theme"
           >
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
+          </Button> */}
         </div>
       )}
     </header>
