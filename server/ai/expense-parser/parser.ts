@@ -1,6 +1,6 @@
 import { ParsedExpense, BillMatchCandidate, Bill } from '@types'
 import { supabase } from '../../db/supabase'
-import { openRouter, expenseSchema, getExpenseParsingSystemPrompt, expenseParsingExamples } from '../providers/openai'
+import { openRouter, expenseSchema, getExpenseParsingSystemPrompt, expenseParsingExamples } from '../providers/openrouter'
 import { postProcessParsedExpense } from './postProcessor'
 
 const keywordBuckets: Record<string, string[]> = {

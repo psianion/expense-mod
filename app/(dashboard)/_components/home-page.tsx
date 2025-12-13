@@ -8,11 +8,10 @@ import { QuickAdd } from '@features/expenses/components/QuickAdd'
 import { PreviewModal } from '@features/expenses/components/PreviewModal'
 import { DataTable } from '@components/common/DataTable'
 import { FloatingActionButton } from '@components/common/FloatingActionButton'
-import { ManualExpenseForm } from '@features/expenses/components/ManualExpenseForm'
 import { AnalyticsDashboard } from '@features/analytics/components/AnalyticsDashboard'
-import { Drawer } from '@/components/ui/drawer'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { supabase } from '@server/db/supabase'
+import { useExpenseProvider } from '@/app/expense-provider'
 import {
   BillMatchCandidate,
   Expense,
@@ -27,12 +26,12 @@ import { fromUTC, getLocalISO } from '@/lib/datetime'
 import { getSummaryTotals } from '@/lib/analytics'
 
 export default function HomePage() {
+  const { openExpenseDrawer } = useExpenseProvider()
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(true)
   const [isParsing, setIsParsing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false)
-  const [manualDrawerOpen, setManualDrawerOpen] = useState(false)
   const [parsedExpense, setParsedExpense] = useState<ParsedExpense | null>(null)
   const [billMatch, setBillMatch] = useState<BillMatchCandidate | null>(null)
   const [rawText, setRawText] = useState<string>('')
@@ -96,7 +95,7 @@ export default function HomePage() {
       setIsParsing(true)
       setRawText(text)
 
-      const response = await fetch('/api/parse-expense', {
+      const response = await fetch('/api/ai/parse-expense', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,41 +167,6 @@ export default function HomePage() {
     }
   }
 
-  const handleManualSave = async (expenseData: any) => {
-    try {
-      setIsSaving(true)
-
-      const payload = {
-        expense: {
-          ...expenseData,
-          datetime: expenseData.datetime,
-          type: (expenseData.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
-        },
-        source: 'MANUAL' as ExpenseSource,
-      }
-
-      const response = await fetch('/api/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      const body = await response.json()
-      if (!response.ok) {
-        console.error('Failed to save expense:', body)
-        alert(body.error || 'Failed to save expense')
-        return
-      }
-
-      await fetchExpenses()
-      setManualDrawerOpen(false)
-    } catch (error) {
-      console.error('Unexpected error saving manual expense:', error)
-      alert(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    } finally {
-      setIsSaving(false)
-    }
-  }
 
   const summary = useMemo(() => getSummaryTotals(expenses), [expenses])
 
@@ -212,7 +176,6 @@ export default function HomePage() {
         <AppSidebar
           currentView={dashboardView}
           onViewChange={handleSidebarViewChange}
-          onAddExpense={() => setManualDrawerOpen(true)}
         />
         <SidebarInset>
           <SiteHeader currentView={dashboardView} />
@@ -247,16 +210,7 @@ export default function HomePage() {
         billMatch={billMatch}
       />
 
-      <Drawer
-        open={manualDrawerOpen}
-        onOpenChange={setManualDrawerOpen}
-        title="Add Manual Expense"
-        description="Enter expense details manually"
-      >
-        <ManualExpenseForm onSave={handleManualSave} isLoading={isSaving} />
-      </Drawer>
-
-      {dashboardView === 'EXPENSES' && <FloatingActionButton onClick={() => setManualDrawerOpen(true)} />}
+      {dashboardView === 'EXPENSES' && <FloatingActionButton onClick={openExpenseDrawer} />}
     </>
   )
 }

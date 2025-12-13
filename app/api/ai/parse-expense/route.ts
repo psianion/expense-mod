@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ParseExpenseRequest, ParseExpenseResponse } from '../../../../types'
+import { ParseExpenseRequest, ParseExpenseResponse } from '@types'
 import { aiService } from '@server/ai/ai.service'
 
 export const dynamic = 'force-dynamic'
