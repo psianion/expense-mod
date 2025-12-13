@@ -1,6 +1,6 @@
 import { format, startOfDay, startOfMonth, startOfWeek } from 'date-fns'
 
-import { Expense } from '../types'
+import { Expense } from '@types'
 
 export type TrendPeriod = 'DAILY' | 'WEEKLY' | 'MONTHLY'
 

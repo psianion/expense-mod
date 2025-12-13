@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import BillsPage from '../_components/bills-page'
+import BillsTable from '@features/bills/components/BillsTable'
 
 export const metadata: Metadata = {
   title: 'Bills & Instances',
 }
 
 export default function Page() {
-  return <BillsPage />
+  return <BillsTable />
 }
 

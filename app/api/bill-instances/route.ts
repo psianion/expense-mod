@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import dayjs from 'dayjs'
 
-import { supabase } from '@/lib/supabaseClient'
-import { BillInstance, Bill } from '@/types'
+import { supabase } from '@server/db/supabase'
+import { BillInstance, Bill } from '../../../types'
 import { buildExpensePayload, computeDueDateForPeriod, createInstanceRecord, findInstanceForPeriod } from '@/lib/recurring'
 
 export const dynamic = 'force-dynamic'

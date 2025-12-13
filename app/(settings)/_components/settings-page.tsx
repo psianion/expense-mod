@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { z } from 'zod'
 import { CalendarClock, Check, X } from 'lucide-react'
 
-import { AppSidebar } from '@/components/AppSidebar'
-import { SiteHeader } from '@/components/SiteHeader'
+import { AppSidebar } from '@components/layout/AppSidebar'
+import { SiteHeader } from '@components/layout/SiteHeader'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Bill, BillInstance, BillType, BillFrequency } from '@/types'
+import { Bill, BillInstance, BillType, BillFrequency } from '../../../types'
 
 type TabValue = 'INCOME' | 'BILLS' | 'INSTANCES'
 
