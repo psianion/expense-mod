@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Bill, BillInstance, BillType, BillFrequency } from '../../../types'
+import { Bill, BillInstance, BillType, BillFrequency } from '@/types'
 
 type TabValue = 'INCOME' | 'BILLS' | 'INSTANCES'
 
@@ -522,9 +522,9 @@ export default function SettingsPage() {
   return (
     <>
       <SidebarProvider>
-        <AppSidebar currentView="SETTINGS" />
+        <AppSidebar />
         <SidebarInset>
-          <SiteHeader currentView="SETTINGS" />
+          <SiteHeader />
           <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
             <div className="flex items-center justify-between">
               <div>
@@ -572,4 +572,3 @@ export default function SettingsPage() {
     </>
   )
 }
-

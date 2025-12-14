@@ -1,0 +1,123 @@
+"use client"
+
+import { useState } from 'react'
+import { QuickAdd } from '@features/expenses/components/QuickAdd'
+import { PreviewModal } from '@features/expenses/components/PreviewModal'
+import { ExpensesPreviewCard } from '@/components/common/ExpensesPreviewCard'
+import { BillsPreviewCard } from '@/components/common/BillsPreviewCard'
+import { AnalyticsPreviewCard } from '@/components/common/AnalyticsPreviewCard'
+import { BillMatchCandidate, ExpenseSource, ExpenseType, ParsedExpense, ParseExpenseRequest, ParseExpenseResponse } from '@/types'
+import { getLocalISO } from '@/lib/datetime'
+
+export default function Page() {
+  const [isParsing, setIsParsing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false)
+  const [parsedExpense, setParsedExpense] = useState<ParsedExpense | null>(null)
+  const [billMatch, setBillMatch] = useState<BillMatchCandidate | null>(null)
+  const [rawText, setRawText] = useState<string>('')
+
+  const handleParse = async (text: string) => {
+    try {
+      setIsParsing(true)
+      setRawText(text)
+
+      const response = await fetch('/api/ai/parse-expense', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text } as ParseExpenseRequest),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to parse expense')
+      }
+
+      const data: ParseExpenseResponse = await response.json()
+      setParsedExpense(data.parsed)
+      setBillMatch(data.bill_match ?? null)
+      setPreviewDrawerOpen(true)
+    } catch (error) {
+      console.error('Error parsing expense:', error)
+      alert('Failed to parse expense. Please try again.')
+    } finally {
+      setIsParsing(false)
+    }
+  }
+
+  const handleSave = async (expense: ParsedExpense) => {
+    try {
+      setIsSaving(true)
+
+      if (!expense.amount || expense.amount <= 0) {
+        alert('Please enter a valid amount.')
+        return
+      }
+
+      const localDateTime = expense.datetime || getLocalISO()
+      const payload = {
+        expense: {
+          ...expense,
+          currency: expense.currency || 'INR',
+          datetime: localDateTime,
+          type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
+        },
+        source: 'AI' as ExpenseSource,
+        billMatch: billMatch,
+        raw_text: rawText,
+      }
+
+      const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const body = await response.json()
+      if (!response.ok) {
+        console.error('Failed to save expense:', body)
+        alert(body.error || 'Failed to save expense')
+        return
+      }
+
+      // Reset form and close modal
+      setPreviewDrawerOpen(false)
+      setParsedExpense(null)
+      setBillMatch(null)
+      setRawText('')
+    } catch (error) {
+      console.error('Unexpected error saving expense:', error)
+      alert(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="max-w-6xl mx-auto p-6 space-y-8">
+        {/* Quick Add Section */}
+        <div className="max-w-2xl mx-auto">
+          <QuickAdd onParse={handleParse} isLoading={isParsing} />
+        </div>
+
+        {/* Preview Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <ExpensesPreviewCard />
+          <BillsPreviewCard />
+          <AnalyticsPreviewCard />
+        </div>
+      </div>
+
+      <PreviewModal
+        open={previewDrawerOpen}
+        onOpenChange={setPreviewDrawerOpen}
+        parsedExpense={parsedExpense}
+        onSave={handleSave}
+        isLoading={isSaving}
+        billMatch={billMatch}
+      />
+    </>
+  )
+}
