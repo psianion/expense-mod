@@ -5,12 +5,12 @@ import { useInView } from "motion/react";
 
 // Hook for scroll-triggered animations
 export function useScrollAnimation(options?: {
-  threshold?: number;
+  margin?: string;
   triggerOnce?: boolean;
 }) {
   const ref = useRef(null);
   const isInView = useInView(ref, {
-    threshold: options?.threshold ?? 0.1,
+    margin: options?.margin ?? "0px",
     once: options?.triggerOnce ?? true,
   });
 
@@ -21,7 +21,7 @@ export function useScrollAnimation(options?: {
 export function useStagger(delay: number = 0.05) {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef(null);
-  const inView = useInView(ref, { threshold: 0.1, once: true });
+  const inView = useInView(ref, { margin: "0px", once: true });
 
   useEffect(() => {
     if (inView) {

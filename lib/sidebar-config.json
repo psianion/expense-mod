@@ -1,0 +1,35 @@
+{
+  "mainNav": [
+    {
+      "title": "Expenses",
+      "icon": "Wallet",
+      "href": "/",
+      "id": "EXPENSES"
+    },
+    {
+      "title": "Analytics",
+      "icon": "BarChart3",
+      "href": "/#analytics",
+      "id": "ANALYTICS"
+    },
+    {
+      "title": "Bills",
+      "icon": "CalendarClock",
+      "href": "/bills",
+      "id": "BILLS"
+    }
+  ],
+  "secondaryNav": [
+    {
+      "title": "Settings",
+      "icon": "Settings",
+      "href": "/settings",
+      "id": "SETTINGS"
+    }
+  ],
+  "appInfo": {
+    "name": "Expense Tracker",
+    "subtitle": "AI-Powered",
+    "version": "v1.1.0"
+  }
+}
