@@ -3,6 +3,7 @@ import dayjs from 'dayjs'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { View } from '@/types'
+import { formatPrice } from '@/lib/formatPrice'
 
 interface HeaderProps {
   monthlyTotal: number
@@ -26,7 +27,7 @@ export function Header({ monthlyTotal, currency, view, onViewChange }: HeaderPro
           <div>
             <p className="text-sm text-muted-foreground">Monthly Total ({currentMonth})</p>
             <p className={`text-3xl font-bold ${monthlyTotal < 0 ? 'text-red-600' : 'text-green-600'}`}>
-              {monthlyTotal < 0 ? '-' : ''}{currency} {Math.abs(monthlyTotal).toLocaleString()}
+              {monthlyTotal < 0 ? '-' : ''}{formatPrice(Math.abs(monthlyTotal))}
             </p>
           </div>
           <div className="text-right">

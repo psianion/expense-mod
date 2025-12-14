@@ -4,6 +4,7 @@ import { Badge } from '@components/ui/badge'
 import { Expense } from '@/types'
 import dayjs from 'dayjs'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { formatPrice } from '@/lib/formatPrice'
 
 interface ExpensesListProps {
   expenses: Expense[]
@@ -72,7 +73,7 @@ export function ExpensesList({ expenses, isLoading }: ExpensesListProps) {
                 <div>
                   <div className="flex items-center space-x-2">
                     <span className="font-medium">
-                      {expense.currency} {expense.amount.toLocaleString()}
+                      {formatPrice(expense.amount)}
                     </span>
                     {expense.category && (
                       <span className="px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded-full">
@@ -101,7 +102,7 @@ export function ExpensesList({ expenses, isLoading }: ExpensesListProps) {
                 <div className={`text-sm font-medium ${
                   expense.type === 'EXPENSE' ? 'text-red-600' : 'text-green-600'
                 }`}>
-                  {expense.type === 'EXPENSE' ? '-' : '+'}{expense.currency} {expense.amount.toLocaleString()}
+                  {expense.type === 'EXPENSE' ? '-' : '+'}{formatPrice(expense.amount)}
                 </div>
                 {expense.parsed_by_ai && (
                   <div className="text-xs text-muted-foreground">AI Parsed</div>

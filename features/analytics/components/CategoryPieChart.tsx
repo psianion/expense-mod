@@ -4,7 +4,8 @@ import * as React from 'react'
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 
 import { SimpleDatum } from '@lib/analytics'
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@components/ui/chart'
+import { ChartConfig, ChartContainer, ChartTooltip } from '@components/ui/chart'
+import { formatPrice } from '@/lib/formatPrice'
 
 type CategoryPieChartProps = {
   data: SimpleDatum[]
@@ -36,6 +37,27 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
     return data.map((_, index) => `hsl(var(--chart-${(index % 5) + 1}))`)
   }, [data])
 
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload
+      return (
+        <div className="rounded-lg border bg-background p-2 shadow-sm">
+          <div className="grid grid-cols-1 gap-2">
+            <div className="flex flex-col">
+              <span className="text-[0.70rem] uppercase text-muted-foreground">
+                {data.name}
+              </span>
+              <span className="font-bold">
+                {formatPrice(data.value)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
+
   if (!mounted) {
     return (
       <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
@@ -66,7 +88,7 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
             <Cell key={`cell-${entry.name}`} fill={COLORS[index]} />
           ))}
         </Pie>
-        <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+        <ChartTooltip content={<CustomTooltip />} />
         <Legend />
       </PieChart>
     </ChartContainer>

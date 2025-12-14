@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/server/db/supabase'
 import { BillInstance } from '@/types'
+import { formatPrice } from '@/lib/formatPrice'
 
 export function BillsPreviewCard() {
   const [billInstances, setBillInstances] = useState<BillInstance[]>([])
@@ -79,7 +80,7 @@ export function BillsPreviewCard() {
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">Upcoming Bills</CardTitle>
         <CardDescription>
-          {billInstances.length} bill{billInstances.length !== 1 ? 's' : ''} • ₹{totalAmount.toLocaleString()}
+          {billInstances.length} bill{billInstances.length !== 1 ? 's' : ''} • {formatPrice(totalAmount)}
         </CardDescription>
       </CardHeader>
 
@@ -98,7 +99,7 @@ export function BillsPreviewCard() {
                     {dayjs(instance.due_date).format('MMM D')}
                   </Badge>
                 </div>
-                <span className="font-medium">₹{instance.amount.toLocaleString()}</span>
+                <span className="font-medium">{formatPrice(instance.amount)}</span>
               </div>
             ))}
           </div>

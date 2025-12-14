@@ -18,6 +18,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Bill, BillInstance, BillType, BillFrequency } from '@/types'
+import { formatPrice } from '@/lib/formatPrice'
 
 type TabValue = 'INCOME' | 'BILLS' | 'INSTANCES'
 
@@ -348,7 +349,7 @@ function BillsTable({ bills }: { bills: Bill[] }) {
                       : null}
                     {bill.frequency === 'YEARLY' && bill.start_date ? formatDate(bill.start_date) : null}
                   </TableCell>
-                  <TableCell>{bill.amount !== null && bill.amount !== undefined ? bill.amount.toFixed(2) : 'Variable'}</TableCell>
+                  <TableCell>{bill.amount !== null && bill.amount !== undefined ? formatPrice(bill.amount) : 'Variable'}</TableCell>
                   <TableCell>
                     {bill.auto_post ? <Badge variant="secondary">Auto</Badge> : <Badge variant="outline">Manual</Badge>}
                   </TableCell>
