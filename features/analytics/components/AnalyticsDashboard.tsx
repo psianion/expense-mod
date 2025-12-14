@@ -3,6 +3,7 @@ import * as React from 'react'
 import { TrendPeriod, getCategoryTotals, getCategoryTrend, getAvailableCategories, getPaymentMethodStats, getPlatformStats, getFilteredSpendingTrend, getSummaryTotals } from '@lib/analytics'
 import { Expense } from '@/types'
 import { Button } from '@components/ui/button'
+import { formatPrice } from '@/lib/formatPrice'
 import { AnimatedButton } from '@lib/animations'
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card'
 import { CategoryPieChart } from '@features/analytics/components/CategoryPieChart'
@@ -222,7 +223,7 @@ type SummaryStatProps = {
 
 function SummaryStat({ label, value, currency, tone }: SummaryStatProps) {
   const isExpense = tone === 'EXPENSE'
-  const formatted = `${currency} ${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const formatted = formatPrice(Math.abs(value))
 
   return (
     <div className="rounded-lg border bg-muted/40 p-4">
@@ -259,8 +260,7 @@ function HighlightsList({ title, items, currency, emptyLabel }: HighlightsListPr
             <li key={item.name} className="flex items-center justify-between rounded-md bg-background p-2">
               <span className="font-medium">{item.name}</span>
               <span>
-                {currency}{' '}
-                {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatPrice(item.amount)}
               </span>
             </li>
           ))}

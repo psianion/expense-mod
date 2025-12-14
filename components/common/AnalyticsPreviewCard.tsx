@@ -10,6 +10,7 @@ import { supabase } from '@/server/db/supabase'
 import { Expense } from '@/types'
 import { getSummaryTotals, getCategoryTotals } from '@/lib/analytics'
 import { fromUTC } from '@/lib/datetime'
+import { formatPrice } from '@/lib/formatPrice'
 
 export function AnalyticsPreviewCard() {
   const [expenses, setExpenses] = useState<Expense[]>([])
@@ -87,15 +88,15 @@ export function AnalyticsPreviewCard() {
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">Analytics</CardTitle>
         <CardDescription>
-          {expenses.length} transaction{expenses.length !== 1 ? 's' : ''} • {summary.net >= 0 ? (
+          {expenses.length} transaction{expenses.length !== 1 ? 's' : ''} •           {summary.net >= 0 ? (
             <span className="text-green-600 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
-              +₹{summary.net.toLocaleString()}
+              +{formatPrice(summary.net)}
             </span>
           ) : (
             <span className="text-red-600 flex items-center gap-1">
               <TrendingDown className="h-3 w-3" />
-              -₹{Math.abs(summary.net).toLocaleString()}
+              -{formatPrice(Math.abs(summary.net))}
             </span>
           )}
         </CardDescription>
@@ -106,11 +107,11 @@ export function AnalyticsPreviewCard() {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Expenses</p>
-              <p className="font-medium text-red-600">₹{summary.expenseTotal.toLocaleString()}</p>
+              <p className="font-medium text-red-600">{formatPrice(summary.expenseTotal)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Income</p>
-              <p className="font-medium text-green-600">₹{summary.inflowTotal.toLocaleString()}</p>
+              <p className="font-medium text-green-600">{formatPrice(summary.inflowTotal)}</p>
             </div>
           </div>
 
@@ -124,7 +125,7 @@ export function AnalyticsPreviewCard() {
                       {category.name}
                     </span>
                     <Badge variant="secondary" className="text-xs">
-                      ₹{category.value.toLocaleString()}
+                      {formatPrice(category.value)}
                     </Badge>
                   </div>
                 ))}

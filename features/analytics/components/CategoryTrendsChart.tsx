@@ -10,7 +10,8 @@ import {
 } from 'recharts'
 
 import { CategoryTrendPoint } from '@lib/analytics'
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@components/ui/chart'
+import { ChartConfig, ChartContainer, ChartTooltip, ChartLegend, ChartLegendContent } from '@components/ui/chart'
+import { formatPrice } from '@/lib/formatPrice'
 
 type CategoryTrendsChartProps = {
   data: CategoryTrendPoint[]
@@ -38,6 +39,28 @@ export function CategoryTrendsChart({ data, categories }: CategoryTrendsChartPro
   const COLORS = React.useMemo(() => {
     return categories.map((_, index) => `hsl(var(--chart-${(index % 5) + 1}))`)
   }, [categories])
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="rounded-lg border bg-background p-2 shadow-sm">
+          <div className="grid grid-cols-1 gap-2">
+            <div className="flex flex-col">
+              <span className="text-[0.70rem] uppercase text-muted-foreground">
+                {label}
+              </span>
+              {payload.map((entry: any, index: number) => (
+                <span key={index} className="font-bold" style={{ color: entry.color }}>
+                  {entry.name}: {formatPrice(entry.value)}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
 
   if (!mounted) {
     return (
@@ -82,7 +105,7 @@ export function CategoryTrendsChart({ data, categories }: CategoryTrendsChartPro
           tickMargin={8}
           width={60}
         />
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip content={<CustomTooltip />} />
         <ChartLegend content={<ChartLegendContent />} />
         {categories.map((category, index) => (
           <Area

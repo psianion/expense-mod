@@ -11,7 +11,8 @@ import {
 } from 'recharts'
 
 import { TrendPoint } from '@lib/analytics'
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@components/ui/chart'
+import { ChartConfig, ChartContainer, ChartTooltip, ChartLegend, ChartLegendContent } from '@components/ui/chart'
+import { formatPrice } from '@/lib/formatPrice'
 
 type SpendingTrendChartProps = {
   data: TrendPoint[]
@@ -27,6 +28,28 @@ const chartConfig = {
     color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border bg-background p-2 shadow-sm">
+        <div className="grid grid-cols-1 gap-2">
+          <div className="flex flex-col">
+            <span className="text-[0.70rem] uppercase text-muted-foreground">
+              {label}
+            </span>
+            {payload.map((entry: any, index: number) => (
+              <span key={index} className="font-bold" style={{ color: entry.color }}>
+                {entry.name === 'expense' ? 'Expenses' : 'Inflows'}: {formatPrice(entry.value)}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+  return null
+}
 
 export function SpendingTrendChart({ data }: SpendingTrendChartProps) {
   const [mounted, setMounted] = React.useState(false)
@@ -70,7 +93,7 @@ export function SpendingTrendChart({ data }: SpendingTrendChartProps) {
           tickMargin={8}
           width={60}
         />
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip content={<CustomTooltip />} />
         <ChartLegend content={<ChartLegendContent />} />
         <Line 
           type="monotone" 

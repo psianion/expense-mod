@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Expense } from "@/types"
+import { formatPrice } from "@/lib/formatPrice"
 
 interface DataTableProps {
   expenses: Expense[]
@@ -96,7 +97,7 @@ export function DataTable({ expenses, isLoading, currency }: DataTableProps) {
                         )}
                       </span>
                       <span className="font-medium">
-                        {expense.currency} {expense.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {formatPrice(expense.amount)}
                       </span>
                     </div>
                   </TableCell>

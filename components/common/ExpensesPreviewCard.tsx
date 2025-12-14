@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/server/db/supabase'
 import { Expense } from '@/types'
 import { fromUTC } from '@/lib/datetime'
+import { formatPrice } from '@/lib/formatPrice'
 
 export function ExpensesPreviewCard() {
   const [expenses, setExpenses] = useState<Expense[]>([])
@@ -82,7 +83,7 @@ export function ExpensesPreviewCard() {
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">Recent Expenses</CardTitle>
         <CardDescription>
-          {expenses.length} transaction{expenses.length !== 1 ? 's' : ''} • ₹{totalAmount.toLocaleString()}
+          {expenses.length} transaction{expenses.length !== 1 ? 's' : ''} • {formatPrice(totalAmount)}
         </CardDescription>
       </CardHeader>
 
@@ -101,7 +102,7 @@ export function ExpensesPreviewCard() {
                     {expense.type}
                   </Badge>
                 </div>
-                <span className="font-medium">₹{expense.amount.toLocaleString()}</span>
+                <span className="font-medium">{formatPrice(expense.amount)}</span>
               </div>
             ))}
           </div>
