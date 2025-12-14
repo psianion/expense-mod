@@ -74,7 +74,7 @@ export const pressTransition: Transition = {
 };
 
 // Page transition
-export const pageTransition: Transition = {
+export const pageTransitionConfig: Transition = {
   duration: 0.3,
   ease: [0.25, 0.46, 0.45, 0.94]
 };

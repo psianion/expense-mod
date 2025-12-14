@@ -3,7 +3,7 @@ import { z } from 'zod'
 import dayjs from 'dayjs'
 
 import { supabase } from '@server/db/supabase'
-import { BillInstance, Bill } from '../../../types'
+import { BillInstance, Bill } from '@/types'
 import { buildExpensePayload, computeDueDateForPeriod, createInstanceRecord, findInstanceForPeriod } from '@/lib/recurring'
 
 export const dynamic = 'force-dynamic'

@@ -209,9 +209,9 @@ export default function BillsPage() {
   return (
     <>
       <SidebarProvider>
-        <AppSidebar currentView="BILLS" />
+        <AppSidebar />
         <SidebarInset>
-          <SiteHeader currentView="BILLS" />
+          <SiteHeader />
           <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
             <div className="flex items-center justify-between">
               <div>

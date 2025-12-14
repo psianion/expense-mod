@@ -5,7 +5,6 @@ export const metadata: Metadata = {
   title: 'Bills & Instances',
 }
 
-export default function Page() {
+export default function BillsPage() {
   return <BillsTable />
 }
-

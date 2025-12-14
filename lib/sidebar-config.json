@@ -1,15 +1,21 @@
 {
   "mainNav": [
     {
+      "title": "Home",
+      "icon": "Home",
+      "href": "/",
+      "id": "HOME"
+    },
+    {
       "title": "Expenses",
       "icon": "Wallet",
-      "href": "/",
+      "href": "/expenses",
       "id": "EXPENSES"
     },
     {
       "title": "Analytics",
       "icon": "BarChart3",
-      "href": "/#analytics",
+      "href": "/analytics",
       "id": "ANALYTICS"
     },
     {

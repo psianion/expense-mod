@@ -1,18 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useInView } from "motion/react";
+import { useInView, type UseInViewOptions } from "motion/react";
 
 // Hook for scroll-triggered animations
 export function useScrollAnimation(options?: {
-  margin?: string;
+  margin?: string; // CSS margin value
   triggerOnce?: boolean;
 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, {
-    margin: options?.margin ?? "0px",
+  const useInViewOptions: Partial<UseInViewOptions> = {
     once: options?.triggerOnce ?? true,
-  });
+  };
+
+  if (options?.margin !== undefined) {
+    useInViewOptions.margin = options.margin as UseInViewOptions['margin'];
+  }
+
+  const isInView = useInView(ref, useInViewOptions);
 
   return { ref, isInView };
 }

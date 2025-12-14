@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
   Breadcrumb,
@@ -14,25 +15,27 @@ import { Separator } from "../ui/separator"
 import {
   SidebarTrigger,
 } from "../ui/sidebar"
-import { View } from "@/types"
 import { ThemeTogglerButton } from '../animate-ui/components/buttons/theme-toggler'
 
-interface SiteHeaderProps {
-  currentView?: View
+interface SiteHeaderProps {}
+
+const getPageTitle = (pathname: string): string => {
+  if (pathname === "/") return "Home"
+  if (pathname === "/expenses") return "Expenses"
+  if (pathname === "/analytics") return "Analytics"
+  if (pathname === "/bills") return "Bills"
+  if (pathname === "/settings") return "Settings"
+  return "Expense Tracker"
 }
 
-const viewLabels: Record<View, string> = {
-  EXPENSES: "Expenses",
-  ANALYTICS: "Analytics",
-  BILLS: "Bills",
-  SETTINGS: "Settings",
-}
-
-export function SiteHeader({ currentView = "EXPENSES" }: SiteHeaderProps) {
+export function SiteHeader({}: SiteHeaderProps) {
   const { theme, setTheme } = useTheme()
+  const pathname = usePathname()
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => setMounted(true), [])
+
+  const pageTitle = getPageTitle(pathname)
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -52,7 +55,7 @@ export function SiteHeader({ currentView = "EXPENSES" }: SiteHeaderProps) {
             <BreadcrumbSeparator className="hidden md:block" />
             <BreadcrumbItem>
               <BreadcrumbPage>
-                {viewLabels[currentView]}
+                {pageTitle}
               </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
