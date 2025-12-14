@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ExpenseSource } from '@types'
+import { ExpenseSource } from '@/types'
 
 export const expenseSchema = z.object({
   amount: z.number().positive(),

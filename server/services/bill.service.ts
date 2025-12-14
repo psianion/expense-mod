@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
 import { billRepository } from '../db/repositories/bill.repo'
 import { CreateBillInput, UpdateBillInput } from '../validators/bill.schema'
-import { Bill, BillType } from '@types'
+import { Bill, BillType } from '@/types'
 import { ensureInstanceForCurrentPeriod } from '@lib/recurring'
 
 export class BillService {

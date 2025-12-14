@@ -1,62 +1,30 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
-import {
-  Wallet,
-  BarChart3,
-  Settings,
-  Plus,
-  Home,
-  CalendarClock,
-} from "lucide-react"
+import { Wallet, Plus } from "lucide-react"
 
+import { NavMain } from "@/components/nav-main"
+import { NavUser } from "@/components/nav-user"
+import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarRail,
+  useSidebar,
+} from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
-} from "../ui/sidebar"
-import { Button } from "../ui/button"
+} from "@/components/ui/sidebar"
 import { View } from "@/types"
 import { useExpenseProvider } from "@/app/expense-provider"
-
-const menuItems = [
-  {
-    title: "Expenses",
-    icon: Wallet,
-    href: "/",
-    id: "EXPENSES" as View,
-  },
-  {
-    title: "Analytics",
-    icon: BarChart3,
-    href: "/#analytics",
-    id: "ANALYTICS" as View,
-  },
-  {
-    title: "Bills",
-    icon: CalendarClock,
-    href: "/bills",
-    id: "BILLS" as View,
-  },
-]
-
-const secondaryItems = [
-  {
-    title: "Settings",
-    icon: Settings,
-    href: "/settings",
-    id: "SETTINGS" as View,
-  },
-]
+import { sidebarConfig, appInfo } from "@/lib/sidebar-config"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   currentView?: View
@@ -65,51 +33,61 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ currentView = "EXPENSES", onViewChange, ...props }: AppSidebarProps) {
   const { openExpenseDrawer } = useExpenseProvider()
+  const { state } = useSidebar()
+
+  // Transform sidebar config to NavMain format
+  const navMainItems = sidebarConfig.mainNav.map((item) => ({
+    title: item.title,
+    url: item.href,
+    icon: item.icon,
+    isActive: currentView === item.id,
+    items: [], // No sub-items for now
+  }))
+
+  // Add Settings to navMain
+  const allNavItems = [
+    ...navMainItems,
+    ...sidebarConfig.secondaryNav.map((item) => ({
+      title: item.title,
+      url: item.href,
+      icon: item.icon,
+      isActive: currentView === item.id,
+      items: [],
+    })),
+  ]
+
+  // Team data for TeamSwitcher (using app info)
+  const teams = [
+    {
+      name: appInfo.name,
+      logo: Wallet,
+      plan: appInfo.subtitle,
+    },
+  ]
+
+  // User data for NavUser (using app info)
+  const user = {
+    name: appInfo.name,
+    email: appInfo.version,
+    avatar: "/avatars/default.jpg",
+  }
+
+  const handleNavClick = (url: string) => {
+    // Find the item by URL and trigger onViewChange if needed
+    const allItems = [...sidebarConfig.mainNav, ...sidebarConfig.secondaryNav]
+    const item = allItems.find((i) => i.href === url)
+    if (item && (item.id === "EXPENSES" || item.id === "ANALYTICS")) {
+      onViewChange?.(item.id as View)
+    }
+  }
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-                  <Link href="/" prefetch>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Wallet className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Expense Tracker</span>
-                  <span className="truncate text-xs">AI-Powered</span>
-                </div>
-                  </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={currentView === item.id}
-                    onClick={() => {
-                      if (item.id === "EXPENSES" || item.id === "ANALYTICS") {
-                        onViewChange?.(item.id)
-                      }
-                    }}
-                  >
-                    <Link href={item.href} prefetch>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <NavMain items={allNavItems} onItemClick={handleNavClick} />
         <SidebarGroup>
           <SidebarGroupLabel>Actions</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -117,51 +95,21 @@ export function AppSidebar({ currentView = "EXPENSES", onViewChange, ...props }:
               <SidebarMenuItem>
                 <Button
                   variant="default"
-                  className="w-full justify-start"
+                  className={`${state !== "collapsed" ? "w-full" : "w-8"} flex justify-center items-center p-0 h-8`}
                   onClick={openExpenseDrawer}
                 >
-                  <Plus className="mr-2 h-4 w-4" />
-                  <span>Add Expense</span>
+                  <Plus className="mr-1 h-4 w-4" />
+                  {state !== "collapsed" && <span>Add Expense</span>}
                 </Button>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Settings</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {secondaryItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.href} prefetch>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <div className="flex items-center gap-2 px-2 py-1.5 text-sm">
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-muted">
-                <Home className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-xs leading-tight">
-                <span className="truncate font-semibold">Expense Tracker</span>
-                <span className="truncate text-muted-foreground">v1.1.0</span>
-              </div>
-            </div>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <NavUser user={user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
 }
-

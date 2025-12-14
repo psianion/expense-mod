@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { BillType, BillFrequency } from '@types'
+import { BillType, BillFrequency } from '@/types'
 
 const billTypes: [BillType, ...BillType[]] = ['BILL', 'EMI', 'CREDITCARD', 'SUBSCRIPTION', 'SALARY', 'INCOME']
 const billFrequencies: [BillFrequency, ...BillFrequency[]] = ['MONTHLY', 'WEEKLY', 'YEARLY']

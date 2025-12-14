@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Drawer } from '@/components/ui/drawer'
 import { Label } from '@/components/ui/label'
-import { Bill, BillInstance } from '@types'
+import { Bill, BillInstance } from '@/types'
 
 const statusOptions = ['ALL', 'DUE', 'PAID', 'SKIPPED'] as const
 type StatusFilter = (typeof statusOptions)[number]
