@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import dayjs from "dayjs"
-import { ArrowUpRight, ArrowDownRight } from "lucide-react"
+import { ArrowUpRight, ArrowDownRight, CalendarIcon, Filter, SortAsc, SortDesc } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -13,16 +13,54 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Expense } from "@/types"
 import { formatPrice } from "@/lib/formatPrice"
+import { cn } from "@/lib/utils"
+import type { DateRange } from "react-day-picker"
+
+type SortField = 'date' | 'amount' | 'category'
+type SortOrder = 'asc' | 'desc'
+type ExpenseFilter = 'ALL' | 'EXPENSE' | 'INFLOW'
 
 interface DataTableProps {
   expenses: Expense[]
   isLoading: boolean
   currency: string
+  // Filter props
+  dateRange: DateRange
+  expenseFilter: ExpenseFilter
+  categoryFilter: string
+  sortField: SortField
+  sortOrder: SortOrder
+  availableCategories: string[]
+  // Filter handlers
+  onDateRangeChange: (range: DateRange) => void
+  onExpenseFilterChange: (filter: ExpenseFilter) => void
+  onCategoryFilterChange: (category: string) => void
+  onSortToggle: (field: SortField) => void
+  onClearDateRange: () => void
 }
 
-export function DataTable({ expenses, isLoading, currency }: DataTableProps) {
+export function DataTable({
+  expenses,
+  isLoading,
+  currency,
+  dateRange,
+  expenseFilter,
+  categoryFilter,
+  sortField,
+  sortOrder,
+  availableCategories,
+  onDateRangeChange,
+  onExpenseFilterChange,
+  onCategoryFilterChange,
+  onSortToggle,
+  onClearDateRange
+}: DataTableProps) {
   if (isLoading) {
     return (
       <Card>
@@ -63,6 +101,138 @@ export function DataTable({ expenses, isLoading, currency }: DataTableProps) {
         <CardDescription>
           {expenses.length} expense{expenses.length !== 1 ? 's' : ''} found
         </CardDescription>
+
+        {/* Filters and Sorting Controls */}
+        <div className="flex flex-wrap items-center justify-end gap-2 p-4 bg-muted/30 rounded-lg">
+          {/* Date Range Picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[280px] justify-start text-left font-normal",
+                  !dateRange.from && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange.from ? (
+                  dateRange.to ? (
+                    <>
+                      {dayjs(dateRange.from).format("LL")} -{" "}
+                      {dayjs(dateRange.to).format("LL")}
+                    </>
+                  ) : (
+                    dayjs(dateRange.from).format("LL")
+                  )
+                ) : (
+                  <span>Pick a date range</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange.from}
+                selected={dateRange}
+                onSelect={(range) => onDateRangeChange(range || { from: undefined, to: undefined })}
+                numberOfMonths={1}
+              />
+              {dateRange.from && (
+                <div className="p-3 border-t">
+                  <Button variant="outline" size="sm" onClick={onClearDateRange}>
+                    Clear
+                  </Button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          {/* Expense Type Filter */}
+          <Select value={expenseFilter} onValueChange={onExpenseFilterChange}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Types</SelectItem>
+              <SelectItem value="EXPENSE">Expenses</SelectItem>
+              <SelectItem value="INFLOW">Income</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Category Filter */}
+          <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Categories</SelectItem>
+              {availableCategories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="flex items-center gap-2 ml-4">
+            {/* Sort Controls */}
+            <Button
+              variant={sortField === 'date' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onSortToggle('date')}
+              className="flex items-center gap-1"
+            >
+              Date
+              {sortField === 'date' && (
+                sortOrder === 'asc' ? <SortAsc className="h-3 w-3" /> : <SortDesc className="h-3 w-3" />
+              )}
+            </Button>
+
+            <Button
+              variant={sortField === 'amount' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onSortToggle('amount')}
+              className="flex items-center gap-1"
+            >
+              Amount
+              {sortField === 'amount' && (
+                sortOrder === 'asc' ? <SortAsc className="h-3 w-3" /> : <SortDesc className="h-3 w-3" />
+              )}
+            </Button>
+
+            <Button
+              variant={sortField === 'category' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onSortToggle('category')}
+              className="flex items-center gap-1"
+            >
+              Category
+              {sortField === 'category' && (
+                sortOrder === 'asc' ? <SortAsc className="h-3 w-3" /> : <SortDesc className="h-3 w-3" />
+              )}
+            </Button>
+          </div>
+
+          {/* Active Filters Display */}
+          <div className="flex gap-1 ml-auto">
+            {expenseFilter !== 'ALL' && (
+              <Badge variant="secondary" className="text-xs">
+                {expenseFilter}
+              </Badge>
+            )}
+            {categoryFilter !== 'ALL' && (
+              <Badge variant="secondary" className="text-xs">
+                {categoryFilter}
+              </Badge>
+            )}
+            {(dateRange.from || dateRange.to) && (
+              <Badge variant="secondary" className="text-xs">
+                Date Range
+              </Badge>
+            )}
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
@@ -83,8 +253,8 @@ export function DataTable({ expenses, isLoading, currency }: DataTableProps) {
               {expenses.map((expense) => (
                 <TableRow key={expense.id}>
                   <TableCell className="font-medium">
-                    {dayjs(expense.datetime).isValid() 
-                      ? dayjs(expense.datetime).format('MMM DD, YYYY HH:mm') 
+                    {dayjs(expense.datetime).isValid()
+                      ? dayjs(expense.datetime).format('MMM DD, YYYY HH:mm')
                       : expense.datetime}
                   </TableCell>
                   <TableCell>
