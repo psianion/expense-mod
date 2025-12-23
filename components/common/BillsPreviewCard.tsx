@@ -1,36 +1,16 @@
 "use client"
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import dayjs from 'dayjs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { billInstancesApi } from '@/lib/api'
-import { BillInstance } from '@/types'
+import { useUpcomingBillInstancesQuery } from '@/lib/query/hooks'
 import { formatPrice } from '@/lib/formatPrice'
 
 export function BillsPreviewCard() {
-  const [billInstances, setBillInstances] = useState<BillInstance[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    fetchUpcomingBills()
-  }, [])
-
-  const fetchUpcomingBills = async () => {
-    try {
-      setIsLoading(true)
-
-      const billInstances = await billInstancesApi.getUpcomingBills(5)
-      setBillInstances(billInstances)
-    } catch (error) {
-      console.error('Unexpected error fetching upcoming bills:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const { data: billInstances = [], isLoading } = useUpcomingBillInstancesQuery(5)
 
   const totalAmount = billInstances.reduce((sum, instance) => sum + instance.amount, 0)
 

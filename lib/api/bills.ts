@@ -1,6 +1,6 @@
 import apiClient from './client'
+import type { Bill } from '@/types'
 import type {
-  Bill,
   CreateBillRequest,
   UpdateBillRequest,
   BillsResponse,

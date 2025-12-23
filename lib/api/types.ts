@@ -49,6 +49,8 @@ export interface ExpenseFilters {
   date_to?: string
   source?: 'MANUAL' | 'AI' | 'RECURRING'
   bill_instance_id?: string
+  limit?: number
+  offset?: number
 }
 
 export interface ExpensesResponse {

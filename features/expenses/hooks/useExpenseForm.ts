@@ -66,10 +66,20 @@ export function useExpenseForm(): UseExpenseFormReturn {
       }
 
       const payload = {
-        expense: expenseData,
+        expense: {
+          amount: expenseData.amount,
+          currency: expenseData.currency,
+          datetime: expenseData.datetime,
+          type: expenseData.type,
+          category: expenseData.category || undefined,
+          platform: expenseData.platform || undefined,
+          payment_method: expenseData.payment_method || undefined,
+          event: expenseData.event || undefined,
+          notes: expenseData.notes || undefined,
+        },
         source: data.source || 'MANUAL' as ExpenseSource,
         billMatch: data.billMatch,
-        raw_text: data.raw_text,
+        raw_text: data.raw_text || undefined,
       }
 
       const result = await expensesApi.createExpense(payload)
