@@ -1,6 +1,6 @@
 import apiClient from './client'
+import type { Expense } from '@/types'
 import type {
-  Expense,
   CreateExpenseRequest,
   ExpensesResponse,
   ExpenseFilters

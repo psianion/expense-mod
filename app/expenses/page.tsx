@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
 
 import { AppSidebar } from '@components/layout/AppSidebar'
@@ -9,8 +9,8 @@ import { PreviewModal } from '@features/expenses/components/PreviewModal'
 import { DataTable } from '@components/common/DataTable'
 import { FloatingActionButton } from '@components/common/FloatingActionButton'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
-import { expensesApi } from '@/lib/api'
-import { useExpenseUIProvider } from '@/app/providers'
+import { useExpenseUIProvider } from '@/app/providers/index'
+import { useExpensesQuery, useCreateExpenseMutation } from '@/lib/query/hooks'
 import {
   BillMatchCandidate,
   Expense,
@@ -18,7 +18,7 @@ import {
   ExpenseType,
   ParsedExpense,
 } from '@/types'
-import { fromUTC, getLocalISO } from '@/lib/datetime'
+import { getLocalISO } from '@/lib/datetime'
 
 type SortField = 'date' | 'amount' | 'category'
 type SortOrder = 'asc' | 'desc'
@@ -28,9 +28,8 @@ import type { DateRange } from "react-day-picker"
 
 export default function ExpensesPage() {
   // const { openExpenseDrawer } = useExpenseUIProvider()
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [isLoadingExpenses, setIsLoadingExpenses] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
+  const { data: expenses = [], isLoading: isLoadingExpenses } = useExpensesQuery()
+  const createExpenseMutation = useCreateExpenseMutation()
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false)
   const [parsedExpense, setParsedExpense] = useState<ParsedExpense | null>(null)
   const [billMatch, setBillMatch] = useState<BillMatchCandidate | null>(null)
@@ -43,40 +42,10 @@ export default function ExpensesPage() {
   const [sortField, setSortField] = useState<SortField>('date')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
 
-  // Available categories for filter dropdown
-  const [availableCategories, setAvailableCategories] = useState<string[]>([])
-
-  useEffect(() => {
-    fetchExpenses()
-  }, [])
-
-  useEffect(() => {
-    // Extract unique categories from expenses
-    const categories = Array.from(new Set(expenses.map(e => e.category).filter((c): c is string => c !== null)))
-    setAvailableCategories(categories)
+  // Available categories for filter dropdown - computed from expenses data
+  const availableCategories = useMemo(() => {
+    return Array.from(new Set(expenses.map(e => e.category).filter((c): c is string => c !== null)))
   }, [expenses])
-
-  const fetchExpenses = async () => {
-    try {
-      setIsLoadingExpenses(true)
-
-      const expenses = await expensesApi.getExpenses()
-
-      const expensesWithLocalTime = expenses.map((expense) => ({
-        ...expense,
-        datetime: fromUTC(expense.datetime),
-        type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
-        source: (expense.source?.toUpperCase?.() as ExpenseSource) || 'MANUAL',
-        bill_instance_id: expense.bill_instance_id ?? null,
-      }))
-
-      setExpenses(expensesWithLocalTime)
-    } catch (error) {
-      console.error('Unexpected error fetching expenses:', error)
-    } finally {
-      setIsLoadingExpenses(false)
-    }
-  }
 
   // Filtered and sorted expenses
   const filteredAndSortedExpenses = useMemo(() => {
@@ -135,40 +104,41 @@ export default function ExpensesPage() {
 
 
   const handleSave = async (expense: ParsedExpense) => {
-    try {
-      setIsSaving(true)
-
-      if (!expense.amount || expense.amount <= 0) {
-        alert('Please enter a valid amount.')
-        return
-      }
-
-      const localDateTime = expense.datetime || getLocalISO()
-      const payload = {
-        expense: {
-          ...expense,
-          currency: expense.currency || 'INR',
-          datetime: localDateTime,
-          type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
-        },
-        source: 'AI' as ExpenseSource,
-        billMatch: billMatch,
-        raw_text: rawText,
-      }
-
-      await expensesApi.createExpense(payload)
-
-      await fetchExpenses()
-      setPreviewDrawerOpen(false)
-      setParsedExpense(null)
-      setBillMatch(null)
-      setRawText('')
-    } catch (error) {
-      console.error('Unexpected error saving expense:', error)
-      alert(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    } finally {
-      setIsSaving(false)
+    if (!expense.amount || expense.amount <= 0) {
+      alert('Please enter a valid amount.')
+      return
     }
+
+    const localDateTime = expense.datetime || getLocalISO()
+    const payload = {
+      expense: {
+        amount: expense.amount,
+        currency: expense.currency || 'INR',
+        datetime: localDateTime,
+        type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
+        category: expense.category || undefined,
+        platform: expense.platform || undefined,
+        payment_method: expense.payment_method || undefined,
+        event: expense.event || undefined,
+        notes: expense.notes || undefined,
+      },
+      source: 'AI' as ExpenseSource,
+      billMatch: billMatch,
+      raw_text: rawText,
+    }
+
+    createExpenseMutation.mutate(payload, {
+      onSuccess: () => {
+        setPreviewDrawerOpen(false)
+        setParsedExpense(null)
+        setBillMatch(null)
+        setRawText('')
+      },
+      onError: (error) => {
+        console.error('Unexpected error saving expense:', error)
+        alert(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      },
+    })
   }
 
   const clearDateRange = () => {
@@ -219,7 +189,7 @@ export default function ExpensesPage() {
         onOpenChange={setPreviewDrawerOpen}
         parsedExpense={parsedExpense}
         onSave={handleSave}
-        isLoading={isSaving}
+        isLoading={createExpenseMutation.isPending}
         billMatch={billMatch}
       />
 

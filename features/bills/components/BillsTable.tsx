@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import { AppSidebar } from '@components/layout/AppSidebar'
 import { SiteHeader } from '@components/layout/SiteHeader'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
-import { billsApi, billInstancesApi } from '@/lib/api'
+import { useBillsQuery, useBillInstancesQuery, useUpdateBillInstanceMutation, useCreateBillInstanceMutation } from '@/lib/query/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -56,70 +56,37 @@ const statusLabel = (instance: BillInstance) => {
 }
 
 export default function BillsPage() {
-  const [instances, setInstances] = useState<BillInstance[]>([])
   const [status, setStatus] = useState<StatusFilter>('DUE')
   const [view, setView] = useState<ViewFilter>('OUTFLOW')
   const [search, setSearch] = useState('')
-  const [loading, setLoading] = useState(true)
   const [pendingUpdates, setPendingUpdates] = useState<Record<string, number>>({})
   const [actionLoading, setActionLoading] = useState(false)
-  const [bills, setBills] = useState<Bill[]>([])
   const [manualOpen, setManualOpen] = useState(false)
   const [selectedBillId, setSelectedBillId] = useState<string>('')
   const [manualAmount, setManualAmount] = useState<string>('')
   const [manualError, setManualError] = useState<string | null>(null)
   const [manualLoading, setManualLoading] = useState(false)
 
-  const fetchInstances = async () => {
-    setLoading(true)
-    const statusArray = status === 'ALL' ? undefined : [status as 'DUE' | 'PAID' | 'SKIPPED']
-    const instances = await billInstancesApi.getBillInstances(statusArray)
-    const normalizedInstances: BillInstance[] = instances.map((instance: BillInstance) => ({
-      ...instance,
-      status: normalizeInstanceStatus(instance.status),
-      bill: instance.bill
-        ? {
-            ...instance.bill,
-            type: instance.bill.type?.toUpperCase?.() as Bill['type'],
-            frequency: instance.bill.frequency?.toUpperCase?.() as Bill['frequency'],
-          }
-        : instance.bill,
-    }))
-    setInstances(normalizedInstances)
-    setLoading(false)
-  }
+  const statusArray = status === 'ALL' ? undefined : [status as 'DUE' | 'PAID' | 'SKIPPED']
+  const { data: instances = [], isLoading: loading } = useBillInstancesQuery(statusArray)
+  const { data: bills = [] } = useBillsQuery()
+  const updateBillInstanceMutation = useUpdateBillInstanceMutation()
+  const createBillInstanceMutation = useCreateBillInstanceMutation()
 
-  const fetchBills = async () => {
-    const bills = await billsApi.getBills()
-    const normalizedBills: Bill[] = bills.map((bill: Bill) => ({
-      ...bill,
-      type: (bill.type?.toUpperCase?.() as Bill['type']) || 'BILL',
-      frequency: (bill.frequency?.toUpperCase?.() as Bill['frequency']) || 'MONTHLY',
-    }))
-    setBills(normalizedBills)
-  }
-
-  useEffect(() => {
-    fetchInstances()
-  }, [status])
-
-  useEffect(() => {
-    fetchBills()
-  }, [])
 
   const handleConfirm = async (id: string) => {
     setActionLoading(true)
     const amount = pendingUpdates[id]
-    await billInstancesApi.updateBillInstance({ action: 'confirm', id, amount })
-    await fetchInstances()
-    setActionLoading(false)
+    updateBillInstanceMutation.mutate({ action: 'confirm', id, amount }, {
+      onSettled: () => setActionLoading(false),
+    })
   }
 
   const handleSkip = async (id: string) => {
     setActionLoading(true)
-    await billInstancesApi.updateBillInstance({ action: 'skip', id })
-    await fetchInstances()
-    setActionLoading(false)
+    updateBillInstanceMutation.mutate({ action: 'skip', id }, {
+      onSettled: () => setActionLoading(false),
+    })
   }
 
   const selectedBill = useMemo(() => bills.find((bill) => bill.id === selectedBillId), [bills, selectedBillId])
@@ -162,21 +129,21 @@ export default function BillsPage() {
     setManualLoading(true)
     setManualError(null)
 
-    try {
-      await billInstancesApi.createBillInstance({
-        billId: selectedBill.id,
-        amount: amountValue,
-      })
-
-      await fetchInstances()
-      setManualLoading(false)
-      setManualOpen(false)
-      setSelectedBillId('')
-      setManualAmount('')
-    } catch (error) {
-      setManualError(error.message || 'Failed to create instance')
-      setManualLoading(false)
-    }
+    createBillInstanceMutation.mutate({
+      billId: selectedBill.id,
+      amount: amountValue,
+    }, {
+      onSuccess: () => {
+        setManualLoading(false)
+        setManualOpen(false)
+        setSelectedBillId('')
+        setManualAmount('')
+      },
+      onError: (error) => {
+        setManualError(error.message || 'Failed to create instance')
+        setManualLoading(false)
+      },
+    })
   }
 
   const filtered = useMemo(() => {
@@ -237,7 +204,7 @@ export default function BillsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" onClick={fetchInstances} disabled={loading}>
+                <Button variant="outline" onClick={() => window.location.reload()} disabled={loading}>
                   <RefreshCw className="mr-2 h-4 w-4" /> Refresh
                 </Button>
                 <Button onClick={() => setManualOpen(true)}>

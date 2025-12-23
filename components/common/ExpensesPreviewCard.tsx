@@ -1,45 +1,15 @@
 "use client"
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { expensesApi } from '@/lib/api'
-import { Expense } from '@/types'
-import { fromUTC } from '@/lib/datetime'
+import { useRecentExpensesQuery } from '@/lib/query/hooks'
 import { formatPrice } from '@/lib/formatPrice'
 
 export function ExpensesPreviewCard() {
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    fetchRecentExpenses()
-  }, [])
-
-  const fetchRecentExpenses = async () => {
-    try {
-      setIsLoading(true)
-
-      const expenses = await expensesApi.getRecentExpenses(5)
-
-      const expensesWithLocalTime = expenses.map((expense) => ({
-        ...expense,
-        datetime: fromUTC(expense.datetime),
-        type: expense.type?.toUpperCase?.() as 'EXPENSE' | 'INFLOW' || 'EXPENSE',
-        source: expense.source?.toUpperCase?.() as 'MANUAL' | 'AI' | 'RECURRING' || 'MANUAL',
-        bill_instance_id: expense.bill_instance_id ?? null,
-      }))
-
-      setExpenses(expensesWithLocalTime)
-    } catch (error) {
-      console.error('Unexpected error fetching recent expenses:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const { data: expenses = [], isLoading } = useRecentExpensesQuery(5)
 
   const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0)
 

@@ -47,10 +47,15 @@ export default function Page() {
       const localDateTime = expense.datetime || getLocalISO()
       const payload = {
         expense: {
-          ...expense,
+          amount: expense.amount,
           currency: expense.currency || 'INR',
           datetime: localDateTime,
           type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
+          category: expense.category || undefined,
+          platform: expense.platform || undefined,
+          payment_method: expense.payment_method || undefined,
+          event: expense.event || undefined,
+          notes: expense.notes || undefined,
         },
         source: 'AI' as ExpenseSource,
         billMatch: billMatch,
