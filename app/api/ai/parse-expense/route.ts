@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { ParseExpenseRequest, ParseExpenseResponse } from '@/types'
+import { NextRequest } from 'next/server'
+import { ParseExpenseRequest } from '@/types'
 import { aiService } from '@server/ai/ai.service'
+import { successResponse, handleApiError } from '../../middleware'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,15 +10,13 @@ export async function POST(request: NextRequest) {
     const { text }: ParseExpenseRequest = await request.json()
 
     if (!text || typeof text !== 'string') {
-      return NextResponse.json({ error: 'Text is required' }, { status: 400 })
+      throw new Error('Text is required and must be a string')
     }
 
     const result = await aiService.parseExpense({ text })
-
-    return NextResponse.json(result as ParseExpenseResponse)
+    return successResponse(result)
   } catch (error) {
-    console.error('AI service error:', error)
-    return NextResponse.json({ error: 'Failed to parse expense' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 

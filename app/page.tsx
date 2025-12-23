@@ -6,7 +6,8 @@ import { PreviewModal } from '@features/expenses/components/PreviewModal'
 import { ExpensesPreviewCard } from '@/components/common/ExpensesPreviewCard'
 import { BillsPreviewCard } from '@/components/common/BillsPreviewCard'
 import { AnalyticsPreviewCard } from '@/components/common/AnalyticsPreviewCard'
-import { BillMatchCandidate, ExpenseSource, ExpenseType, ParsedExpense, ParseExpenseRequest, ParseExpenseResponse } from '@/types'
+import { expensesApi, aiApi } from '@/lib/api'
+import { BillMatchCandidate, ExpenseSource, ExpenseType, ParsedExpense } from '@/types'
 import { getLocalISO } from '@/lib/datetime'
 
 export default function Page() {
@@ -22,19 +23,7 @@ export default function Page() {
       setIsParsing(true)
       setRawText(text)
 
-      const response = await fetch('/api/ai/parse-expense', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text } as ParseExpenseRequest),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to parse expense')
-      }
-
-      const data: ParseExpenseResponse = await response.json()
+      const data = await aiApi.parseExpense({ text })
       setParsedExpense(data.parsed)
       setBillMatch(data.bill_match ?? null)
       setPreviewDrawerOpen(true)
@@ -68,18 +57,7 @@ export default function Page() {
         raw_text: rawText,
       }
 
-      const response = await fetch('/api/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      const body = await response.json()
-      if (!response.ok) {
-        console.error('Failed to save expense:', body)
-        alert(body.error || 'Failed to save expense')
-        return
-      }
+      await expensesApi.createExpense(payload)
 
       // Reset form and close modal
       setPreviewDrawerOpen(false)

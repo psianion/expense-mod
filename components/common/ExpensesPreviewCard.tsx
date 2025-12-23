@@ -6,7 +6,7 @@ import { ExternalLink } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { supabase } from '@/server/db/supabase'
+import { expensesApi } from '@/lib/api'
 import { Expense } from '@/types'
 import { fromUTC } from '@/lib/datetime'
 import { formatPrice } from '@/lib/formatPrice'
@@ -23,18 +23,9 @@ export function ExpensesPreviewCard() {
     try {
       setIsLoading(true)
 
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5)
+      const expenses = await expensesApi.getRecentExpenses(5)
 
-      if (error) {
-        console.error('Error fetching recent expenses:', error)
-        return
-      }
-
-      const expensesWithLocalTime = (data || []).map((expense) => ({
+      const expensesWithLocalTime = expenses.map((expense) => ({
         ...expense,
         datetime: fromUTC(expense.datetime),
         type: expense.type?.toUpperCase?.() as 'EXPENSE' | 'INFLOW' || 'EXPENSE',

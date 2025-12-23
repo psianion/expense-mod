@@ -10,8 +10,8 @@ import {
   type ThemeTogglerProps as ThemeTogglerPrimitiveProps,
   type ThemeSelection,
   type Resolved,
-} from '@/components/animate-ui/primitives/effects/theme-toggler';
-import { buttonVariants } from '@/components/animate-ui/components/buttons/icon';
+} from '../../primitives/effects/theme-toggler';
+import { buttonVariants } from './icon';
 import { cn } from '@/lib/utils';
 
 const getIcon = (

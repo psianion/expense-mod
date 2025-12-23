@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import { expenseRepository } from '../db/repositories/expense.repo'
+import { expenseRepository, ExpenseFilters } from '../db/repositories/expense.repo'
 import { billRepository } from '../db/repositories/bill.repo'
 import { CreateExpenseInput } from '../validators/expense.schema'
 import { Bill, BillMatchCandidate, Expense } from '@/types'
@@ -55,8 +55,8 @@ export class ExpenseService {
     return { expense, matchedInstanceId }
   }
 
-  async getExpenses(): Promise<Expense[]> {
-    return expenseRepository.getExpenses()
+  async getExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
+    return expenseRepository.getExpenses(filters)
   }
 
   private findBestBill(bills: Bill[], haystack: string, hint?: BillMatchCandidate | null): Bill | null {

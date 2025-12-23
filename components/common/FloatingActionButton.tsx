@@ -1,7 +1,7 @@
 import React from 'react'
 import { Button } from '../ui/button'
 import { Plus } from 'lucide-react'
-import { AnimatedIcon, fabHover } from '@/lib/animations'
+import { AnimatedIcon, fabHover } from '@/components/animations'
 
 interface FloatingActionButtonProps {
   onClick: () => void

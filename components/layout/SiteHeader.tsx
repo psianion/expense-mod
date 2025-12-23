@@ -15,7 +15,7 @@ import { Separator } from "../ui/separator"
 import {
   SidebarTrigger,
 } from "../ui/sidebar"
-import { ThemeTogglerButton } from '../animate-ui/components/buttons/theme-toggler'
+import { ThemeTogglerButton } from '@/components/animations/components/buttons/theme-toggler'
 
 interface SiteHeaderProps {}
 

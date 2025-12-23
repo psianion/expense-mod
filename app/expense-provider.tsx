@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { ManualExpenseForm } from '@features/expenses/components/ManualExpenseForm'
 import { Drawer } from '@/components/ui/drawer'
+import { expensesApi } from '@/lib/api'
 import { ExpenseSource, ExpenseType } from '@/types'
 import { getLocalISO } from '@/lib/datetime'
 
@@ -41,19 +42,7 @@ export function ExpenseProvider({ children }: ExpenseProviderProps) {
         source: 'MANUAL' as ExpenseSource,
       }
 
-      const response = await fetch('/api/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      const body = await response.json()
-      if (!response.ok) {
-        console.error('Failed to save expense:', body)
-        alert(body.error || 'Failed to save expense')
-        return
-      }
-
+      await expensesApi.createExpense(payload)
       setManualDrawerOpen(false)
     } catch (error) {
       console.error('Unexpected error saving manual expense:', error)

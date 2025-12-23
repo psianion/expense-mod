@@ -7,6 +7,7 @@ import dayjs from 'dayjs'
 import { AppSidebar } from '@components/layout/AppSidebar'
 import { SiteHeader } from '@components/layout/SiteHeader'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { billsApi, billInstancesApi } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -71,10 +72,9 @@ export default function BillsPage() {
 
   const fetchInstances = async () => {
     setLoading(true)
-    const queryStatus = status === 'ALL' ? '' : `?status=${status}`
-    const response = await fetch(`/api/bill-instances${queryStatus}`)
-    const body = await response.json()
-    const normalizedInstances: BillInstance[] = (body.instances || []).map((instance: BillInstance) => ({
+    const statusArray = status === 'ALL' ? undefined : [status as 'DUE' | 'PAID' | 'SKIPPED']
+    const instances = await billInstancesApi.getBillInstances(statusArray)
+    const normalizedInstances: BillInstance[] = instances.map((instance: BillInstance) => ({
       ...instance,
       status: normalizeInstanceStatus(instance.status),
       bill: instance.bill
@@ -90,9 +90,8 @@ export default function BillsPage() {
   }
 
   const fetchBills = async () => {
-    const response = await fetch('/api/bills')
-    const body = await response.json()
-    const normalizedBills: Bill[] = (body.bills || []).map((bill: Bill) => ({
+    const bills = await billsApi.getBills()
+    const normalizedBills: Bill[] = bills.map((bill: Bill) => ({
       ...bill,
       type: (bill.type?.toUpperCase?.() as Bill['type']) || 'BILL',
       frequency: (bill.frequency?.toUpperCase?.() as Bill['frequency']) || 'MONTHLY',
@@ -111,22 +110,14 @@ export default function BillsPage() {
   const handleConfirm = async (id: string) => {
     setActionLoading(true)
     const amount = pendingUpdates[id]
-    await fetch('/api/bill-instances', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'confirm', id, amount }),
-    })
+    await billInstancesApi.updateBillInstance({ action: 'confirm', id, amount })
     await fetchInstances()
     setActionLoading(false)
   }
 
   const handleSkip = async (id: string) => {
     setActionLoading(true)
-    await fetch('/api/bill-instances', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'skip', id }),
-    })
+    await billInstancesApi.updateBillInstance({ action: 'skip', id })
     await fetchInstances()
     setActionLoading(false)
   }
@@ -170,27 +161,22 @@ export default function BillsPage() {
 
     setManualLoading(true)
     setManualError(null)
-    const response = await fetch('/api/bill-instances', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+
+    try {
+      await billInstancesApi.createBillInstance({
         billId: selectedBill.id,
         amount: amountValue,
-      }),
-    })
+      })
 
-    const body = await response.json()
-    if (!response.ok) {
-      setManualError(body.error || 'Failed to create instance')
+      await fetchInstances()
       setManualLoading(false)
-      return
+      setManualOpen(false)
+      setSelectedBillId('')
+      setManualAmount('')
+    } catch (error) {
+      setManualError(error.message || 'Failed to create instance')
+      setManualLoading(false)
     }
-
-    await fetchInstances()
-    setManualLoading(false)
-    setManualOpen(false)
-    setSelectedBillId('')
-    setManualAmount('')
   }
 
   const filtered = useMemo(() => {

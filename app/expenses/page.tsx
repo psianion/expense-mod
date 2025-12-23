@@ -9,8 +9,8 @@ import { PreviewModal } from '@features/expenses/components/PreviewModal'
 import { DataTable } from '@components/common/DataTable'
 import { FloatingActionButton } from '@components/common/FloatingActionButton'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
-import { supabase } from '@server/db/supabase'
-import { useExpenseProvider } from '@/app/expense-provider'
+import { expensesApi } from '@/lib/api'
+import { useExpenseUIProvider } from '@/app/providers'
 import {
   BillMatchCandidate,
   Expense,
@@ -27,7 +27,7 @@ type ExpenseFilter = 'ALL' | 'EXPENSE' | 'INFLOW'
 import type { DateRange } from "react-day-picker"
 
 export default function ExpensesPage() {
-  const { openExpenseDrawer } = useExpenseProvider()
+  // const { openExpenseDrawer } = useExpenseUIProvider()
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -60,23 +60,9 @@ export default function ExpensesPage() {
     try {
       setIsLoadingExpenses(true)
 
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .order('created_at', { ascending: false })
+      const expenses = await expensesApi.getExpenses()
 
-      if (error) {
-        console.error('Error fetching expenses:', error)
-        console.error('Fetch error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        })
-        return
-      }
-
-      const expensesWithLocalTime = (data || []).map((expense) => ({
+      const expensesWithLocalTime = expenses.map((expense) => ({
         ...expense,
         datetime: fromUTC(expense.datetime),
         type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
@@ -170,18 +156,7 @@ export default function ExpensesPage() {
         raw_text: rawText,
       }
 
-      const response = await fetch('/api/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      const body = await response.json()
-      if (!response.ok) {
-        console.error('Failed to save expense:', body)
-        alert(body.error || 'Failed to save expense')
-        return
-      }
+      await expensesApi.createExpense(payload)
 
       await fetchExpenses()
       setPreviewDrawerOpen(false)
@@ -248,7 +223,7 @@ export default function ExpensesPage() {
         billMatch={billMatch}
       />
 
-      <FloatingActionButton onClick={openExpenseDrawer} />
+      {/* <FloatingActionButton onClick={openExpenseDrawer} /> */}
     </>
   )
 }

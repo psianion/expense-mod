@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { analyticsService } from '@server/services/analytics.service'
+import { successResponse, handleApiError } from '../middleware'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
     const data = await analyticsService.getAnalyticsData()
-    return NextResponse.json(data)
+    return successResponse(data)
   } catch (error) {
-    console.error('Analytics service error:', error)
-    return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 })
+    return handleApiError(error)
   }
 }

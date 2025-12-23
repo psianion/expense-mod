@@ -6,56 +6,36 @@ import { ExternalLink, TrendingUp, TrendingDown } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { supabase } from '@/server/db/supabase'
-import { Expense } from '@/types'
-import { getSummaryTotals, getCategoryTotals } from '@/lib/analytics'
-import { fromUTC } from '@/lib/datetime'
+import { analyticsApi } from '@/lib/api'
 import { formatPrice } from '@/lib/formatPrice'
 
 export function AnalyticsPreviewCard() {
-  const [expenses, setExpenses] = useState<Expense[]>([])
+  const [analyticsData, setAnalyticsData] = useState<{
+    summary: { expenseTotal: number; inflowTotal: number; net: number }
+    topCategories: Array<{ name: string; value: number }>
+    totalTransactions: number
+  } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    fetchRecentExpenses()
+    fetchAnalyticsData()
   }, [])
 
-  const fetchRecentExpenses = async () => {
+  const fetchAnalyticsData = async () => {
     try {
       setIsLoading(true)
-
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100) // Get more data for analytics
-
-      if (error) {
-        console.error('Error fetching expenses for analytics:', error)
-        return
-      }
-
-      const expensesWithLocalTime = (data || []).map((expense) => ({
-        ...expense,
-        datetime: fromUTC(expense.datetime),
-        type: expense.type?.toUpperCase?.() as 'EXPENSE' | 'INFLOW' || 'EXPENSE',
-        source: expense.source?.toUpperCase?.() as 'MANUAL' | 'AI' | 'RECURRING' || 'MANUAL',
-        bill_instance_id: expense.bill_instance_id ?? null,
-      }))
-
-      setExpenses(expensesWithLocalTime)
+      const data = await analyticsApi.getAnalyticsData()
+      setAnalyticsData(data)
     } catch (error) {
-      console.error('Unexpected error fetching expenses for analytics:', error)
+      console.error('Unexpected error fetching analytics data:', error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const summary = getSummaryTotals(expenses)
-  const categoryTotals = getCategoryTotals(expenses)
-  const topCategories = categoryTotals
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 3)
+  const summary = analyticsData?.summary || { expenseTotal: 0, inflowTotal: 0, net: 0 }
+  const topCategories = analyticsData?.topCategories || []
+  const totalTransactions = analyticsData?.totalTransactions || 0
 
   if (isLoading) {
     return (
@@ -88,7 +68,7 @@ export function AnalyticsPreviewCard() {
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">Analytics</CardTitle>
         <CardDescription>
-          {expenses.length} transaction{expenses.length !== 1 ? 's' : ''} •           {summary.net >= 0 ? (
+          {totalTransactions} transaction{totalTransactions !== 1 ? 's' : ''} •           {summary.net >= 0 ? (
             <span className="text-green-600 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               +{formatPrice(summary.net)}

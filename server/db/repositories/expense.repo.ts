@@ -18,6 +18,19 @@ export interface CreateExpenseData {
   bill_instance_id: string | null
 }
 
+export interface ExpenseFilters {
+  type?: 'EXPENSE' | 'INFLOW'
+  category?: string
+  platform?: string
+  payment_method?: string
+  date_from?: string
+  date_to?: string
+  source?: 'MANUAL' | 'AI' | 'RECURRING'
+  bill_instance_id?: string
+  limit?: number
+  offset?: number
+}
+
 export class ExpenseRepository {
   async createExpense(data: CreateExpenseData): Promise<Expense> {
     const { data: expense, error } = await supabase
@@ -33,11 +46,45 @@ export class ExpenseRepository {
     return expense as Expense
   }
 
-  async getExpenses(): Promise<Expense[]> {
-    const { data, error } = await supabase
+  async getExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
+    let query = supabase
       .from('expenses')
-      .select('*, bill_instance:bill_instances(*)')
+      .select('*')
       .order('datetime', { ascending: false })
+
+    // Apply filters
+    if (filters?.type) {
+      query = query.eq('type', filters.type)
+    }
+    if (filters?.category) {
+      query = query.eq('category', filters.category)
+    }
+    if (filters?.platform) {
+      query = query.eq('platform', filters.platform)
+    }
+    if (filters?.payment_method) {
+      query = query.eq('payment_method', filters.payment_method)
+    }
+    if (filters?.date_from) {
+      query = query.gte('datetime', filters.date_from)
+    }
+    if (filters?.date_to) {
+      query = query.lte('datetime', filters.date_to)
+    }
+    if (filters?.source) {
+      query = query.eq('source', filters.source)
+    }
+    if (filters?.bill_instance_id) {
+      query = query.eq('bill_instance_id', filters.bill_instance_id)
+    }
+    if (filters?.limit) {
+      query = query.limit(filters.limit)
+    }
+    if (filters?.offset) {
+      query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       throw new Error(error.message)
@@ -49,7 +96,7 @@ export class ExpenseRepository {
   async getExpenseById(id: string): Promise<Expense | null> {
     const { data, error } = await supabase
       .from('expenses')
-      .select('*, bill_instance:bill_instances(*)')
+      .select('*')
       .eq('id', id)
       .single()
 

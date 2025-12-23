@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { successResponse, handleApiError } from '../middleware'
 import { z } from 'zod'
 import dayjs from 'dayjs'
 
@@ -73,24 +74,28 @@ const fetchInstanceWithBill = async (id: string) => {
 }
 
 export async function GET(request: NextRequest) {
-  const statusFilterInput = request.nextUrl.searchParams
-    .get('status')
-    ?.split(',')
-    .map((value) => value?.toString?.().toUpperCase())
-    .filter((value) => value && value !== 'ALL')
-  const statusFilter = statusFilterInput as BillInstance['status'][] | undefined
-  let query = supabase.from('bill_instances').select('*, bill:bills(*)').order('due_date', { ascending: true })
-  if (statusFilter && statusFilter.length > 0) {
-    query = query.in('status', statusFilter)
-  }
+  try {
+    const statusFilterInput = request.nextUrl.searchParams
+      .get('status')
+      ?.split(',')
+      .map((value) => value?.toString?.().toUpperCase())
+      .filter((value) => value && value !== 'ALL')
+    const statusFilter = statusFilterInput as BillInstance['status'][] | undefined
+    let query = supabase.from('bill_instances').select('*, bill:bills(*)').order('due_date', { ascending: true })
+    if (statusFilter && statusFilter.length > 0) {
+      query = query.in('status', statusFilter)
+    }
 
-  const { data, error } = await query
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+    const { data, error } = await query
+    if (error) {
+      throw new Error(error.message)
+    }
 
-  const normalized = (data || []).map(normalizeInstance)
-  return NextResponse.json({ instances: normalized as BillInstance[] })
+    const normalized = (data || []).map(normalizeInstance)
+    return successResponse({ instances: normalized as BillInstance[] })
+  } catch (error) {
+    return handleApiError(error)
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -98,13 +103,15 @@ export async function POST(request: NextRequest) {
     const payload = createSchema.parse(await request.json())
     const { data: bill, error: billError } = await supabase.from('bills').select('*').eq('id', payload.billId).single()
     if (billError || !bill) {
-      return NextResponse.json({ error: billError?.message || 'Bill not found' }, { status: 404 })
+      throw new Error(billError?.message || 'Bill not found')
     }
 
     const normalizedBill = normalizeBill(bill)
     const existing = await findInstanceForPeriod(normalizedBill, normalizedBill.frequency, dayjs())
     if (existing) {
-      return NextResponse.json({ error: 'Instance already exists for current period' }, { status: 409 })
+      const error = new Error('Instance already exists for current period')
+      ;(error as any).status = 409
+      throw error
     }
 
     const dueDate =
@@ -120,7 +127,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!created) {
-      return NextResponse.json({ error: 'Failed to create bill instance' }, { status: 500 })
+      throw new Error('Failed to create bill instance')
     }
 
     const { data: instanceWithBill } = await supabase
@@ -130,10 +137,9 @@ export async function POST(request: NextRequest) {
       .single()
 
     const instance = normalizeInstance(instanceWithBill ?? created)
-    return NextResponse.json({ instance })
-  } catch (err: any) {
-    const message = err?.issues?.[0]?.message || err.message || 'Invalid payload'
-    return NextResponse.json({ error: message }, { status: 400 })
+    return successResponse({ instance })
+  } catch (error) {
+    return handleApiError(error)
   }
 }
 
@@ -143,7 +149,7 @@ export async function PATCH(request: NextRequest) {
     const instance = await fetchInstanceWithBill(parsed.id)
 
     if (!instance?.bill) {
-      return NextResponse.json({ error: 'Bill not found for instance' }, { status: 404 })
+      throw new Error('Bill not found for instance')
     }
 
     if (parsed.action === 'skip') {
@@ -155,10 +161,10 @@ export async function PATCH(request: NextRequest) {
         .single()
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        throw new Error(error.message)
       }
 
-      return NextResponse.json({ instance: normalizeInstance(data) })
+      return successResponse({ instance: normalizeInstance(data) })
     }
 
     if (parsed.action === 'update') {
@@ -170,15 +176,15 @@ export async function PATCH(request: NextRequest) {
         .single()
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        throw new Error(error.message)
       }
 
-      return NextResponse.json({ instance: normalizeInstance(data) })
+      return successResponse({ instance: normalizeInstance(data) })
     }
 
     const amount = parsed.amount ?? instance.amount
     if (!amount || amount <= 0) {
-      return NextResponse.json({ error: 'Amount is required to confirm' }, { status: 400 })
+      throw new Error('Amount is required to confirm')
     }
 
     const expensePayload = buildExpensePayload(instance.bill, instance, amount)
@@ -189,7 +195,7 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (expenseError) {
-      return NextResponse.json({ error: expenseError.message }, { status: 500 })
+      throw new Error(expenseError.message)
     }
 
     const { data, error } = await supabase
@@ -204,13 +210,12 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      throw new Error(error.message)
     }
 
-    return NextResponse.json({ instance: normalizeInstance(data) })
-  } catch (err: any) {
-    const message = err?.issues?.[0]?.message || err.message || 'Invalid payload'
-    return NextResponse.json({ error: message }, { status: 400 })
+    return successResponse({ instance: normalizeInstance(data) })
+  } catch (error) {
+    return handleApiError(error)
   }
 }
 

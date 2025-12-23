@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { supabase } from '@/server/db/supabase'
+import { billInstancesApi } from '@/lib/api'
 import { BillInstance } from '@/types'
 import { formatPrice } from '@/lib/formatPrice'
 
@@ -23,23 +23,8 @@ export function BillsPreviewCard() {
     try {
       setIsLoading(true)
 
-      const { data, error } = await supabase
-        .from('bill_instances')
-        .select(`
-          *,
-          bill:bills(name, type)
-        `)
-        .eq('status', 'DUE')
-        .gte('due_date', dayjs().format('YYYY-MM-DD'))
-        .order('due_date', { ascending: true })
-        .limit(5)
-
-      if (error) {
-        console.error('Error fetching upcoming bills:', error)
-        return
-      }
-
-      setBillInstances(data || [])
+      const billInstances = await billInstancesApi.getUpcomingBills(5)
+      setBillInstances(billInstances)
     } catch (error) {
       console.error('Unexpected error fetching upcoming bills:', error)
     } finally {

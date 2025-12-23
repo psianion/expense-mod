@@ -3,7 +3,7 @@
 import * as React from "react"
 import { ArrowUpRight, ArrowDownRight, TrendingUp } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { StaggerContainer, StaggerItem, AnimatedNumber, AnimatedIcon, AnimatedCard } from "@/lib/animations"
+import { StaggerContainer, StaggerItem, AnimatedNumber, AnimatedIcon, AnimatedCard } from "@/components/animations"
 
 interface SectionCardsProps {
   expenseTotal: number

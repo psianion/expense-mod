@@ -4,7 +4,7 @@ import { TrendPeriod, getCategoryTotals, getCategoryTrend, getAvailableCategorie
 import { Expense } from '@/types'
 import { Button } from '@components/ui/button'
 import { formatPrice } from '@/lib/formatPrice'
-import { AnimatedButton } from '@lib/animations'
+import { AnimatedButton } from '@components/animations'
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card'
 import { CategoryPieChart } from '@features/analytics/components/CategoryPieChart'
 import { PlatformBarChart } from './PlatformBarChart'
@@ -12,7 +12,7 @@ import { PaymentMethodChart } from './PaymentMethodChart'
 import { SpendingTrendChart } from './SpendingTrendChart'
 import { CategoryTrendsChart } from './CategoryTrendsChart'
 import { MultiSelect } from '@components/ui/multi-select'
-import { StaggerContainer, StaggerItem, AnimatedCard, chartReveal } from '@lib/animations'
+import { StaggerContainer, StaggerItem, AnimatedCard, chartReveal } from '@components/animations'
 
 type AnalyticsDashboardProps = {
   expenses: Expense[]

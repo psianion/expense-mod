@@ -23,13 +23,13 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { useExpenseProvider } from "@/app/expense-provider"
+import { useExpenseUIProvider } from "@/app/providers/ExpenseUIProvider"
 import { sidebarConfig, appInfo } from "@/lib/sidebar-config"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {}
 
 export function AppSidebar({ ...props }: AppSidebarProps) {
-  const { openExpenseDrawer } = useExpenseProvider()
+  const { openExpenseDrawer } = useExpenseUIProvider()
   const { state } = useSidebar()
   const pathname = usePathname()
 

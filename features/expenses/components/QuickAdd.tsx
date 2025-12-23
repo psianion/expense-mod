@@ -3,7 +3,7 @@ import { Button } from '@components/ui/button'
 import { Textarea } from '@components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card'
 import { Loader2 } from 'lucide-react'
-import { AnimatedCard, SlideIn } from '@/lib/animations'
+import { AnimatedCard, SlideIn } from '@/components/animations'
 
 interface QuickAddProps {
   onParse: (text: string) => Promise<void>
