@@ -166,7 +166,6 @@ export const buildExpensePayload = (bill: Bill, instance: BillInstance, amount: 
   const payload: ExpenseInsert = {
     user_id: bill.user_id,
     amount,
-    currency: 'INR',
     datetime: datetimeUTC,
     category: expenseType === 'INFLOW' ? 'Income' : 'Bills',
     platform: null,

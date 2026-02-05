@@ -9,14 +9,12 @@ export function postProcessParsedExpense(text: string, rawModelOutput: string): 
     const amountMatch = text.match(/(\d+(?:\.\d+)?)/)
     parsed = {
       amount: amountMatch ? parseFloat(amountMatch[1]) : null,
-      currency: 'INR',
       datetime: null,
-      category: null,
-      platform: null,
-      payment_method: null,
+      category: 'Other',
+      platform: 'Other',
+      payment_method: 'Other',
       type: 'EXPENSE',
-      event: null,
-      notes: text,
+      tags: [text], // Put the raw text in tags
     }
   }
 
@@ -27,11 +25,21 @@ export function postProcessParsedExpense(text: string, rawModelOutput: string): 
     }
   }
 
-  if (!parsed.currency) {
-    parsed.currency = 'INR'
-  }
-
   parsed.type = (parsed.type || 'EXPENSE').toString().toUpperCase() as ParsedExpense['type']
+
+  // Apply defaults for clean schema
+  parsed.category = parsed.category || 'Other'
+  parsed.platform = parsed.platform || 'Other'
+  parsed.payment_method = parsed.payment_method || 'Other'
+  parsed.tags = parsed.tags || []
+
+  // Convert legacy event/notes fields to tags if they exist
+  if ((parsed as any).event) {
+    parsed.tags.push((parsed as any).event)
+  }
+  if ((parsed as any).notes) {
+    parsed.tags.push((parsed as any).notes)
+  }
 
   if (!parsed.datetime) {
     const lowerText = text.toLowerCase()

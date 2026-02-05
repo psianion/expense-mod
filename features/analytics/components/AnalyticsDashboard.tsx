@@ -1,9 +1,10 @@
 import * as React from 'react'
 
-import { TrendPeriod, getCategoryTotals, getCategoryTrend, getAvailableCategories, getPaymentMethodStats, getPlatformStats, getFilteredSpendingTrend, getSummaryTotals } from '@lib/analytics'
+import { TrendPeriod, getCategoryTotals, getCategoryTrend, getAvailableCategories, getPaymentMethodStats, getPlatformStats, getFilteredSpendingTrend, getSummaryTotals, getCreditCardAnalytics, getCreditCardComparison } from '@lib/analytics'
 import { Expense } from '@/types'
 import { Button } from '@components/ui/button'
 import { formatPrice } from '@/lib/formatPrice'
+import { getUserPreferences } from '@/lib/userPreferences'
 import { AnimatedButton } from '@components/animations'
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card'
 import { CategoryPieChart } from '@features/analytics/components/CategoryPieChart'
@@ -35,6 +36,13 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
   const platformStats = React.useMemo(() => getPlatformStats(expenses), [expenses])
   const paymentStats = React.useMemo(() => getPaymentMethodStats(expenses), [expenses])
   const availableCategories = React.useMemo(() => getAvailableCategories(expenses), [expenses])
+
+  // Credit card analytics
+  const creditCards = React.useMemo(() => getUserPreferences().creditCards, [])
+  const creditCardComparison = React.useMemo(() =>
+    creditCards.length > 0 ? getCreditCardComparison(expenses, creditCards.map(card => card.name)) : [],
+    [expenses, creditCards]
+  )
   
   const trendData = React.useMemo(
     () => getFilteredSpendingTrend(expenses, trendPeriod, selectedCategories.length > 0 ? selectedCategories : undefined),
@@ -210,6 +218,46 @@ export function AnalyticsDashboard({ expenses, isLoading, currency }: AnalyticsD
           </AnimatedCard>
         </div>
       </StaggerItem>
+
+      {/* Credit Card Insights */}
+      {creditCards.length > 0 && (
+        <StaggerItem>
+          <AnimatedCard hover={false}>
+            <CardHeader>
+              <CardTitle>Credit Card Insights</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {creditCardComparison.map((card) => (
+                  <div key={card.name} className="rounded-lg border p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-sm">{card.name}</span>
+                      <span className="text-lg font-bold">{formatPrice(card.expense)}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {((card.expense / summary.expenseTotal) * 100).toFixed(1)}% of spending
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {creditCardComparison.length > 0 && (
+                <div className="pt-2 border-t">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Total Credit Card Spending:</span>
+                    <span className="font-semibold">
+                      {formatPrice(creditCardComparison.reduce((sum, card) => sum + card.expense, 0))}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {((creditCardComparison.reduce((sum, card) => sum + card.expense, 0) / summary.expenseTotal) * 100).toFixed(1)}% of total expenses
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </AnimatedCard>
+        </StaggerItem>
+      )}
     </StaggerContainer>
   )
 }

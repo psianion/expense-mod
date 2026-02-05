@@ -9,7 +9,7 @@ export const expenseSchema = {
     },
     currency: {
       type: ["string", "null"],
-      description: "The currency code, defaults to INR if ambiguous"
+      description: "Optional currency code (e.g. INR); not stored in DB, for context only"
     },
     datetime: {
       type: ["string", "null"],
@@ -32,15 +32,12 @@ export const expenseSchema = {
       enum: ["EXPENSE", "INFLOW"],
       description: "Type of transaction"
     },
-    event: {
-      type: ["string", "null"],
-      description: "Event or trip associated with the expense (e.g., Kerala trip)"
-    },
-    notes: {
-      type: ["string", "null"],
-      description: "Additional notes or description of the expense"
+    tags: {
+      type: "array",
+      items: { type: "string" },
+      description: "Tags associated with the expense (e.g., ['Kerala trip', 'chips'])"
     }
   },
-  required: ["amount", "currency", "type"],
+  required: ["amount", "type"],
   additionalProperties: false
 }

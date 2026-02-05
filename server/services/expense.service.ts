@@ -5,54 +5,66 @@ import { CreateExpenseInput } from '../validators/expense.schema'
 import { Bill, BillMatchCandidate, Expense } from '@/types'
 import { toUTC, getLocalISO } from '@lib/datetime'
 import { billToExpenseType, findInstanceForPeriod } from '@lib/recurring'
+import { findCreditCardByPaymentMethod } from '@lib/userPreferences'
 
 export class ExpenseService {
-  async createExpense(input: CreateExpenseInput): Promise<{ expense: Expense; matchedInstanceId: string | null }> {
+  async createExpense(input: CreateExpenseInput): Promise<{ expense: Expense; matchedBillId: string | null; creditCardId: string | null }> {
     const { expense: expenseInput, billMatch: billHint, source, raw_text } = input
 
     const datetimeLocal = expenseInput.datetime || getLocalISO()
     const utcDateTime = toUTC(datetimeLocal)
 
-    // Get all bills for matching
+    // Get all bills for matching (keeping for backward compatibility, will be simplified in Phase 2)
     const bills = await billRepository.getBills()
-    const haystack = `${expenseInput.event || ''} ${expenseInput.notes || ''} ${raw_text || ''}`.toLowerCase()
+    const haystack = `${expenseInput.tags?.join(' ') || ''} ${raw_text || ''}`.toLowerCase()
     const matchedBill = this.findBestBill(bills, haystack, billHint)
 
-    let matchedInstanceId: string | null = null
+    let matchedBillId: string | null = null
     if (matchedBill) {
-      const instance = await findInstanceForPeriod(matchedBill, matchedBill.frequency, dayjs())
-      if (instance) {
-        matchedInstanceId = instance.id
-      }
+      matchedBillId = matchedBill.id
     }
 
     const expenseType = matchedBill ? billToExpenseType(matchedBill.type) : (expenseInput.type as 'EXPENSE' | 'INFLOW')
 
+    // Phase 2: Credit card attribution
+    // Check if payment method matches any credit card in user preferences
+    const creditCard = expenseInput.payment_method ? findCreditCardByPaymentMethod(expenseInput.payment_method) : null
+    const creditCardBillId = creditCard ? creditCard.id : null
+
+    // Use credit card bill_id if found, otherwise use matched bill_id from AI parsing
+    const finalBillId = creditCardBillId || matchedBillId
+
     const expenseData = {
       user_id: null,
       amount: expenseInput.amount,
-      currency: expenseInput.currency || 'INR',
       datetime: utcDateTime,
-      category: expenseInput.category ?? null,
-      platform: expenseInput.platform ?? null,
-      payment_method: expenseInput.payment_method ?? null,
+      category: expenseInput.category || 'Other',
+      platform: expenseInput.platform || 'Other',
+      payment_method: expenseInput.payment_method || 'Other',
       type: expenseType,
-      event: expenseInput.event ?? matchedBill?.name ?? null,
-      notes: expenseInput.notes ?? null,
+      tags: expenseInput.tags || [],
       parsed_by_ai: source === 'AI',
       raw_text: raw_text ?? null,
       source,
-      bill_instance_id: matchedInstanceId,
+      bill_id: finalBillId, // Phase 2: Links to credit card if payment method matches
     }
 
     const expense = await expenseRepository.createExpense(expenseData)
 
-    // Update bill instance if matched
-    if (matchedInstanceId) {
-      await this.updateBillInstanceStatus(matchedInstanceId, 'PAID', expense.id, expenseInput.amount)
+    // For now, keep bill instance logic for backward compatibility
+    // This will be simplified in Phase 2 when we remove bill instances
+    if (matchedBillId) {
+      // Find existing instance or create new one for backward compatibility
+      const bill = await billRepository.getBillById(matchedBillId)
+      if (bill) {
+        const instance = await findInstanceForPeriod(bill, bill.frequency, dayjs())
+        if (instance) {
+          await this.updateBillInstanceStatus(instance.id, 'PAID', expense.id, expenseInput.amount)
+        }
+      }
     }
 
-    return { expense, matchedInstanceId }
+    return { expense, matchedBillId, creditCardId: creditCardBillId }
   }
 
   async getExpenses(filters?: ExpenseFilters): Promise<Expense[]> {

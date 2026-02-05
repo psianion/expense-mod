@@ -19,8 +19,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Bill, BillInstance, BillType, BillFrequency } from '@/types'
 import { formatPrice } from '@/lib/formatPrice'
+import { CreditCardManager } from '@/features/settings/components/CreditCardManager'
+import { useBillsQuery, useCreateBillMutation, useUpdateBillMutation, useDeleteBillMutation } from '@/lib/query/hooks'
+import { useBillInstancesQuery, useUpdateBillInstanceMutation } from '@/lib/query/hooks'
 
-type TabValue = 'INCOME' | 'BILLS' | 'INSTANCES'
+type TabValue = 'INCOME' | 'BILLS' | 'INSTANCES' | 'CREDITCARDS'
 
 const billFormSchema = z
   .object({
@@ -124,8 +127,9 @@ function BillForm({
     ...defaultFormValues,
     type: presetType[0],
   })
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const createBillMutation = useCreateBillMutation()
 
   const handleChange = (field: keyof BillFormValues, value: any) => {
     setForm((prev) => {
@@ -166,19 +170,19 @@ function BillForm({
       return
     }
 
-    try {
-      setIsSubmitting(true)
-      const response = await fetch('/api/bills', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(parsed.data),
-      })
+    const data = parsed.data
+    const createPayload = {
+      ...data,
+      day_of_month: data.day_of_month ?? undefined,
+      day_of_week: data.day_of_week ?? undefined,
+      start_date: data.start_date ?? undefined,
+      end_date: data.end_date ?? undefined,
+      amount: data.amount ?? undefined,
+      notes: data.notes ?? undefined,
+    }
 
-      const body = await response.json()
-      if (!response.ok) {
-        setError(body.error || 'Failed to save bill')
-        return
-      }
+    try {
+      await createBillMutation.mutateAsync(createPayload)
 
       setForm({
         ...defaultFormValues,
@@ -188,8 +192,6 @@ function BillForm({
       await onCreated()
     } catch (err: any) {
       setError(err.message || 'Failed to save bill')
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -294,8 +296,8 @@ function BillForm({
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end">
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save'}
+          <Button onClick={handleSubmit} disabled={createBillMutation.isPending}>
+            {createBillMutation.isPending ? 'Saving...' : 'Save'}
           </Button>
         </div>
       </CardContent>
@@ -366,35 +368,27 @@ function BillsTable({ bills }: { bills: Bill[] }) {
 
 function PendingTable({
   instances,
-  onRefresh,
 }: {
   instances: BillInstance[]
-  onRefresh: () => Promise<void>
 }) {
   const [pendingUpdates, setPendingUpdates] = useState<Record<string, number>>({})
-  const [isUpdating, setIsUpdating] = useState(false)
+
+  const updateBillInstanceMutation = useUpdateBillInstanceMutation()
 
   const handleConfirm = async (id: string) => {
-    setIsUpdating(true)
     const amount = pendingUpdates[id]
-    await fetch('/api/bill-instances', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'confirm', id, amount }),
+    await updateBillInstanceMutation.mutateAsync({
+      action: 'confirm',
+      id,
+      amount,
     })
-    await onRefresh()
-    setIsUpdating(false)
   }
 
   const handleSkip = async (id: string) => {
-    setIsUpdating(true)
-    await fetch('/api/bill-instances', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'skip', id }),
+    await updateBillInstanceMutation.mutateAsync({
+      action: 'skip',
+      id,
     })
-    await onRefresh()
-    setIsUpdating(false)
   }
 
   return (
@@ -452,7 +446,7 @@ function PendingTable({
                         size="sm"
                         variant="default"
                         onClick={() => handleConfirm(instance.id)}
-                        disabled={isUpdating || instance.status !== 'DUE'}
+                        disabled={updateBillInstanceMutation.isPending || instance.status !== 'DUE'}
                       >
                         <Check className="mr-1 h-4 w-4" /> {inflow ? 'Mark received' : 'Mark paid'}
                       </Button>
@@ -460,7 +454,7 @@ function PendingTable({
                         size="sm"
                         variant="outline"
                         onClick={() => handleSkip(instance.id)}
-                        disabled={isUpdating || instance.status !== 'DUE'}
+                        disabled={updateBillInstanceMutation.isPending || instance.status !== 'DUE'}
                       >
                         <X className="mr-1 h-4 w-4" /> Skip
                       </Button>
@@ -478,47 +472,22 @@ function PendingTable({
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<TabValue>('INCOME')
-  const [bills, setBills] = useState<Bill[]>([])
-  const [pendingInstances, setPendingInstances] = useState<BillInstance[]>([])
+
+  // Use React Query hooks
+  const { data: bills = [], isLoading: billsLoading, refetch: refetchBills } = useBillsQuery()
+  const { data: pendingInstances = [], isLoading: instancesLoading, refetch: refetchInstances } = useBillInstancesQuery(['DUE', 'PAID'])
+
+  const refreshAll = async () => {
+    await Promise.all([refetchBills(), refetchInstances()])
+  }
+
+  const createBillMutation = useCreateBillMutation()
+  const updateBillMutation = useUpdateBillMutation()
+  const deleteBillMutation = useDeleteBillMutation()
+  const updateBillInstanceMutation = useUpdateBillInstanceMutation()
 
   const incomeBills = useMemo(() => bills.filter((b) => b.type === 'INCOME' || b.type === 'SALARY'), [bills])
   const expenseBills = useMemo(() => bills.filter((b) => !['INCOME', 'SALARY'].includes(b.type)), [bills])
-
-  const fetchBills = async () => {
-    const response = await fetch('/api/bills')
-    const body = await response.json()
-    const normalizedBills: Bill[] = (body.bills || []).map((bill: Bill) => ({
-      ...bill,
-      type: (bill.type?.toUpperCase?.() as Bill['type']) || 'BILL',
-      frequency: (bill.frequency?.toUpperCase?.() as Bill['frequency']) || 'MONTHLY',
-    }))
-    setBills(normalizedBills)
-  }
-
-  const fetchInstances = async () => {
-    const response = await fetch('/api/bill-instances?status=DUE,PAID')
-    const body = await response.json()
-    const normalizedInstances: BillInstance[] = (body.instances || []).map((instance: BillInstance) => ({
-      ...instance,
-      status: normalizeInstanceStatus(instance.status),
-      bill: instance.bill
-        ? {
-            ...instance.bill,
-            type: instance.bill.type?.toUpperCase?.() as Bill['type'],
-            frequency: instance.bill.frequency?.toUpperCase?.() as Bill['frequency'],
-          }
-        : instance.bill,
-    }))
-    setPendingInstances(normalizedInstances)
-  }
-
-  const refreshAll = async () => {
-    await Promise.all([fetchBills(), fetchInstances()])
-  }
-
-  useEffect(() => {
-    refreshAll()
-  }, [])
 
   return (
     <>
@@ -541,6 +510,7 @@ export default function SettingsPage() {
                 <TabsTrigger value="INCOME">Income</TabsTrigger>
                 <TabsTrigger value="BILLS">Bills & Loans</TabsTrigger>
                 <TabsTrigger value="INSTANCES">Bill instances</TabsTrigger>
+                <TabsTrigger value="CREDITCARDS">Credit Cards</TabsTrigger>
               </TabsList>
 
               <TabsContent value="INCOME" className="space-y-4">
@@ -564,7 +534,11 @@ export default function SettingsPage() {
               </TabsContent>
 
               <TabsContent value="INSTANCES" className="space-y-4">
-                <PendingTable instances={pendingInstances} onRefresh={refreshAll} />
+                <PendingTable instances={pendingInstances} />
+              </TabsContent>
+
+              <TabsContent value="CREDITCARDS" className="space-y-4">
+                <CreditCardManager onCreditCardsChange={refreshAll} />
               </TabsContent>
             </Tabs>
           </div>

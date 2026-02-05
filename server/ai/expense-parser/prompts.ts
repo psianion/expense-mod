@@ -12,8 +12,7 @@ Keys:
 - platform (string or null)
 - payment_method (string or null)
 - type ("EXPENSE" or "INFLOW")
-- event (string or null)
-- notes (string or null)
+- tags (array of strings)
 
 When parsing dates:
 - Relative dates like "yesterday", "today", "last week" should be calculated based on the current date/time above
@@ -38,8 +37,7 @@ export const expenseParsingExamples = [
       platform: 'Swiggy',
       payment_method: 'Card',
       type: 'EXPENSE',
-      event: 'Kerala trip',
-      notes: 'chips',
+      tags: ['Kerala trip', 'chips'],
     }),
   },
   {
@@ -56,8 +54,7 @@ export const expenseParsingExamples = [
       platform: null,
       payment_method: null,
       type: 'EXPENSE',
-      event: null,
-      notes: 'Hotel booking Mumbai',
+      tags: ['Hotel booking Mumbai'],
     }),
   },
   {
@@ -74,8 +71,7 @@ export const expenseParsingExamples = [
       platform: null,
       payment_method: null,
       type: 'EXPENSE',
-      event: null,
-      notes: 'Coffee yesterday morning',
+      tags: ['yesterday morning'],
     }),
   },
   {
@@ -92,8 +88,7 @@ export const expenseParsingExamples = [
       platform: null,
       payment_method: 'UPI',
       type: 'INFLOW',
-      event: null,
-      notes: 'salary',
+      tags: ['salary'],
     }),
   },
   {
@@ -110,8 +105,7 @@ export const expenseParsingExamples = [
       platform: 'Amazon',
       payment_method: null,
       type: 'INFLOW',
-      event: null,
-      notes: 'order cancelled',
+      tags: ['order cancelled'],
     }),
   },
   {
@@ -128,8 +122,7 @@ export const expenseParsingExamples = [
       platform: 'Starbucks',
       payment_method: 'Cash',
       type: 'EXPENSE',
-      event: null,
-      notes: 'Coffee',
+      tags: ['Coffee'],
     }),
   },
   {
@@ -146,8 +139,7 @@ export const expenseParsingExamples = [
       platform: null,
       payment_method: null,
       type: 'EXPENSE',
-      event: null,
-      notes: 'Metro card recharge',
+      tags: ['Metro card recharge'],
     }),
   },
 ]

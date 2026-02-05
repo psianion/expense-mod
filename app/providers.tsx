@@ -13,13 +13,14 @@ type ProvidersProps = {
 }
 
 function ExpenseUIWithLogic({ children }: { children: ReactNode }) {
-  const { createExpense, isCreating, error } = useExpenseForm()
+  const { createExpense, isCreating, error, clearError } = useExpenseForm()
 
   const handleSave = async (expenseData: any) => {
     if (error) {
       console.error('Previous error:', error)
     }
-    await createExpense(expenseData)
+    clearError() // Clear any previous errors before attempting save
+    await createExpense({ expense: expenseData })
   }
 
   return (

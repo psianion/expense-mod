@@ -3,9 +3,9 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { ManualExpenseForm } from '@features/expenses/components/ManualExpenseForm'
 import { Drawer } from '@/components/ui/drawer'
-import { expensesApi } from '@/lib/api'
 import { ExpenseSource, ExpenseType } from '@/types'
 import { getLocalISO } from '@/lib/datetime'
+import { useCreateExpenseMutation } from '@/lib/query/hooks'
 
 interface ExpenseProviderContextType {
   openExpenseDrawer: () => void
@@ -27,28 +27,26 @@ interface ExpenseProviderProps {
 
 export function ExpenseProvider({ children }: ExpenseProviderProps) {
   const [manualDrawerOpen, setManualDrawerOpen] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+
+  const createExpenseMutation = useCreateExpenseMutation()
 
   const handleManualSave = async (expenseData: any) => {
     try {
-      setIsSaving(true)
-
+      const { currency: _currency, ...rest } = expenseData
       const payload = {
         expense: {
-          ...expenseData,
+          ...rest,
           datetime: expenseData.datetime,
           type: (expenseData.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
         },
         source: 'MANUAL' as ExpenseSource,
       }
 
-      await expensesApi.createExpense(payload)
+      await createExpenseMutation.mutateAsync(payload)
       setManualDrawerOpen(false)
     } catch (error) {
       console.error('Unexpected error saving manual expense:', error)
       alert(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    } finally {
-      setIsSaving(false)
     }
   }
 
@@ -66,7 +64,7 @@ export function ExpenseProvider({ children }: ExpenseProviderProps) {
         title="Add Manual Expense"
         description="Enter expense details manually"
       >
-        <ManualExpenseForm onSave={handleManualSave} isLoading={isSaving} />
+        <ManualExpenseForm onSave={handleManualSave} isLoading={createExpenseMutation.isPending} />
       </Drawer>
     </ExpenseProviderContext.Provider>
   )

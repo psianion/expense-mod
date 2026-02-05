@@ -96,11 +96,6 @@ export function MultiSelect({
                       variant="secondary"
                       key={item}
                       className="mr-1"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        handleUnselect(item)
-                      }}
                     >
                       {option?.label}
                       <button

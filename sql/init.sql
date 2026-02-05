@@ -73,8 +73,22 @@ ALTER TABLE expenses
   ADD COLUMN source text NOT NULL DEFAULT 'MANUAL' CHECK (source IN ('MANUAL', 'AI', 'RECURRING')),
   ADD COLUMN bill_instance_id uuid NULL REFERENCES bill_instances(id);
 
+-- Phase 1: Schema Standardization Migration
+ALTER TABLE expenses
+  DROP COLUMN IF EXISTS currency,
+  ALTER COLUMN datetime SET NOT NULL,
+  ALTER COLUMN category SET DEFAULT 'Other',
+  ALTER COLUMN platform SET DEFAULT 'Other',
+  ALTER COLUMN payment_method SET DEFAULT 'Other',
+  ADD COLUMN IF NOT EXISTS tags text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS bill_id uuid NULL REFERENCES bills(id);
+
+-- Migration complete: Schema is now in v2 state with clean structure
+
 CREATE INDEX expenses_source_idx ON expenses (source);
 CREATE INDEX expenses_bill_instance_id_idx ON expenses (bill_instance_id);
+CREATE INDEX expenses_bill_id_idx ON expenses (bill_id);
+CREATE INDEX expenses_tags_idx ON expenses USING gin (tags);
 
 -- TODO (future): Enable RLS once auth is added
 -- ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;

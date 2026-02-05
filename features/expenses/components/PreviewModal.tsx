@@ -86,16 +86,7 @@ export function PreviewModal({
               placeholder="0.00"
             />
           </div>
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Currency</label>
-            <Input
-              value={editedExpense.currency || ''}
-              onChange={(e) => updateField('currency', e.target.value || null)}
-              placeholder="INR"
-            />
-          </div>
-          
+
           <div className="space-y-2">
             <label className="text-sm font-medium">Category</label>
             <Input
@@ -136,11 +127,15 @@ export function PreviewModal({
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-medium">Event</label>
+            <label className="text-sm font-medium">Tags</label>
             <Input
-              value={editedExpense.event || ''}
-              onChange={(e) => updateField('event', e.target.value || null)}
-              placeholder="Trip, Meeting, etc."
+              value={editedExpense.tags?.join(', ') || ''}
+              onChange={(e) => {
+                const tagsString = e.target.value
+                const tags = tagsString ? tagsString.split(',').map(tag => tag.trim()).filter(tag => tag) : []
+                updateField('tags', tags)
+              }}
+              placeholder="Trip, Meeting, etc. (comma separated)"
             />
           </div>
           
@@ -193,16 +188,6 @@ export function PreviewModal({
                 className="w-32"
               />
             </div>
-          </div>
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Notes</label>
-            <Textarea
-              value={editedExpense.notes || ''}
-              onChange={(e) => updateField('notes', e.target.value || null)}
-              placeholder="Additional notes..."
-              rows={3}
-            />
           </div>
         </div>
         
