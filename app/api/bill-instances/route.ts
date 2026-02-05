@@ -3,11 +3,19 @@ import { successResponse, handleApiError } from '../middleware'
 import { z } from 'zod'
 import dayjs from 'dayjs'
 
-import { supabase } from '@server/db/supabase'
+import { supabase, DB_UNAVAILABLE_MESSAGE } from '@server/db/supabase'
 import { BillInstance, Bill } from '@/types'
 import { buildExpensePayload, computeDueDateForPeriod, createInstanceRecord, findInstanceForPeriod } from '@/lib/recurring'
 
 export const dynamic = 'force-dynamic'
+
+function throwOnSupabaseError(error: { message?: string; name?: string }): never {
+  const msg = error.message ?? ''
+  if (msg === 'fetch failed' || (error.name === 'TypeError' && msg.includes('fetch'))) {
+    throw new Error(DB_UNAVAILABLE_MESSAGE)
+  }
+  throw new Error(msg)
+}
 
 const normalizeBill = (bill: any): Bill => ({
   ...bill,
@@ -67,7 +75,7 @@ const fetchInstanceWithBill = async (id: string) => {
   const { data, error } = await supabase.from('bill_instances').select('*, bill:bills(*)').eq('id', id).single()
 
   if (error) {
-    throw new Error(error.message)
+    throwOnSupabaseError(error)
   }
 
   return normalizeInstance(data) as BillInstance & { bill: Bill }
@@ -87,9 +95,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { data, error } = await query
-    if (error) {
-      throw new Error(error.message)
-    }
+    if (error) throwOnSupabaseError(error)
 
     const normalized = (data || []).map(normalizeInstance)
     return successResponse({ instances: normalized as BillInstance[] })
@@ -160,9 +166,7 @@ export async function PATCH(request: NextRequest) {
         .select()
         .single()
 
-      if (error) {
-        throw new Error(error.message)
-      }
+      if (error) throwOnSupabaseError(error)
 
       return successResponse({ instance: normalizeInstance(data) })
     }
@@ -175,9 +179,7 @@ export async function PATCH(request: NextRequest) {
         .select()
         .single()
 
-      if (error) {
-        throw new Error(error.message)
-      }
+      if (error) throwOnSupabaseError(error)
 
       return successResponse({ instance: normalizeInstance(data) })
     }
@@ -194,9 +196,7 @@ export async function PATCH(request: NextRequest) {
       .select()
       .single()
 
-    if (expenseError) {
-      throw new Error(expenseError.message)
-    }
+    if (expenseError) throwOnSupabaseError(expenseError)
 
     const { data, error } = await supabase
       .from('bill_instances')
@@ -209,9 +209,7 @@ export async function PATCH(request: NextRequest) {
       .select()
       .single()
 
-    if (error) {
-      throw new Error(error.message)
-    }
+    if (error) throwOnSupabaseError(error)
 
     return successResponse({ instance: normalizeInstance(data) })
   } catch (error) {

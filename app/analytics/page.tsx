@@ -1,12 +1,10 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { AppSidebar } from '@components/layout/AppSidebar'
-import { SiteHeader } from '@components/layout/SiteHeader'
+import { AppLayoutClient } from '@components/layout/AppLayoutClient'
 import { AnalyticsDashboard } from '@features/analytics/components/AnalyticsDashboard'
 import { CreditCardStatements } from '@features/analytics/components/CreditCardStatements'
 import { BillReconciliation } from '@features/analytics/components/BillReconciliation'
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { supabase } from '@server/db/supabase'
 import { Expense, ExpenseSource, ExpenseType } from '@/types'
 import { fromUTC } from '@/lib/datetime'
@@ -50,18 +48,14 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="@container/main flex flex-1 flex-col gap-4">
-            <AnalyticsDashboard expenses={expenses} isLoading={isLoading} currency="₹" />
-            <CreditCardStatements expenses={expenses} />
-            <BillReconciliation expenses={expenses} />
-          </div>
+    <AppLayoutClient>
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+        <div className="@container/main flex flex-1 flex-col gap-4">
+          <AnalyticsDashboard expenses={expenses} isLoading={isLoading} currency="₹" />
+          <CreditCardStatements expenses={expenses} />
+          <BillReconciliation expenses={expenses} />
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      </div>
+    </AppLayoutClient>
   )
 }

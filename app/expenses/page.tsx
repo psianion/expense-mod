@@ -3,12 +3,10 @@
 import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
 
-import { AppSidebar } from '@components/layout/AppSidebar'
-import { SiteHeader } from '@components/layout/SiteHeader'
+import { AppLayoutClient } from '@components/layout/AppLayoutClient'
 import { PreviewModal } from '@features/expenses/components/PreviewModal'
 import { DataTable } from '@components/common/DataTable'
 import { FloatingActionButton } from '@components/common/FloatingActionButton'
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { useExpenseUIProvider } from '@/app/providers/index'
 import { useExpensesQuery, useCreateExpenseMutation } from '@/lib/query/hooks'
 import {
@@ -156,13 +154,9 @@ export default function ExpensesPage() {
 
   return (
     <>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            <div className="@container/main flex flex-1 flex-col gap-4">
-
+      <AppLayoutClient>
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <div className="@container/main flex flex-1 flex-col gap-4">
               <DataTable
                 expenses={filteredAndSortedExpenses}
                 isLoading={isLoadingExpenses}
@@ -179,10 +173,9 @@ export default function ExpensesPage() {
                 onSortToggle={toggleSort}
                 onClearDateRange={clearDateRange}
               />
-            </div>
           </div>
-        </SidebarInset>
-      </SidebarProvider>
+        </div>
+      </AppLayoutClient>
 
       <PreviewModal
         open={previewDrawerOpen}

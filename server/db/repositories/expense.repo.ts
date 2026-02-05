@@ -1,4 +1,4 @@
-import { supabase } from '../supabase'
+import { supabase, DB_UNAVAILABLE_MESSAGE } from '../supabase'
 import { Expense, ExpenseSource } from '@/types'
 
 export interface CreateExpenseData {
@@ -87,9 +87,7 @@ export class ExpenseRepository {
     if (error) {
       const msg = error.message ?? ''
       if (msg === 'fetch failed' || (error.name === 'TypeError' && msg.includes('fetch'))) {
-        throw new Error(
-          'Supabase request failed (fetch failed). Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local and network connectivity.'
-        )
+        throw new Error(DB_UNAVAILABLE_MESSAGE)
       }
       throw new Error(error.message)
     }

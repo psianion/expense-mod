@@ -4,9 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { RefreshCw, Check, X, Plus } from 'lucide-react'
 import dayjs from 'dayjs'
 
-import { AppSidebar } from '@components/layout/AppSidebar'
-import { SiteHeader } from '@components/layout/SiteHeader'
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { AppLayoutClient } from '@components/layout/AppLayoutClient'
 import { useBillsQuery, useBillInstancesQuery, useUpdateBillInstanceMutation, useCreateBillInstanceMutation } from '@/lib/query/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -161,11 +159,8 @@ export default function BillsPage() {
 
   return (
     <>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <AppLayoutClient>
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-semibold">Bills & Instances</h2>
@@ -309,9 +304,8 @@ export default function BillsPage() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
+        </div>
+      </AppLayoutClient>
 
       <Drawer
         open={manualOpen}
