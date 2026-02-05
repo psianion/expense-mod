@@ -4,9 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { z } from 'zod'
 import { CalendarClock, Check, X } from 'lucide-react'
 
-import { AppSidebar } from '@components/layout/AppSidebar'
-import { SiteHeader } from '@components/layout/SiteHeader'
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { AppLayoutClient } from '@components/layout/AppLayoutClient'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -491,11 +489,8 @@ export default function SettingsPage() {
 
   return (
     <>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <AppLayoutClient>
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-semibold flex items-center gap-2">
@@ -541,9 +536,8 @@ export default function SettingsPage() {
                 <CreditCardManager onCreditCardsChange={refreshAll} />
               </TabsContent>
             </Tabs>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
+        </div>
+      </AppLayoutClient>
     </>
   )
 }

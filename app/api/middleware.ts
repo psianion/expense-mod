@@ -52,8 +52,28 @@ export function errorResponse(
   return NextResponse.json(errorResponse, { status })
 }
 
+// Message used by server/db/supabase and repos for 503 responses
+const DB_UNAVAILABLE_MSG =
+  'Database unavailable. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local (see env.example).'
+
 // Handle API errors consistently
 export function handleApiError(error: any): NextResponse<ApiResponse> {
+  const msg = String(error?.message ?? '')
+  const isConfigOrNetwork =
+    msg.includes('Missing Supabase configuration') ||
+    msg.includes(DB_UNAVAILABLE_MSG) ||
+    msg.includes('fetch failed') ||
+    (error?.name === 'TypeError' && msg.includes('fetch'))
+
+  if (isConfigOrNetwork) {
+    console.warn('API: Database unavailable (check .env.local and Supabase connectivity).')
+    return errorResponse(
+      msg.includes('Missing Supabase') ? msg : DB_UNAVAILABLE_MSG,
+      503,
+      'SERVICE_UNAVAILABLE'
+    )
+  }
+
   console.error('API Error:', error)
 
   // Zod validation errors
@@ -74,20 +94,6 @@ export function handleApiError(error: any): NextResponse<ApiResponse> {
   // Database errors
   if (error?.code?.startsWith('23')) {
     return errorResponse('Database constraint violation', 400, 'CONSTRAINT_VIOLATION', error.code)
-  }
-
-  // Supabase/config or network errors (e.g. missing env, unreachable DB)
-  const msg = String(error?.message ?? '')
-  const isConfigOrNetwork =
-    msg.includes('Missing Supabase configuration') ||
-    msg.includes('fetch failed') ||
-    (error?.name === 'TypeError' && msg.includes('fetch'))
-  if (isConfigOrNetwork) {
-    return errorResponse(
-      msg.includes('Missing Supabase') ? msg : 'Database unavailable. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local (see env.example).',
-      503,
-      'SERVICE_UNAVAILABLE'
-    )
   }
 
   // Generic error handling
