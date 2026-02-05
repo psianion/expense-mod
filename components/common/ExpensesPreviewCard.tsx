@@ -7,6 +7,14 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useRecentExpensesQuery } from '@/lib/query/hooks'
 import { formatPrice } from '@/lib/formatPrice'
+import type { Expense } from '@/types'
+
+function expenseLabel(expense: Expense): string {
+  if (expense.tags?.length) return expense.tags[0]
+  if (expense.platform) return expense.platform
+  if (expense.category) return expense.category
+  return 'Expense'
+}
 
 export function ExpensesPreviewCard() {
   const { data: expenses = [], isLoading } = useRecentExpensesQuery(5)
@@ -56,8 +64,8 @@ export function ExpensesPreviewCard() {
             {expenses.map((expense) => (
               <div key={expense.id} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="truncate max-w-[120px]" title={expense.event || 'Unknown'}>
-                    {expense.event || 'Unknown'}
+                  <span className="truncate max-w-[120px]" title={expenseLabel(expense)}>
+                    {expenseLabel(expense)}
                   </span>
                   <Badge variant="secondary" className="text-xs">
                     {expense.type}

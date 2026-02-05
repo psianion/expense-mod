@@ -4,22 +4,22 @@ import { Input } from '@components/ui/input'
 import { Textarea } from '@components/ui/textarea'
 import { Calendar } from '@components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/popover'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
 import { Loader2, CalendarIcon } from 'lucide-react'
 import dayjs from 'dayjs'
 import { cn } from '@lib/utils'
 import { getLocalISO, localISOToDate, dateToLocalISO } from '@lib/datetime'
+import { getCombinedCategories, getCombinedPlatforms, getCombinedPaymentMethods } from '@lib/userPreferences'
 
 interface ManualExpenseFormProps {
   onSave: (expense: {
     amount: number
-    currency: string
     datetime: string
-    category: string | null
-    platform: string | null
-    payment_method: string | null
+    category: string
+    platform: string
+    payment_method: string
     type: 'EXPENSE' | 'INFLOW'
-    event: string | null
-    notes: string | null
+    tags: string[]
   }) => Promise<void>
   isLoading: boolean
 }
@@ -27,14 +27,12 @@ interface ManualExpenseFormProps {
 export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps) {
   const [formData, setFormData] = useState({
     amount: '',
-    currency: 'INR',
     datetime: getLocalISO(),
-    category: '',
-    platform: '',
-    payment_method: '',
+    category: 'Other',
+    platform: 'Other',
+    payment_method: 'Other',
     type: 'EXPENSE' as 'EXPENSE' | 'INFLOW',
-    event: '',
-    notes: ''
+    tags: [] as string[]
   })
 
   const updateField = (field: string, value: string | Date | null) => {
@@ -50,27 +48,23 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
 
     await onSave({
       amount: parseFloat(formData.amount),
-      currency: formData.currency,
       datetime: formData.datetime,
-      category: formData.category || null,
-      platform: formData.platform || null,
-      payment_method: formData.payment_method || null,
+      category: formData.category,
+      platform: formData.platform,
+      payment_method: formData.payment_method,
       type: formData.type,
-      event: formData.event || null,
-      notes: formData.notes || null
+      tags: formData.tags
     })
 
     // Reset form
     setFormData({
       amount: '',
-      currency: 'INR',
       datetime: getLocalISO(),
-      category: '',
-      platform: '',
-      payment_method: '',
+      category: 'Other',
+      platform: 'Other',
+      payment_method: 'Other',
       type: 'EXPENSE',
-      event: '',
-      notes: ''
+      tags: []
     })
   }
 
@@ -89,39 +83,51 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
         </div>
         
         <div className="space-y-2">
-          <label className="text-sm font-medium">Currency</label>
-          <Input
-            value={formData.currency}
-            onChange={(e) => updateField('currency', e.target.value)}
-            placeholder="INR"
-          />
-        </div>
-        
-        <div className="space-y-2">
           <label className="text-sm font-medium">Category</label>
-          <Input
-            value={formData.category}
-            onChange={(e) => updateField('category', e.target.value)}
-            placeholder="Food, Transport, etc."
-          />
+          <Select value={formData.category} onValueChange={(value) => updateField('category', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              {getCombinedCategories().map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        
+
         <div className="space-y-2">
           <label className="text-sm font-medium">Platform</label>
-          <Input
-            value={formData.platform}
-            onChange={(e) => updateField('platform', e.target.value)}
-            placeholder="Swiggy, Amazon, etc."
-          />
+          <Select value={formData.platform} onValueChange={(value) => updateField('platform', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select platform" />
+            </SelectTrigger>
+            <SelectContent>
+              {getCombinedPlatforms().map((platform) => (
+                <SelectItem key={platform} value={platform}>
+                  {platform}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        
+
         <div className="space-y-2">
           <label className="text-sm font-medium">Payment Method</label>
-          <Input
-            value={formData.payment_method}
-            onChange={(e) => updateField('payment_method', e.target.value)}
-            placeholder="Card, UPI, Cash, etc."
-          />
+          <Select value={formData.payment_method} onValueChange={(value) => updateField('payment_method', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select payment method" />
+            </SelectTrigger>
+            <SelectContent>
+              {getCombinedPaymentMethods().map((method) => (
+                <SelectItem key={method} value={method}>
+                  {method}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         
         <div className="space-y-2">
@@ -137,11 +143,11 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
         </div>
         
         <div className="space-y-2">
-          <label className="text-sm font-medium">Event</label>
+          <label className="text-sm font-medium">Tags</label>
           <Input
-            value={formData.event}
-            onChange={(e) => updateField('event', e.target.value)}
-            placeholder="Trip, Meeting, etc."
+            value={formData.tags.join(', ')}
+            onChange={(e) => updateField('tags', e.target.value.split(',').map(tag => tag.trim()).filter(Boolean))}
+            placeholder="Trip to Goa, Office lunch, etc. (comma separated)"
           />
         </div>
         
@@ -196,15 +202,6 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
           </div>
         </div>
         
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Notes</label>
-          <Textarea
-            value={formData.notes}
-            onChange={(e) => updateField('notes', e.target.value)}
-            placeholder="Additional notes..."
-            rows={3}
-          />
-        </div>
       </div>
       
       <div className="flex justify-end space-x-2 pt-4">

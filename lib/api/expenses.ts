@@ -47,10 +47,11 @@ export const expensesApi = {
     source: 'MANUAL' | 'AI' | 'RECURRING'
     billMatch?: any
     raw_text?: string
-  }): Promise<{ expense: Expense; matchedInstanceId: string | null }> {
+  }): Promise<{ expense: Expense; matchedBillId: string | null; creditCardId: string | null }> {
     const response = await apiClient.post<{
       expense: Expense
-      matchedInstanceId: string | null
+      matchedBillId: string | null
+      creditCardId: string | null
     }>('/expenses', data)
     return response.data
   },

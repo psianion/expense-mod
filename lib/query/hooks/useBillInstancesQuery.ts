@@ -22,7 +22,37 @@ export function useUpdateBillInstanceMutation() {
 
   return useMutation({
     mutationFn: billInstancesApi.updateBillInstance,
-    onSuccess: () => {
+    onMutate: async (variables) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.billInstances.all })
+
+      // Snapshot the previous value
+      const previousInstances = queryClient.getQueryData(queryKeys.billInstances.list(['DUE', 'PAID']))
+
+      // Optimistically update the bill instance status
+      queryClient.setQueryData(queryKeys.billInstances.list(['DUE', 'PAID']), (old: any) => {
+        if (!old) return old
+        return old.map((instance: any) => {
+          if (instance.id === variables.id) {
+            return {
+              ...instance,
+              status: variables.action === 'confirm' ? 'PAID' : variables.action === 'skip' ? 'SKIPPED' : instance.status,
+            }
+          }
+          return instance
+        })
+      })
+
+      return { previousInstances }
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousInstances) {
+        queryClient.setQueryData(queryKeys.billInstances.list(['DUE', 'PAID']), context.previousInstances)
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: queryKeys.billInstances.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
     },

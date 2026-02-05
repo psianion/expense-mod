@@ -38,10 +38,44 @@ export function useCreateExpenseMutation() {
 
   return useMutation({
     mutationFn: expensesApi.createExpense,
-    onSuccess: () => {
-      // Invalidate all expense queries to refetch fresh data
+    onMutate: async (variables) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: queryKeys.expenses.all })
+
+      // Snapshot the previous value
+      const previousExpenses = queryClient.getQueryData(queryKeys.expenses.list())
+
+      // Optimistically update to the new value
+      if (variables.expense) {
+        const optimisticExpense = {
+          ...variables.expense,
+          id: `temp-${Date.now()}`, // Temporary ID
+          user_id: null,
+          created_at: new Date().toISOString(),
+          parsed_by_ai: variables.source === 'AI',
+          raw_text: variables.raw_text || null,
+          source: variables.source,
+          bill_instance_id: variables.billMatch?.bill_id ? `temp-${Date.now()}` : null,
+        }
+
+        queryClient.setQueryData(queryKeys.expenses.list(), (old: any) => {
+          if (!old) return [optimisticExpense]
+          return [optimisticExpense, ...old]
+        })
+      }
+
+      // Return a context object with the snapshotted value
+      return { previousExpenses }
+    },
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousExpenses) {
+        queryClient.setQueryData(queryKeys.expenses.list(), context.previousExpenses)
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
-      // Also invalidate bill instances as they may be linked
       queryClient.invalidateQueries({ queryKey: queryKeys.billInstances.all })
     },
   })

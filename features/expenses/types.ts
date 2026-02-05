@@ -11,7 +11,7 @@ export interface ExpenseFilters {
 
 export interface ExpenseFormData {
   amount: string
-  currency: string
+  currency?: string // Display only; not stored in DB
   datetime: string
   category: string
   platform: string

@@ -57,18 +57,16 @@ export function useExpenseForm(): UseExpenseFormReturn {
       setIsCreating(true)
       setError(null)
 
-      // Ensure datetime is in local format
+      // Ensure datetime is in local format (currency not stored in DB)
       const expenseData = {
         ...data.expense,
         datetime: data.expense.datetime || getLocalISO(),
-        currency: data.expense.currency || 'INR',
         type: (data.expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
       }
 
       const payload = {
         expense: {
           amount: expenseData.amount,
-          currency: expenseData.currency,
           datetime: expenseData.datetime,
           type: expenseData.type,
           category: expenseData.category || undefined,
@@ -76,6 +74,7 @@ export function useExpenseForm(): UseExpenseFormReturn {
           payment_method: expenseData.payment_method || undefined,
           event: expenseData.event || undefined,
           notes: expenseData.notes || undefined,
+          tags: (data.expense as { tags?: string[] }).tags || undefined,
         },
         source: data.source || 'MANUAL' as ExpenseSource,
         billMatch: data.billMatch,

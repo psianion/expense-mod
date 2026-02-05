@@ -4,18 +4,16 @@ import { Expense, ExpenseSource } from '@/types'
 export interface CreateExpenseData {
   user_id: string | null
   amount: number
-  currency: string
   datetime: string
-  category: string | null
-  platform: string | null
-  payment_method: string | null
+  category: string
+  platform: string
+  payment_method: string
   type: 'EXPENSE' | 'INFLOW'
-  event: string | null
-  notes: string | null
+  tags: string[]
   parsed_by_ai: boolean
   raw_text: string | null
   source: ExpenseSource
-  bill_instance_id: string | null
+  bill_id: string | null
 }
 
 export interface ExpenseFilters {
@@ -87,6 +85,12 @@ export class ExpenseRepository {
     const { data, error } = await query
 
     if (error) {
+      const msg = error.message ?? ''
+      if (msg === 'fetch failed' || (error.name === 'TypeError' && msg.includes('fetch'))) {
+        throw new Error(
+          'Supabase request failed (fetch failed). Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local and network connectivity.'
+        )
+      }
       throw new Error(error.message)
     }
 

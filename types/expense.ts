@@ -2,14 +2,12 @@ import type { BillInstance, BillMatchCandidate } from './bill'
 
 export type ParsedExpense = {
   amount: number | null;
-  currency: string | null;
   datetime: string | null;
-  category: string | null;
-  platform: string | null;
-  payment_method: string | null;
+  category: string; // Default to 'Other'
+  platform: string; // Default to 'Other'
+  payment_method: string; // Default to 'Other'
   type: 'EXPENSE' | 'INFLOW';
-  event: string | null;
-  notes: string | null;
+  tags: string[]; // Convert event/notes to tags
 };
 
 export type ExpenseSource = 'MANUAL' | 'AI' | 'RECURRING';
@@ -20,20 +18,17 @@ export type Expense = {
   id: string;
   user_id: string | null;
   amount: number;
-  currency: string;
-  datetime: string;
-  category: string | null;
-  platform: string | null;
-  payment_method: string | null;
+  datetime: string; // Required
+  category: string; // Required (default: 'Other')
+  platform: string; // Required (default: 'Other')
+  payment_method: string; // Required (default: 'Other')
   type: ExpenseType;
-  event: string | null;
-  notes: string | null;
+  tags: string[]; // Replace event + notes
   parsed_by_ai: boolean;
   raw_text: string | null;
   source: ExpenseSource;
-  bill_instance_id: string | null;
+  bill_id: string | null; // For Phase 2 credit card linkage
   created_at: string;
-  bill_instance?: BillInstance;
 };
 
 export type ParseExpenseRequest = {

@@ -20,10 +20,9 @@ export interface QueryParams extends PaginationParams {
   [key: string]: any
 }
 
-// Expense API types
+// Expense API types (currency not stored in DB; use display symbol in UI)
 export interface CreateExpenseRequest {
   amount: number
-  currency: string
   datetime: string
   category?: string
   platform?: string
@@ -31,6 +30,7 @@ export interface CreateExpenseRequest {
   type: 'EXPENSE' | 'INFLOW'
   event?: string
   notes?: string
+  tags?: string[]
   raw_text?: string
   source?: 'MANUAL' | 'AI' | 'RECURRING'
   bill_instance_id?: string

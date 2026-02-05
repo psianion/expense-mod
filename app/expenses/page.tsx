@@ -113,14 +113,14 @@ export default function ExpensesPage() {
     const payload = {
       expense: {
         amount: expense.amount,
-        currency: expense.currency || 'INR',
         datetime: localDateTime,
         type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
         category: expense.category || undefined,
         platform: expense.platform || undefined,
         payment_method: expense.payment_method || undefined,
-        event: expense.event || undefined,
-        notes: expense.notes || undefined,
+        event: (expense as { event?: string }).event || undefined,
+        notes: (expense as { notes?: string }).notes || undefined,
+        tags: expense.tags || [],
       },
       source: 'AI' as ExpenseSource,
       billMatch: billMatch,

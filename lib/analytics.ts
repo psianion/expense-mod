@@ -248,3 +248,123 @@ export const getFilteredSpendingTrend = (
   return getSpendingTrend(filteredExpenses, period)
 }
 
+// Credit Card Analytics Functions (Phase 2)
+
+export interface CreditCardAnalytics {
+  cardName: string
+  totalSpent: number
+  transactionCount: number
+  averageTransaction: number
+  categories: ComparisonDatum[]
+  platforms: ComparisonDatum[]
+  currentPeriod: {
+    spent: number
+    transactions: number
+  }
+  previousPeriod?: {
+    spent: number
+    transactions: number
+  }
+}
+
+/**
+ * Get analytics for a specific credit card
+ */
+export const getCreditCardAnalytics = (
+  expenses: Expense[],
+  cardName: string,
+  cardConfig?: any // Would come from user preferences
+): CreditCardAnalytics => {
+  // Filter expenses by this credit card
+  const cardExpenses = expenses.filter(expense =>
+    expense.type === 'EXPENSE' &&
+    expense.payment_method === cardName
+  )
+
+  const totalSpent = round(cardExpenses.reduce((sum, exp) => sum + exp.amount, 0))
+  const transactionCount = cardExpenses.length
+  const averageTransaction = transactionCount > 0 ? round(totalSpent / transactionCount) : 0
+
+  // Category breakdown for this card
+  const categories = getCategoryTotals(cardExpenses)
+
+  // Platform breakdown for this card
+  const platforms = getPlatformStats(cardExpenses)
+
+  // Current period analysis (would use creditCardUtils in real implementation)
+  const currentPeriodExpenses = cardExpenses // Simplified - would filter by current period
+  const currentPeriod = {
+    spent: round(currentPeriodExpenses.reduce((sum, exp) => sum + exp.amount, 0)),
+    transactions: currentPeriodExpenses.length
+  }
+
+  return {
+    cardName,
+    totalSpent,
+    transactionCount,
+    averageTransaction,
+    categories,
+    platforms,
+    currentPeriod
+  }
+}
+
+/**
+ * Get spending comparison across all credit cards
+ */
+export const getCreditCardComparison = (
+  expenses: Expense[],
+  creditCards: string[]
+): ComparisonDatum[] => {
+  return creditCards.map(cardName => {
+    const cardExpenses = expenses.filter(expense =>
+      expense.type === 'EXPENSE' &&
+      expense.payment_method === cardName
+    )
+
+    const totalSpent = cardExpenses.reduce((sum, exp) => sum + exp.amount, 0)
+
+    return {
+      name: cardName,
+      expense: round(totalSpent)
+    }
+  }).sort((a, b) => b.expense - a.expense)
+}
+
+/**
+ * Get expenses for a specific credit card statement period
+ */
+export const getCreditCardPeriodExpenses = (
+  expenses: Expense[],
+  cardName: string,
+  periodStart: Date,
+  periodEnd: Date
+): Expense[] => {
+  return expenses.filter(expense => {
+    if (expense.type !== 'EXPENSE' || expense.payment_method !== cardName) {
+      return false
+    }
+
+    const expenseDate = new Date(expense.datetime)
+    return expenseDate >= periodStart && expenseDate <= periodEnd
+  })
+}
+
+/**
+ * Calculate credit utilization (spent vs limit)
+ */
+export const getCreditUtilization = (
+  currentSpent: number,
+  creditLimit: number
+): { percentage: number; status: 'low' | 'medium' | 'high' | 'over_limit' } => {
+  const percentage = (currentSpent / creditLimit) * 100
+
+  let status: 'low' | 'medium' | 'high' | 'over_limit'
+  if (percentage > 100) status = 'over_limit'
+  else if (percentage > 80) status = 'high'
+  else if (percentage > 50) status = 'medium'
+  else status = 'low'
+
+  return { percentage: round(percentage), status }
+}
+

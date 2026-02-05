@@ -6,17 +6,19 @@ import { PreviewModal } from '@features/expenses/components/PreviewModal'
 import { ExpensesPreviewCard } from '@/components/common/ExpensesPreviewCard'
 import { BillsPreviewCard } from '@/components/common/BillsPreviewCard'
 import { AnalyticsPreviewCard } from '@/components/common/AnalyticsPreviewCard'
-import { expensesApi, aiApi } from '@/lib/api'
+import { aiApi } from '@/lib/api'
 import { BillMatchCandidate, ExpenseSource, ExpenseType, ParsedExpense } from '@/types'
 import { getLocalISO } from '@/lib/datetime'
+import { useCreateExpenseMutation } from '@/lib/query/hooks'
 
 export default function Page() {
   const [isParsing, setIsParsing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false)
   const [parsedExpense, setParsedExpense] = useState<ParsedExpense | null>(null)
   const [billMatch, setBillMatch] = useState<BillMatchCandidate | null>(null)
   const [rawText, setRawText] = useState<string>('')
+
+  const createExpenseMutation = useCreateExpenseMutation()
 
   const handleParse = async (text: string) => {
     try {
@@ -37,8 +39,6 @@ export default function Page() {
 
   const handleSave = async (expense: ParsedExpense) => {
     try {
-      setIsSaving(true)
-
       if (!expense.amount || expense.amount <= 0) {
         alert('Please enter a valid amount.')
         return
@@ -48,21 +48,19 @@ export default function Page() {
       const payload = {
         expense: {
           amount: expense.amount,
-          currency: expense.currency || 'INR',
           datetime: localDateTime,
           type: (expense.type?.toUpperCase?.() as ExpenseType) || 'EXPENSE',
           category: expense.category || undefined,
           platform: expense.platform || undefined,
           payment_method: expense.payment_method || undefined,
-          event: expense.event || undefined,
-          notes: expense.notes || undefined,
+          tags: expense.tags || [],
         },
         source: 'AI' as ExpenseSource,
         billMatch: billMatch,
         raw_text: rawText,
       }
 
-      await expensesApi.createExpense(payload)
+      await createExpenseMutation.mutateAsync(payload)
 
       // Reset form and close modal
       setPreviewDrawerOpen(false)
@@ -72,8 +70,6 @@ export default function Page() {
     } catch (error) {
       console.error('Unexpected error saving expense:', error)
       alert(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    } finally {
-      setIsSaving(false)
     }
   }
 
@@ -98,7 +94,7 @@ export default function Page() {
         onOpenChange={setPreviewDrawerOpen}
         parsedExpense={parsedExpense}
         onSave={handleSave}
-        isLoading={isSaving}
+        isLoading={createExpenseMutation.isPending}
         billMatch={billMatch}
       />
     </>

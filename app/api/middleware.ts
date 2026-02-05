@@ -76,6 +76,20 @@ export function handleApiError(error: any): NextResponse<ApiResponse> {
     return errorResponse('Database constraint violation', 400, 'CONSTRAINT_VIOLATION', error.code)
   }
 
+  // Supabase/config or network errors (e.g. missing env, unreachable DB)
+  const msg = String(error?.message ?? '')
+  const isConfigOrNetwork =
+    msg.includes('Missing Supabase configuration') ||
+    msg.includes('fetch failed') ||
+    (error?.name === 'TypeError' && msg.includes('fetch'))
+  if (isConfigOrNetwork) {
+    return errorResponse(
+      msg.includes('Missing Supabase') ? msg : 'Database unavailable. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local (see env.example).',
+      503,
+      'SERVICE_UNAVAILABLE'
+    )
+  }
+
   // Generic error handling
   const message = error?.message || 'An unexpected error occurred'
   const status = error?.status || 500
