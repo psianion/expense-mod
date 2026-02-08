@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET, POST, PATCH } from '@/app/api/bill-instances/route'
-import { clearMockStore, createBillPayload } from '../../setup'
+import { clearMockStore, createBillPayload, getDemoUserContext } from '../../setup'
 import { billService } from '@server/services/bill.service'
+
+const demoUser = getDemoUserContext()
 
 beforeEach(() => {
   clearMockStore()
@@ -28,7 +30,7 @@ describe('GET /api/bill-instances', () => {
 
 describe('POST /api/bill-instances', () => {
   it('creates instance for existing bill', async () => {
-    const bill = await billService.createBill(createBillPayload)
+    const bill = await billService.createBill(createBillPayload, demoUser)
     const res = await POST(
       new NextRequest('http://localhost/api/bill-instances', {
         method: 'POST',
@@ -64,7 +66,7 @@ describe('POST /api/bill-instances', () => {
 
 describe('PATCH /api/bill-instances', () => {
   it('skip action marks instance as SKIPPED', async () => {
-    const bill = await billService.createBill(createBillPayload)
+    const bill = await billService.createBill(createBillPayload, demoUser)
     const createRes = await POST(
       new NextRequest('http://localhost/api/bill-instances', {
         method: 'POST',
@@ -86,7 +88,7 @@ describe('PATCH /api/bill-instances', () => {
   })
 
   it('update action updates amount', async () => {
-    const bill = await billService.createBill(createBillPayload)
+    const bill = await billService.createBill(createBillPayload, demoUser)
     const createRes = await POST(
       new NextRequest('http://localhost/api/bill-instances', {
         method: 'POST',

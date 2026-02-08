@@ -71,10 +71,22 @@ expense-tracker/
 ## 🛠️ Setup
 
 1. **Install dependencies**: `npm install`
-2. **Environment variables**: Copy `env.local.example` to `.env.local` and add your Supabase URL/key and OpenRouter API key
-3. **Database**: Run `sql/init.sql` in your Supabase SQL Editor
+2. **Environment variables**: Copy `.env.example` to `.env` and set values.
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (required)
+   - `NEXT_PUBLIC_APP_MODE`: `DEMO` | `PUBLIC` | `MASTER` (default `PUBLIC`). For no-login tryout use `DEMO`; see [App modes](docs/app-modes.md).
+   - For auth (PUBLIC/MASTER): optional `SUPABASE_SERVICE_ROLE_KEY` for role lookups; for DEMO set `DEMO_USER_ID` (and optionally `DEMO_USER_EMAIL`).
+   - `OPENROUTER_API_KEY` for AI parsing; `CRON_SECRET` for cron.
+3. **Database**: Run `sql/init.sql` in your Supabase SQL Editor. For auth/roles run `sql/seed-auth.sql` after init (see [Auth setup](docs/auth-setup.md)).
 4. **Run**: `npm run dev`
 5. **Cron (optional)**: Set `CRON_SECRET` and schedule a daily call to `/api/cron/bills` (e.g., Vercel cron) with header `x-cron-secret: $CRON_SECRET`
+
+### Auth & app modes
+
+- **DEMO**: Single fixed user, no login. Good for tryout and tests.
+- **PUBLIC**: Multi-tenant; sign in with email magic link or Google. RLS and roles apply.
+- **MASTER**: Single-tenant; first signed-in user gets full access.
+
+See [docs/auth-setup.md](docs/auth-setup.md) and [docs/app-modes.md](docs/app-modes.md).
 
 ### Vercel Cron example
 
@@ -115,7 +127,7 @@ expense-tracker/
 - Smart Budget Tracking with Alerts
 - Advanced Search & Filtering System
 - AI-Powered Expense Insights and Recommendations
-- Multi-user Support with Authentication
+- Multi-user Support with Authentication ✅ *Implemented (Supabase Auth + app modes)*
 - Expense Export/Import functionality
 - Mobile App companion
 

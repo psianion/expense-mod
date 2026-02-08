@@ -7,6 +7,7 @@ import { Wallet, Plus } from "lucide-react"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
+import { useAuth } from "@/app/providers/AuthProvider"
 import {
   Sidebar,
   SidebarContent,
@@ -30,6 +31,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {}
 
 export function AppSidebar({ ...props }: AppSidebarProps) {
   const { openExpenseDrawer } = useExpenseUIProvider()
+  const { user, isDemo, isMaster, signOut } = useAuth()
   const { state } = useSidebar()
   const pathname = usePathname()
 
@@ -63,12 +65,19 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
     },
   ]
 
-  // User data for NavUser (using app info)
-  const user = {
-    name: appInfo.name,
-    email: appInfo.version,
-    avatar: "/avatars/default.jpg",
-  }
+  // User for NavUser: from auth or fallback to app info
+  const navUser = user
+    ? {
+        name: user.email?.split("@")[0] ?? "User",
+        email: user.email ?? "",
+        avatar: undefined as string | undefined,
+      }
+    : {
+        name: appInfo.name,
+        email: appInfo.version,
+        avatar: "/avatars/default.jpg",
+      }
+  const badge = isDemo ? "demo" : isMaster ? "master" : undefined
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -96,7 +105,11 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} />
+        <NavUser
+          user={navUser}
+          onLogout={user && !isDemo ? signOut : undefined}
+          badge={badge}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

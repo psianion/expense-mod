@@ -1,12 +1,14 @@
 import { NextRequest } from 'next/server'
 import { expenseService } from '@server/services/expense.service'
 import { createExpenseSchema } from '@server/validators/expense.schema'
+import { requireAuth } from '@server/auth/context'
 import { successResponse, handleApiError } from '../middleware'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuth(request)
     const typeFilter = request.nextUrl.searchParams.get('type')
     const categoryFilter = request.nextUrl.searchParams.get('category')
     const platformFilter = request.nextUrl.searchParams.get('platform')
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest) {
       offset,
     }
 
-    const result = await expenseService.getExpenses(filters)
+    const result = await expenseService.getExpenses(filters, user)
     return successResponse({ expenses: result })
   } catch (error) {
     return handleApiError(error)
@@ -40,8 +42,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuth(request)
     const input = createExpenseSchema.parse(await request.json())
-    const result = await expenseService.createExpense(input)
+    const result = await expenseService.createExpense(input, user)
     return successResponse(result)
   } catch (error) {
     return handleApiError(error)

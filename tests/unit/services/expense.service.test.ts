@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { expenseService } from '@server/services/expense.service'
-import { clearMockStore, getMockStore, createExpensePayload } from '../../setup'
+import { clearMockStore, getMockStore, createExpensePayload, getDemoUserContext } from '../../setup'
+
+const demoUser = getDemoUserContext()
 
 beforeEach(() => {
   clearMockStore()
@@ -16,7 +18,7 @@ describe('ExpenseService', () => {
           amount: 75,
           category: 'Transport',
         },
-      })
+      }, demoUser)
 
       expect(result.expense).toBeDefined()
       expect(result.expense.id).toBeDefined()
@@ -31,6 +33,7 @@ describe('ExpenseService', () => {
       const billId = 'b0000000-0000-0000-0000-000000000001'
       store.bills.push({
         id: billId,
+        user_id: demoUser.userId,
         name: 'Rent',
         type: 'BILL',
         frequency: 'MONTHLY',
@@ -52,7 +55,7 @@ describe('ExpenseService', () => {
         },
         source: 'AI',
         billMatch: { bill_id: billId, bill_name: 'Rent' },
-      })
+      }, demoUser)
 
       expect(result.expense).toBeDefined()
       expect(result.matchedBillId).toBe(billId)
@@ -61,7 +64,7 @@ describe('ExpenseService', () => {
 
   describe('getExpenses', () => {
     it('returns empty array when no expenses', async () => {
-      const expenses = await expenseService.getExpenses()
+      const expenses = await expenseService.getExpenses(undefined, demoUser)
       expect(expenses).toEqual([])
     })
 
@@ -69,8 +72,8 @@ describe('ExpenseService', () => {
       await expenseService.createExpense({
         ...createExpensePayload,
         expense: { ...createExpensePayload.expense, category: 'Food' },
-      })
-      const expenses = await expenseService.getExpenses({ category: 'Food' })
+      }, demoUser)
+      const expenses = await expenseService.getExpenses({ category: 'Food' }, demoUser)
       expect(expenses.length).toBe(1)
       expect(expenses[0].category).toBe('Food')
     })

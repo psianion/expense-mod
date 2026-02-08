@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from 'next-themes'
 import { createQueryClient } from '@/lib/query/queryClient'
+import { AuthProvider } from '@/app/providers/AuthProvider'
 import { ExpenseUIProvider } from '@/app/providers/ExpenseUIProvider'
 
 export interface AllProvidersOptions {
@@ -33,9 +34,11 @@ function AllProviders({
   return (
     <QueryClientProvider client={client}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-        <ExpenseUIProvider onSave={onSave} isLoading={isLoading}>
-          {children}
-        </ExpenseUIProvider>
+        <AuthProvider>
+          <ExpenseUIProvider onSave={onSave} isLoading={isLoading}>
+            {children}
+          </ExpenseUIProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   )

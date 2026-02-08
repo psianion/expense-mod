@@ -16,6 +16,7 @@ export const sampleExpense = {
   raw_text: null,
   source: 'MANUAL' as const,
   bill_id: null,
+  bill_instance_id: null,
   created_at: now,
 } satisfies Expense
 

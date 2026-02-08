@@ -124,6 +124,7 @@ export const findInstanceForPeriod = async (
 type CreateInstanceOptions = {
   amount?: number | null
   status?: BillInstanceStatus
+  user_id?: string | null
 }
 
 export const createInstanceRecord = async (
@@ -136,7 +137,7 @@ export const createInstanceRecord = async (
 
   const insertPayload = {
     bill_id: bill.id,
-    user_id: bill.user_id,
+    user_id: options.user_id ?? bill.user_id ?? null,
     due_date: formatDate(dueDate),
     amount,
     status,

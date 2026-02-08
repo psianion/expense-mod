@@ -88,8 +88,8 @@ describe('FiltersPanel', () => {
       />
     )
 
-    // Date range label should be visible
-    expect(screen.getByText(/date range/i)).toBeInTheDocument()
+    // Date range label or trigger should be visible (multiple elements can match)
+    expect(screen.getAllByText(/date range/i).length).toBeGreaterThan(0)
   })
 
   it('should show period selector', () => {
@@ -128,7 +128,7 @@ describe('FiltersPanel', () => {
       />
     )
 
-    expect(screen.getByText(/categories/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/categories/i).length).toBeGreaterThan(0)
   })
 
   it('should show platform filter with available platforms', () => {
@@ -141,7 +141,7 @@ describe('FiltersPanel', () => {
       />
     )
 
-    expect(screen.getByText(/platforms/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/platforms/i).length).toBeGreaterThan(0)
   })
 
   it('should open export dropdown when clicked', async () => {

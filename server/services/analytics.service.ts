@@ -21,11 +21,19 @@ export {
   type CategoryTrendPoint,
 } from '../../lib/analytics'
 
+import type { UserContext } from '../auth/context'
+import type { RepoAuthContext } from '../db/repositories/expense.repo'
+
+function toRepoAuth(user: UserContext): RepoAuthContext {
+  return { userId: user.userId, useMasterAccess: user.isMaster }
+}
+
 // Business logic for analytics can be added here as needed
 export class AnalyticsService {
-  async getAnalyticsData() {
+  async getAnalyticsData(user: UserContext) {
+    const auth = toRepoAuth(user)
     // Get recent expenses for analytics (last 100 for performance)
-    const expenses = await expenseRepository.getExpenses({ limit: 100 })
+    const expenses = await expenseRepository.getExpenses({ limit: 100 }, auth)
 
     // Convert UTC times to local times for calculations
     const expensesWithLocalTime = expenses.map((expense) => ({

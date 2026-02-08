@@ -4,6 +4,8 @@ import { useState, type ReactNode } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ThemeProvider } from 'next-themes'
+import { AuthProvider } from './providers/AuthProvider'
+import { AuthGuard } from './providers/AuthGuard'
 import { ExpenseUIProvider } from './providers/ExpenseUIProvider'
 import { useExpenseForm } from '@/features/expenses/hooks'
 import { createQueryClient } from '@/lib/query/queryClient'
@@ -36,9 +38,13 @@ export default function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-        <ExpenseUIWithLogic>
-          {children}
-        </ExpenseUIWithLogic>
+        <AuthProvider>
+          <AuthGuard>
+            <ExpenseUIWithLogic>
+              {children}
+            </ExpenseUIWithLogic>
+          </AuthGuard>
+        </AuthProvider>
       </ThemeProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
