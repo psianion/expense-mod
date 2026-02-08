@@ -255,7 +255,7 @@ export interface CreditCardAnalytics {
   totalSpent: number
   transactionCount: number
   averageTransaction: number
-  categories: ComparisonDatum[]
+  categories: SimpleDatum[]
   platforms: ComparisonDatum[]
   currentPeriod: {
     spent: number

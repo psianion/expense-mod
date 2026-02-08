@@ -16,6 +16,7 @@ export default defineConfig({
       '@types': path.resolve(__dirname, './types'),
       '@components': path.resolve(__dirname, './components'),
       '@features': path.resolve(__dirname, './features'),
+      '@hooks': path.resolve(__dirname, './hooks'),
     },
   },
 })

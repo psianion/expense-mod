@@ -34,7 +34,7 @@ const computeMatchScore = (bill: Bill, haystack: string, parsedType?: ParsedExpe
 }
 
 const detectBillMatch = async (text: string, parsed: ParsedExpense): Promise<BillMatchCandidate | null> => {
-  const haystack = `${text} ${parsed.event || ''} ${parsed.notes || ''}`.toLowerCase()
+  const haystack = `${text} ${parsed.tags.join(' ')}`.toLowerCase()
   const { data: bills, error } = await supabase.from('bills').select('id,name,type')
   if (error || !bills) {
     return null

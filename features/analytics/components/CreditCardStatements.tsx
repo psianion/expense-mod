@@ -125,7 +125,7 @@ export function CreditCardStatements({ expenses }: CreditCardStatementsProps) {
                     {analytics.categories.slice(0, 3).map((category, index) => (
                       <div key={category.name} className="flex items-center justify-between text-xs">
                         <span className="text-muted-foreground">{category.name}</span>
-                        <span className="font-medium">{formatPrice(category.expense)}</span>
+                        <span className="font-medium">{formatPrice(category.value)}</span>
                       </div>
                     ))}
                   </div>

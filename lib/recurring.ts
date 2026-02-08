@@ -175,6 +175,7 @@ export const buildExpensePayload = (bill: Bill, instance: BillInstance, amount: 
     parsed_by_ai: false,
     raw_text: null,
     source: 'RECURRING' as ExpenseSource,
+    bill_id: bill.id,
     bill_instance_id: instance.id,
   }
 

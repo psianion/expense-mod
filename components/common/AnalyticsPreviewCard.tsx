@@ -27,7 +27,7 @@ export function AnalyticsPreviewCard() {
       const data = await analyticsApi.getAnalyticsData()
       setAnalyticsData(data)
     } catch (error) {
-      console.error('Unexpected error fetching analytics data:', error)
+      console.debug('Unexpected error fetching analytics data:', error)
     } finally {
       setIsLoading(false)
     }

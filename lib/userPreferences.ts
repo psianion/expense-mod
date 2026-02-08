@@ -25,11 +25,11 @@ export const getUserPreferences = (): UserPreferences => {
 
   // Migrate credit cards from payment_due_offset to payment_due_day
   if (parsed.creditCards && parsed.creditCards.length > 0) {
-    parsed.creditCards = parsed.creditCards.map(card => {
+    parsed.creditCards = parsed.creditCards.map((card: any) => {
       if ('payment_due_offset' in card && !('payment_due_day' in card)) {
         // Convert offset to due day: add offset days to statement day
         const statementDay = card.statement_day
-        const offset = (card as any).payment_due_offset
+        const offset = card.payment_due_offset
         let dueDay = statementDay + offset
 
         // Handle month overflow - if due day exceeds 31, wrap to next month
@@ -65,18 +65,18 @@ export const saveUserPreferences = (preferences: Partial<UserPreferences>): void
 
 export const getCombinedCategories = (): string[] => {
   const prefs = getUserPreferences()
-  return [...DEFAULT_CATEGORIES, ...prefs.categories.filter(cat => !DEFAULT_CATEGORIES.includes(cat))]
+  return [...DEFAULT_CATEGORIES, ...prefs.categories.filter((cat: string) => !(DEFAULT_CATEGORIES as readonly string[]).includes(cat))]
 }
 
 export const getCombinedPlatforms = (): string[] => {
   const prefs = getUserPreferences()
-  return [...DEFAULT_PLATFORMS, ...prefs.platforms.filter(platform => !DEFAULT_PLATFORMS.includes(platform))]
+  return [...DEFAULT_PLATFORMS, ...prefs.platforms.filter((platform: string) => !(DEFAULT_PLATFORMS as readonly string[]).includes(platform))]
 }
 
 export const getCombinedPaymentMethods = (): string[] => {
   const prefs = getUserPreferences()
-  const creditCardNames = prefs.creditCards.map(card => card.name)
-  return [...DEFAULT_PAYMENT_METHODS, ...prefs.paymentMethods.filter(method => !DEFAULT_PAYMENT_METHODS.includes(method)), ...creditCardNames]
+  const creditCardNames = prefs.creditCards.map((card: any) => card.name)
+  return [...DEFAULT_PAYMENT_METHODS, ...prefs.paymentMethods.filter((method: string) => !(DEFAULT_PAYMENT_METHODS as readonly string[]).includes(method)), ...creditCardNames]
 }
 
 export const addUserCategory = (category: string): void => {
