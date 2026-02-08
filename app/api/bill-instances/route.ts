@@ -1,13 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { successResponse, handleApiError } from '../middleware'
 import { z } from 'zod'
 import dayjs from 'dayjs'
 
-import { supabase, DB_UNAVAILABLE_MESSAGE } from '@server/db/supabase'
+import { getServiceRoleClientIfAvailable, supabase, DB_UNAVAILABLE_MESSAGE } from '@server/db/supabase'
+import { requireAuth } from '@server/auth/context'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { BillInstance, Bill } from '@/types'
 import { buildExpensePayload, computeDueDateForPeriod, createInstanceRecord, findInstanceForPeriod } from '@/lib/recurring'
 
 export const dynamic = 'force-dynamic'
+
+function getClient(user: { userId: string; isMaster: boolean }): { client: SupabaseClient; userId: string | undefined } {
+  const client = getServiceRoleClientIfAvailable() ?? supabase
+  return { client, userId: user.isMaster ? undefined : user.userId }
+}
 
 function throwOnSupabaseError(error: { message?: string; name?: string }): never {
   const msg = error.message ?? ''
@@ -55,14 +62,14 @@ const createSchema = z.object({
   due_date: z.string().optional(),
 })
 
-const fetchLastInstanceAmount = async (billId: string): Promise<number | null> => {
-  const { data, error } = await supabase
-    .from('bill_instances')
-    .select('amount')
-    .eq('bill_id', billId)
-    .order('due_date', { ascending: false })
-    .limit(1)
-    .single()
+const fetchLastInstanceAmount = async (
+  client: SupabaseClient,
+  billId: string,
+  userId?: string
+): Promise<number | null> => {
+  let q = client.from('bill_instances').select('amount').eq('bill_id', billId).order('due_date', { ascending: false }).limit(1)
+  if (userId) q = q.eq('user_id', userId)
+  const { data, error } = await q.single()
 
   if (error && error.code !== 'PGRST116') {
     console.error('Error fetching last bill instance', error)
@@ -71,8 +78,10 @@ const fetchLastInstanceAmount = async (billId: string): Promise<number | null> =
   return data?.amount ?? null
 }
 
-const fetchInstanceWithBill = async (id: string) => {
-  const { data, error } = await supabase.from('bill_instances').select('*, bill:bills(*)').eq('id', id).single()
+const fetchInstanceWithBill = async (client: SupabaseClient, id: string, userId?: string) => {
+  let q = client.from('bill_instances').select('*, bill:bills(*)').eq('id', id)
+  if (userId) q = q.eq('user_id', userId)
+  const { data, error } = await q.single()
 
   if (error) {
     throwOnSupabaseError(error)
@@ -83,13 +92,16 @@ const fetchInstanceWithBill = async (id: string) => {
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuth(request)
+    const { client, userId } = getClient(user)
     const statusFilterInput = request.nextUrl.searchParams
       .get('status')
       ?.split(',')
       .map((value) => value?.toString?.().toUpperCase())
       .filter((value) => value && value !== 'ALL')
     const statusFilter = statusFilterInput as BillInstance['status'][] | undefined
-    let query = supabase.from('bill_instances').select('*, bill:bills(*)').order('due_date', { ascending: true })
+    let query = client.from('bill_instances').select('*, bill:bills(*)').order('due_date', { ascending: true })
+    if (userId) query = query.eq('user_id', userId)
     if (statusFilter && statusFilter.length > 0) {
       query = query.in('status', statusFilter)
     }
@@ -106,8 +118,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuth(request)
+    const { client, userId } = getClient(user)
     const payload = createSchema.parse(await request.json())
-    const { data: bill, error: billError } = await supabase.from('bills').select('*').eq('id', payload.billId).single()
+    let billQ = client.from('bills').select('*').eq('id', payload.billId)
+    if (userId) billQ = billQ.eq('user_id', userId)
+    const { data: bill, error: billError } = await billQ.single()
     if (billError || !bill) {
       throw new Error(billError?.message || 'Bill not found')
     }
@@ -124,23 +140,22 @@ export async function POST(request: NextRequest) {
       payload.due_date && dayjs(payload.due_date).isValid()
         ? dayjs(payload.due_date)
         : computeDueDateForPeriod(normalizedBill, dayjs())
-    const lastAmount = await fetchLastInstanceAmount(normalizedBill.id)
+    const lastAmount = await fetchLastInstanceAmount(client, normalizedBill.id, userId ?? undefined)
     const amount = payload.amount ?? normalizedBill.amount ?? lastAmount ?? 0
 
     const created = await createInstanceRecord(normalizedBill, dueDate, {
       amount,
       status: 'DUE',
+      user_id: userId ?? null,
     })
 
     if (!created) {
       throw new Error('Failed to create bill instance')
     }
 
-    const { data: instanceWithBill } = await supabase
-      .from('bill_instances')
-      .select('*, bill:bills(*)')
-      .eq('id', created.id)
-      .single()
+    let instanceQ = client.from('bill_instances').select('*, bill:bills(*)').eq('id', created.id)
+    if (userId) instanceQ = instanceQ.eq('user_id', userId)
+    const { data: instanceWithBill } = await instanceQ.single()
 
     const instance = normalizeInstance(instanceWithBill ?? created)
     return successResponse({ instance })
@@ -151,20 +166,19 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const user = await requireAuth(request)
+    const { client, userId } = getClient(user)
     const parsed = updateSchema.parse(await request.json())
-    const instance = await fetchInstanceWithBill(parsed.id)
+    const instance = await fetchInstanceWithBill(client, parsed.id, userId ?? undefined)
 
     if (!instance?.bill) {
       throw new Error('Bill not found for instance')
     }
 
     if (parsed.action === 'skip') {
-      const { data, error } = await supabase
-        .from('bill_instances')
-        .update({ status: 'SKIPPED' })
-        .eq('id', parsed.id)
-        .select()
-        .single()
+      let q = client.from('bill_instances').update({ status: 'SKIPPED' }).eq('id', parsed.id)
+      if (userId) q = q.eq('user_id', userId)
+      const { data, error } = await q.select().single()
 
       if (error) throwOnSupabaseError(error)
 
@@ -172,12 +186,9 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (parsed.action === 'update') {
-      const { data, error } = await supabase
-        .from('bill_instances')
-        .update({ amount: parsed.amount })
-        .eq('id', parsed.id)
-        .select()
-        .single()
+      let q = client.from('bill_instances').update({ amount: parsed.amount }).eq('id', parsed.id)
+      if (userId) q = q.eq('user_id', userId)
+      const { data, error } = await q.select().single()
 
       if (error) throwOnSupabaseError(error)
 
@@ -189,8 +200,8 @@ export async function PATCH(request: NextRequest) {
       throw new Error('Amount is required to confirm')
     }
 
-    const expensePayload = buildExpensePayload(instance.bill, instance, amount)
-    const { data: expense, error: expenseError } = await supabase
+    const expensePayload = { ...buildExpensePayload(instance.bill, instance, amount), user_id: user.userId }
+    const { data: expense, error: expenseError } = await client
       .from('expenses')
       .insert([expensePayload])
       .select()
@@ -198,7 +209,7 @@ export async function PATCH(request: NextRequest) {
 
     if (expenseError) throwOnSupabaseError(expenseError)
 
-    const { data, error } = await supabase
+    let updateQ = client
       .from('bill_instances')
       .update({
         amount,
@@ -206,8 +217,8 @@ export async function PATCH(request: NextRequest) {
         posted_expense_id: expense?.id,
       })
       .eq('id', parsed.id)
-      .select()
-      .single()
+    if (userId) updateQ = updateQ.eq('user_id', userId)
+    const { data, error } = await updateQ.select().single()
 
     if (error) throwOnSupabaseError(error)
 

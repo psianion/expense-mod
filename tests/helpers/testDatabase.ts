@@ -1,6 +1,6 @@
 /**
  * Test database setup/teardown for E2E tests using a real Supabase instance.
- * Use env.test (from env.test.example) for test Supabase URL and key.
+ * Use .env (from .env.example) for test Supabase URL and key.
  */
 
 export async function setupTestDatabase(): Promise<void> {

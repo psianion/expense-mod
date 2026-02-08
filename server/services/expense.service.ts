@@ -1,21 +1,27 @@
 import dayjs from 'dayjs'
-import { expenseRepository, ExpenseFilters } from '../db/repositories/expense.repo'
+import { expenseRepository, ExpenseFilters, RepoAuthContext } from '../db/repositories/expense.repo'
 import { billRepository } from '../db/repositories/bill.repo'
 import { CreateExpenseInput } from '../validators/expense.schema'
+import type { UserContext } from '../auth/context'
 import { Bill, BillMatchCandidate, Expense } from '@/types'
 import { toUTC, getLocalISO } from '@lib/datetime'
 import { billToExpenseType, findInstanceForPeriod } from '@lib/recurring'
 import { findCreditCardByPaymentMethod } from '@lib/userPreferences'
 
+function toRepoAuth(user: UserContext): RepoAuthContext {
+  return { userId: user.userId, useMasterAccess: user.isMaster }
+}
+
 export class ExpenseService {
-  async createExpense(input: CreateExpenseInput): Promise<{ expense: Expense; matchedBillId: string | null; creditCardId: string | null }> {
+  async createExpense(input: CreateExpenseInput, user: UserContext): Promise<{ expense: Expense; matchedBillId: string | null; creditCardId: string | null }> {
     const { expense: expenseInput, billMatch: billHint, source, raw_text } = input
+    const auth = toRepoAuth(user)
 
     const datetimeLocal = expenseInput.datetime || getLocalISO()
     const utcDateTime = toUTC(datetimeLocal)
 
     // Get all bills for matching (keeping for backward compatibility, will be simplified in Phase 2)
-    const bills = await billRepository.getBills()
+    const bills = await billRepository.getBills(undefined, auth)
     const haystack = `${expenseInput.tags?.join(' ') || ''} ${raw_text || ''}`.toLowerCase()
     const matchedBill = this.findBestBill(bills, haystack, billHint)
 
@@ -35,7 +41,7 @@ export class ExpenseService {
     const finalBillId = creditCardBillId || matchedBillId
 
     const expenseData = {
-      user_id: null,
+      user_id: user.userId,
       amount: expenseInput.amount,
       datetime: utcDateTime,
       category: expenseInput.category || 'Other',
@@ -49,17 +55,17 @@ export class ExpenseService {
       bill_id: finalBillId, // Phase 2: Links to credit card if payment method matches
     }
 
-    const expense = await expenseRepository.createExpense(expenseData)
+    const expense = await expenseRepository.createExpense(expenseData, auth)
 
     // For now, keep bill instance logic for backward compatibility
     // This will be simplified in Phase 2 when we remove bill instances
     if (matchedBillId) {
       // Find existing instance or create new one for backward compatibility
-      const bill = await billRepository.getBillById(matchedBillId)
+      const bill = await billRepository.getBillById(matchedBillId, auth)
       if (bill) {
         const instance = await findInstanceForPeriod(bill, bill.frequency, dayjs())
         if (instance) {
-          await this.updateBillInstanceStatus(instance.id, 'PAID', expense.id, expenseInput.amount)
+          await this.updateBillInstanceStatus(instance.id, 'PAID', expense.id, expenseInput.amount, auth)
         }
       }
     }
@@ -67,8 +73,9 @@ export class ExpenseService {
     return { expense, matchedBillId, creditCardId: creditCardBillId }
   }
 
-  async getExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
-    return expenseRepository.getExpenses(filters)
+  async getExpenses(filters?: ExpenseFilters, user?: UserContext): Promise<Expense[]> {
+    const auth = user ? toRepoAuth(user) : undefined
+    return expenseRepository.getExpenses(filters, auth)
   }
 
   private findBestBill(bills: Bill[], haystack: string, hint?: BillMatchCandidate | null): Bill | null {
@@ -123,11 +130,16 @@ export class ExpenseService {
     return score
   }
 
-  private async updateBillInstanceStatus(instanceId: string, status: 'PAID', expenseId: string, amount: number): Promise<void> {
-    // This would need to be implemented in the bill repository
-    // For now, we'll use direct supabase call since bill instances aren't fully extracted yet
-    const { supabase } = await import('../db/supabase')
-    await supabase
+  private async updateBillInstanceStatus(
+    instanceId: string,
+    status: 'PAID',
+    expenseId: string,
+    amount: number,
+    auth?: RepoAuthContext
+  ): Promise<void> {
+    const { getServiceRoleClientIfAvailable, supabase } = await import('../db/supabase')
+    const client = auth?.useMasterAccess ? (getServiceRoleClientIfAvailable() ?? supabase) : supabase
+    await client
       .from('bill_instances')
       .update({
         status,

@@ -9,6 +9,7 @@
 /coverage
 /tests/reports
 /tests/test-reports
+/test-results
 
 # next.js
 /.next/
@@ -28,6 +29,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
 
 # vercel

@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET } from '@/app/api/analytics/route'
-import { clearMockStore, createExpensePayload } from '../../setup'
+import { clearMockStore, createExpensePayload, getDemoUserContext } from '../../setup'
 import { expenseService } from '@server/services/expense.service'
+
+const demoUser = getDemoUserContext()
 
 beforeEach(() => {
   clearMockStore()
@@ -25,7 +27,7 @@ describe('GET /api/analytics', () => {
     await expenseService.createExpense({
       ...createExpensePayload,
       expense: { ...createExpensePayload.expense, amount: 50, category: 'Food' },
-    })
+    }, demoUser)
     const req = new NextRequest('http://localhost/api/analytics')
     const res = await GET(req)
     const body = await res.json()

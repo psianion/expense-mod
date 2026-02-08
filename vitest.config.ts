@@ -6,6 +6,12 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     setupFiles: ['./tests/setup.ts'],
+    include: [
+      'tests/unit/**/*.test.{ts,tsx}',
+      'tests/integration/api/**/*.test.{ts,tsx}',
+      'tests/examples/**/*.test.{ts,tsx}',
+    ],
+    exclude: ['**/node_modules/**', '**/e2e/**', '**/workflows/**'],
   },
   resolve: {
     alias: {

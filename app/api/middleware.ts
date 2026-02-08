@@ -54,10 +54,18 @@ export function errorResponse(
 
 // Message used by server/db/supabase and repos for 503 responses
 const DB_UNAVAILABLE_MSG =
-  'Database unavailable. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local (see env.example).'
+  'Database unavailable. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env (see .env.example).'
 
 // Handle API errors consistently
 export function handleApiError(error: any): NextResponse<ApiResponse> {
+  // Auth errors
+  if (error?.code === 'AUTH_REQUIRED' || error?.status === 401) {
+    return errorResponse('Authentication required', 401, 'UNAUTHORIZED')
+  }
+  if (error?.code === 'FORBIDDEN' || error?.status === 403) {
+    return errorResponse('Permission denied', 403, 'FORBIDDEN')
+  }
+
   const msg = String(error?.message ?? '')
   const isConfigOrNetwork =
     msg.includes('Missing Supabase configuration') ||
@@ -65,8 +73,17 @@ export function handleApiError(error: any): NextResponse<ApiResponse> {
     msg.includes('fetch failed') ||
     (error?.name === 'TypeError' && msg.includes('fetch'))
 
+  if (msg === 'Invalid API key' || msg.includes('Invalid API key')) {
+    console.warn('API: Supabase returned Invalid API key (check .env keys match project).')
+    return errorResponse(
+      'Invalid Supabase API key. In .env set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY from the same project (Dashboard → Settings → API). Use the anon public key, not the service_role key.',
+      503,
+      'SERVICE_UNAVAILABLE'
+    )
+  }
+
   if (isConfigOrNetwork) {
-    console.warn('API: Database unavailable (check .env.local and Supabase connectivity).')
+    console.warn('API: Database unavailable (check .env and Supabase connectivity).')
     return errorResponse(
       msg.includes('Missing Supabase') ? msg : DB_UNAVAILABLE_MSG,
       503,

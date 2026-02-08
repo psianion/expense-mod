@@ -1,98 +1,12 @@
--- Enable UUIDs
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
--- Expenses table (auth-ready)
-CREATE TABLE expenses (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NULL, -- for future auth
-  amount numeric(12,2) NOT NULL,
-  currency text DEFAULT 'INR',
-  datetime timestamptz DEFAULT now(),
-  category text,
-  platform text,
-  payment_method text,
-  type text DEFAULT 'EXPENSE' CHECK (type IN ('EXPENSE', 'INFLOW')), -- 'EXPENSE' or 'INFLOW'
-  event text,
-  notes text,
-  parsed_by_ai boolean DEFAULT false,
-  raw_text text,
-  created_at timestamptz DEFAULT now()
-);
-
-CREATE INDEX ON expenses (created_at DESC);
-
--- Bills / recurring templates
-CREATE TABLE bills (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NULL,
-  name text NOT NULL,
-  type text NOT NULL CHECK (type IN ('BILL', 'EMI', 'CREDITCARD', 'SUBSCRIPTION', 'SALARY', 'INCOME')),
-  frequency text NOT NULL CHECK (frequency IN ('MONTHLY', 'WEEKLY', 'YEARLY')),
-  day_of_month smallint NULL,
-  day_of_week smallint NULL,
-  start_date date DEFAULT CURRENT_DATE,
-  end_date date NULL,
-  amount numeric(12,2) NULL,
-  auto_post boolean DEFAULT false,
-  notes text NULL,
-  last_generated_at timestamptz NULL,
-  last_bill_created timestamptz NULL,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  CONSTRAINT bills_day_of_month_valid CHECK (
-    frequency <> 'MONTHLY' OR (day_of_month BETWEEN 1 AND 28)
-  ),
-  CONSTRAINT bills_day_of_week_valid CHECK (
-    frequency <> 'WEEKLY' OR (day_of_week BETWEEN 0 AND 6)
-  )
-);
-
-CREATE INDEX bills_type_idx ON bills (type);
-CREATE INDEX bills_frequency_idx ON bills (frequency);
-CREATE INDEX bills_start_date_idx ON bills (start_date);
-CREATE INDEX bills_end_date_idx ON bills (end_date);
-
--- Concrete bill instances (due / paid / skipped)
-CREATE TABLE bill_instances (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  bill_id uuid NOT NULL REFERENCES bills(id) ON DELETE CASCADE,
-  user_id uuid NULL,
-  due_date date NOT NULL,
-  amount numeric(12,2) NOT NULL,
-  status text NOT NULL DEFAULT 'DUE' CHECK (status IN ('DUE', 'PAID', 'SKIPPED')),
-  posted_expense_id uuid NULL REFERENCES expenses(id),
-  created_at timestamptz DEFAULT now()
-);
-
-CREATE INDEX bill_instances_bill_id_idx ON bill_instances (bill_id);
-CREATE INDEX bill_instances_due_date_idx ON bill_instances (due_date);
-CREATE INDEX bill_instances_status_idx ON bill_instances (status);
-
--- Trace expenses that came from AI or recurring flows
-ALTER TABLE expenses
-  ADD COLUMN source text NOT NULL DEFAULT 'MANUAL' CHECK (source IN ('MANUAL', 'AI', 'RECURRING')),
-  ADD COLUMN bill_instance_id uuid NULL REFERENCES bill_instances(id);
-
--- Phase 1: Schema Standardization Migration
-ALTER TABLE expenses
-  DROP COLUMN IF EXISTS currency,
-  ALTER COLUMN datetime SET NOT NULL,
-  ALTER COLUMN category SET DEFAULT 'Other',
-  ALTER COLUMN platform SET DEFAULT 'Other',
-  ALTER COLUMN payment_method SET DEFAULT 'Other',
-  ADD COLUMN IF NOT EXISTS tags text[] DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS bill_id uuid NULL REFERENCES bills(id);
-
--- Migration complete: Schema is now in v2 state with clean structure
-
-CREATE INDEX expenses_source_idx ON expenses (source);
-CREATE INDEX expenses_bill_instance_id_idx ON expenses (bill_instance_id);
-CREATE INDEX expenses_bill_id_idx ON expenses (bill_id);
-CREATE INDEX expenses_tags_idx ON expenses USING gin (tags);
+-- Migration: Auth tables and RLS for expense-tracker
+-- Run this after init.sql on an existing database, or use init.sql which includes these changes.
+-- Rollback: Drop policies, disable RLS, then drop tables in reverse order (user_roles, role_permissions, profiles, permissions, roles).
 
 -- =============================================
--- Auth & RBAC tables (Supabase: auth.users must exist)
+-- Auth & RBAC tables
 -- =============================================
+
+-- User profiles (extends Supabase auth.users)
 CREATE TABLE IF NOT EXISTS profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email text,
@@ -102,6 +16,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at timestamptz DEFAULT now()
 );
 
+-- Roles (extensible RBAC)
 CREATE TABLE IF NOT EXISTS roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text UNIQUE NOT NULL,
@@ -109,6 +24,7 @@ CREATE TABLE IF NOT EXISTS roles (
   created_at timestamptz DEFAULT now()
 );
 
+-- Permissions (resource + action)
 CREATE TABLE IF NOT EXISTS permissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   resource text NOT NULL,
@@ -118,12 +34,14 @@ CREATE TABLE IF NOT EXISTS permissions (
   UNIQUE(resource, action)
 );
 
+-- Role-Permission mapping
 CREATE TABLE IF NOT EXISTS role_permissions (
   role_id uuid REFERENCES roles(id) ON DELETE CASCADE,
   permission_id uuid REFERENCES permissions(id) ON DELETE CASCADE,
   PRIMARY KEY (role_id, permission_id)
 );
 
+-- User-Role mapping
 CREATE TABLE IF NOT EXISTS user_roles (
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   role_id uuid REFERENCES roles(id) ON DELETE CASCADE,
@@ -134,6 +52,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
 -- =============================================
 -- Row Level Security (RLS)
 -- =============================================
+
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "user_read_own_expenses" ON expenses
@@ -162,6 +81,7 @@ CREATE POLICY "user_delete_own_expenses" ON expenses
   FOR DELETE
   USING (auth.uid() = user_id);
 
+-- Bills
 ALTER TABLE bills ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "user_read_own_bills" ON bills
@@ -190,6 +110,7 @@ CREATE POLICY "user_delete_own_bills" ON bills
   FOR DELETE
   USING (auth.uid() = user_id);
 
+-- Bill instances
 ALTER TABLE bill_instances ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "user_read_own_bill_instances" ON bill_instances
@@ -218,6 +139,7 @@ CREATE POLICY "user_delete_own_bill_instances" ON bill_instances
   FOR DELETE
   USING (auth.uid() = user_id);
 
+-- Profiles: users can read/update own profile
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "user_read_own_profile" ON profiles

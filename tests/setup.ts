@@ -5,6 +5,11 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'test-anon-key'
 
+// Auth: tests run in DEMO mode with fixed demo user
+process.env.NEXT_PUBLIC_APP_MODE = process.env.NEXT_PUBLIC_APP_MODE ?? 'DEMO'
+process.env.DEMO_USER_ID = process.env.DEMO_USER_ID ?? '00000000-0000-0000-0000-000000000001'
+process.env.DEMO_USER_EMAIL = process.env.DEMO_USER_EMAIL ?? 'demo@expense-tracker.app'
+
 // Inline mock for @server/db/supabase (vi.mock is hoisted and require() cannot resolve .ts)
 type TableName = 'expenses' | 'bills' | 'bill_instances'
 const store: Record<TableName, Record<string, unknown>[]> = {
@@ -154,12 +159,16 @@ function createQueryBuilder(table: TableName) {
   return chain
 }
 
-vi.mock('@server/db/supabase', () => ({
-  supabase: {
-    from(table: TableName) {
-      return createQueryBuilder(table)
-    },
+const mockSupabaseClient = {
+  from(table: TableName) {
+    return createQueryBuilder(table)
   },
+}
+
+vi.mock('@server/db/supabase', () => ({
+  supabase: mockSupabaseClient,
+  getServiceRoleClient: () => mockSupabaseClient,
+  DB_UNAVAILABLE_MESSAGE: 'Database unavailable.',
 }))
 
 // Re-export for tests (same store as mock)
@@ -171,4 +180,16 @@ export function clearMockStore() {
 export function getMockStore() {
   return store
 }
+
+/** Demo user context for unit/integration tests (matches DEMO_USER_ID from env). */
+export function getDemoUserContext() {
+  return {
+    userId: process.env.DEMO_USER_ID ?? '00000000-0000-0000-0000-000000000001',
+    email: process.env.DEMO_USER_EMAIL ?? 'demo@expense-tracker.app',
+    isMaster: false,
+    isDemo: true,
+    roles: ['user'],
+  } as const
+}
+
 export * from './helpers/testData'

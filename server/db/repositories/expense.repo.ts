@@ -1,5 +1,10 @@
-import { supabase, DB_UNAVAILABLE_MESSAGE } from '../supabase'
+import { supabase, getServiceRoleClient, DB_UNAVAILABLE_MESSAGE } from '../supabase'
 import { Expense, ExpenseSource } from '@/types'
+
+export interface RepoAuthContext {
+  userId: string
+  useMasterAccess: boolean
+}
 
 export interface CreateExpenseData {
   user_id: string | null
@@ -29,9 +34,18 @@ export interface ExpenseFilters {
   offset?: number
 }
 
+function getClient(auth?: RepoAuthContext | null) {
+  // Use service role when we have auth and key is set (RLS would block anon without user JWT)
+  if (auth && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return getServiceRoleClient()
+  }
+  return supabase
+}
+
 export class ExpenseRepository {
-  async createExpense(data: CreateExpenseData): Promise<Expense> {
-    const { data: expense, error } = await supabase
+  async createExpense(data: CreateExpenseData, auth?: RepoAuthContext | null): Promise<Expense> {
+    const client = getClient(auth)
+    const { data: expense, error } = await client
       .from('expenses')
       .insert([data])
       .select()
@@ -44,11 +58,16 @@ export class ExpenseRepository {
     return expense as Expense
   }
 
-  async getExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
-    let query = supabase
+  async getExpenses(filters?: ExpenseFilters, auth?: RepoAuthContext | null): Promise<Expense[]> {
+    const client = getClient(auth)
+    let query = client
       .from('expenses')
       .select('*')
       .order('datetime', { ascending: false })
+
+    if (auth && !auth.useMasterAccess && auth.userId) {
+      query = query.eq('user_id', auth.userId)
+    }
 
     // Apply filters
     if (filters?.type) {
@@ -95,12 +114,13 @@ export class ExpenseRepository {
     return data as Expense[]
   }
 
-  async getExpenseById(id: string): Promise<Expense | null> {
-    const { data, error } = await supabase
-      .from('expenses')
-      .select('*')
-      .eq('id', id)
-      .single()
+  async getExpenseById(id: string, auth?: RepoAuthContext | null): Promise<Expense | null> {
+    const client = getClient(auth)
+    let query = client.from('expenses').select('*').eq('id', id)
+    if (auth && !auth.useMasterAccess && auth.userId) {
+      query = query.eq('user_id', auth.userId)
+    }
+    const { data, error } = await query.single()
 
     if (error) {
       if (error.code === 'PGRST116') return null // Not found
@@ -110,13 +130,13 @@ export class ExpenseRepository {
     return data as Expense
   }
 
-  async updateExpense(id: string, updates: Partial<CreateExpenseData>): Promise<Expense> {
-    const { data, error } = await supabase
-      .from('expenses')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
+  async updateExpense(id: string, updates: Partial<CreateExpenseData>, auth?: RepoAuthContext | null): Promise<Expense> {
+    const client = getClient(auth)
+    let query = client.from('expenses').update(updates).eq('id', id)
+    if (auth && !auth.useMasterAccess && auth.userId) {
+      query = query.eq('user_id', auth.userId)
+    }
+    const { data, error } = await query.select().single()
 
     if (error) {
       throw new Error(error.message)
@@ -125,11 +145,13 @@ export class ExpenseRepository {
     return data as Expense
   }
 
-  async deleteExpense(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('expenses')
-      .delete()
-      .eq('id', id)
+  async deleteExpense(id: string, auth?: RepoAuthContext | null): Promise<void> {
+    const client = getClient(auth)
+    let query = client.from('expenses').delete().eq('id', id)
+    if (auth && !auth.useMasterAccess && auth.userId) {
+      query = query.eq('user_id', auth.userId)
+    }
+    const { error } = await query
 
     if (error) {
       throw new Error(error.message)
