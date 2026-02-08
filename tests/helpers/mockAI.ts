@@ -1,6 +1,5 @@
 import type { ParseExpenseRequest, ParseExpenseResponse } from '@/types'
 import { parseExpenseResponseFixture } from './testData'
-import { parseExpenseResponseFixture } from './testData'
 
 export { parseExpenseResponseFixture }
 

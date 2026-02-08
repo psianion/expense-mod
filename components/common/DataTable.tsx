@@ -295,7 +295,7 @@ export function DataTable({
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate">
-                    {expense.notes || <span className="text-muted-foreground">-</span>}
+                    {expense.tags && expense.tags.length > 0 ? expense.tags.join(', ') : <span className="text-muted-foreground">-</span>}
                   </TableCell>
                 </TableRow>
               ))}

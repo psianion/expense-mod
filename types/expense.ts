@@ -28,6 +28,7 @@ export type Expense = {
   raw_text: string | null;
   source: ExpenseSource;
   bill_id: string | null; // For Phase 2 credit card linkage
+  bill_instance_id: string | null; // Link to specific bill instance
   created_at: string;
 };
 

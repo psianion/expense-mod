@@ -49,10 +49,13 @@ export function PreviewModal({
     onOpenChange(false)
   }
 
-  const updateField = (field: keyof ParsedExpense, value: string | number | null | Date) => {
+  const updateField = (field: keyof ParsedExpense, value: string | number | null | Date | string[]) => {
     if (!editedExpense) return
-    const updatedValue = value instanceof Date ? dateToLocalISO(value) : value
-    setEditedExpense({ ...editedExpense, [field]: updatedValue })
+    if (value instanceof Date) {
+      setEditedExpense({ ...editedExpense, [field]: dateToLocalISO(value) })
+    } else {
+      setEditedExpense({ ...editedExpense, [field]: value })
+    }
   }
 
   if (!editedExpense) return null

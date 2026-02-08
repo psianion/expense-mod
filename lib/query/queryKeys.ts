@@ -1,4 +1,5 @@
 import type { ExpenseFilters, BillFilters } from '@/lib/api/types'
+import type { AnalyticsFilters } from '@features/analytics/types'
 
 export const queryKeys = {
   expenses: {
@@ -22,6 +23,9 @@ export const queryKeys = {
   },
   analytics: {
     all: ['analytics'] as const,
-    byPeriod: (period: string) => [...queryKeys.analytics.all, period] as const,
+    filtered: (filters?: AnalyticsFilters) => [...queryKeys.analytics.all, 'filtered', filters] as const,
+    summary: (filters?: AnalyticsFilters) => [...queryKeys.analytics.all, 'summary', filters] as const,
+    comparison: (current: AnalyticsFilters, previous: AnalyticsFilters) => 
+      [...queryKeys.analytics.all, 'comparison', current, previous] as const,
   },
 } as const

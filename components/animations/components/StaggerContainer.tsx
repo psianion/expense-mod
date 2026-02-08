@@ -5,20 +5,19 @@ import { ReactNode, forwardRef } from "react";
 import { staggerContainer, staggerItem } from "../variants";
 import { useReducedMotion } from "../hooks";
 
-interface StaggerContainerProps {
+interface StaggerContainerProps extends React.ComponentPropsWithoutRef<'div'> {
   children: ReactNode;
   staggerDelay?: number;
   delay?: number;
-  className?: string;
 }
 
 export const StaggerContainer = forwardRef<HTMLDivElement, StaggerContainerProps>(
-  ({ children, staggerDelay = 0.05, delay = 0.1, className }, ref) => {
+  ({ children, staggerDelay = 0.05, delay = 0.1, className, ...rest }, ref) => {
     const prefersReducedMotion = useReducedMotion();
 
     if (prefersReducedMotion) {
       return (
-        <div ref={ref} className={className}>
+        <div ref={ref} className={className} {...rest}>
           {children}
         </div>
       );
@@ -35,6 +34,7 @@ export const StaggerContainer = forwardRef<HTMLDivElement, StaggerContainerProps
           staggerChildren: staggerDelay,
           delayChildren: delay
         }}
+        {...rest}
       >
         {children}
       </motion.div>

@@ -35,9 +35,12 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
     tags: [] as string[]
   })
 
-  const updateField = (field: string, value: string | Date | null) => {
-    const updatedValue = value instanceof Date ? dateToLocalISO(value) : value
-    setFormData(prev => ({ ...prev, [field]: updatedValue }))
+  const updateField = (field: string, value: string | Date | null | string[]) => {
+    if (value instanceof Date) {
+      setFormData(prev => ({ ...prev, [field]: dateToLocalISO(value) }))
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }))
+    }
   }
 
   const handleSave = async () => {
