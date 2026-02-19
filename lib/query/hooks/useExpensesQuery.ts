@@ -42,15 +42,18 @@ export function useCreateExpenseMutation() {
       // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: queryKeys.expenses.all })
 
-      // Snapshot the previous value
-      const previousExpenses = queryClient.getQueryData(queryKeys.expenses.list())
+      // Snapshot all active expense list cache entries so we can roll back any of them on error
+      const previousQueriesData = queryClient.getQueriesData<Expense[]>({
+        queryKey: queryKeys.expenses.lists(),
+      })
 
-      // Optimistically update to the new value
+      // Optimistically prepend the new expense to every active filtered/unfiltered expense list
       if (variables.expense) {
-        const optimisticExpense = {
+        const optimisticExpense: Expense = {
           ...variables.expense,
           id: `temp-${Date.now()}`, // Temporary ID
           user_id: null,
+          bill_id: null,
           created_at: new Date().toISOString(),
           parsed_by_ai: variables.source === 'AI',
           raw_text: variables.raw_text || null,
@@ -58,23 +61,30 @@ export function useCreateExpenseMutation() {
           bill_instance_id: variables.billMatch?.bill_id ? `temp-${Date.now()}` : null,
         }
 
-        queryClient.setQueryData(queryKeys.expenses.list(), (old: any) => {
-          if (!old) return [optimisticExpense]
-          return [optimisticExpense, ...old]
-        })
+        queryClient.setQueriesData<Expense[]>(
+          { queryKey: queryKeys.expenses.lists() },
+          (old) => {
+            if (!old) return [optimisticExpense]
+            return [optimisticExpense, ...old]
+          }
+        )
       }
 
-      // Return a context object with the snapshotted value
-      return { previousExpenses }
+      // Return a context object with the snapshotted values for rollback
+      return { previousQueriesData }
     },
     onError: (err, variables, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousExpenses) {
-        queryClient.setQueryData(queryKeys.expenses.list(), context.previousExpenses)
+      // If the mutation fails, roll back every expense list cache entry to its prior state
+      if (context?.previousQueriesData) {
+        for (const [queryKey, data] of context.previousQueriesData) {
+          queryClient.setQueryData(queryKey, data)
+        }
       }
     },
     onSettled: () => {
-      // Always refetch after error or success
+      // Always invalidate all expense queries after error or success so every
+      // filtered view (by category, platform, date range, etc.) reflects the
+      // latest server state rather than staying stale.
       queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.billInstances.all })
     },
