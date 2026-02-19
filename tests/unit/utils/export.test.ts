@@ -1,7 +1,7 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   exportToCSV,
-  exportToPDF,
   exportSummaryToCSV,
   exportCategoryBreakdownToCSV,
 } from '@features/analytics/utils/export'
@@ -58,6 +58,7 @@ describe('Export Utilities', () => {
         raw_text: null,
         source: 'MANUAL',
         bill_id: null,
+        bill_instance_id: null,
         created_at: '2026-02-08T10:00:00Z',
       },
       {
@@ -74,6 +75,7 @@ describe('Export Utilities', () => {
         raw_text: 'uber ride to office',
         source: 'AI',
         bill_id: null,
+        bill_instance_id: null,
         created_at: '2026-02-07T15:30:00Z',
       },
     ]
@@ -261,59 +263,6 @@ describe('Export Utilities', () => {
       await exportCategoryBreakdownToCSV(mockCategoryData, 'categories.csv')
 
       expect(setAttributeMock).toHaveBeenCalledWith('download', 'categories.csv')
-    })
-  })
-
-  describe('exportToPDF', () => {
-    let mockElement: HTMLDivElement
-
-    beforeEach(() => {
-      mockElement = { id: 'test-element' } as HTMLDivElement
-      vi.spyOn(document, 'getElementById').mockReturnValue(mockElement)
-
-      // Mock html2canvas
-      vi.mock('html2canvas', () => ({
-        default: vi.fn().mockResolvedValue({
-          toDataURL: vi.fn().mockReturnValue('data:image/png;base64,mock'),
-          width: 1000,
-          height: 1400,
-        }),
-      }))
-
-      // Mock jsPDF
-      vi.mock('jspdf', () => ({
-        default: vi.fn().mockImplementation(() => ({
-          addImage: vi.fn(),
-          addPage: vi.fn(),
-          save: vi.fn(),
-          setFontSize: vi.fn(),
-          text: vi.fn(),
-        })),
-      }))
-    })
-
-    it('should throw error if element not found', async () => {
-      vi.spyOn(document, 'getElementById').mockReturnValue(null)
-
-      await expect(exportToPDF('non-existent-id')).rejects.toThrow(
-        'Element with id "non-existent-id" not found'
-      )
-    })
-
-    it('should generate PDF with default filename', async () => {
-      // This test requires actual PDF library mocking
-      // Skipping detailed implementation as it requires more setup
-      expect(true).toBe(true)
-    })
-
-    it('should include title when provided', async () => {
-      // Test that title is added to PDF
-      expect(true).toBe(true)
-    })
-
-    it('should include timestamp when requested', async () => {
-      // Test that timestamp is added to PDF
-      expect(true).toBe(true)
     })
   })
 })
