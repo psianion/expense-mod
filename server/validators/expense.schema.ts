@@ -25,3 +25,15 @@ export const createExpenseSchema = z.object({
 })
 
 export type CreateExpenseInput = z.infer<typeof createExpenseSchema>
+
+export const updateExpenseSchema = z.object({
+  amount: z.number().positive().optional(),
+  datetime: z.string().optional(),
+  category: z.string().optional(),
+  platform: z.string().optional(),
+  payment_method: z.string().optional(),
+  type: z.enum(['EXPENSE', 'INFLOW']).optional(),
+  tags: z.array(z.string()).optional(),
+})
+
+export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>

@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
 import { expenseRepository, ExpenseFilters, RepoAuthContext } from '../db/repositories/expense.repo'
 import { billRepository } from '../db/repositories/bill.repo'
-import { CreateExpenseInput } from '../validators/expense.schema'
+import { CreateExpenseInput, UpdateExpenseInput } from '../validators/expense.schema'
 import type { UserContext } from '../auth/context'
 import { Bill, BillMatchCandidate, Expense } from '@/types'
 import { toUTC, getLocalISO } from '@lib/datetime'
@@ -76,6 +76,16 @@ export class ExpenseService {
   async getExpenses(filters?: ExpenseFilters, user?: UserContext): Promise<Expense[]> {
     const auth = user ? toRepoAuth(user) : undefined
     return expenseRepository.getExpenses(filters, auth)
+  }
+
+  async updateExpense(id: string, updates: UpdateExpenseInput, user: UserContext): Promise<Expense> {
+    const auth = toRepoAuth(user)
+    return expenseRepository.updateExpense(id, updates, auth)
+  }
+
+  async deleteExpense(id: string, user: UserContext): Promise<void> {
+    const auth = toRepoAuth(user)
+    return expenseRepository.deleteExpense(id, auth)
   }
 
   private findBestBill(bills: Bill[], haystack: string, hint?: BillMatchCandidate | null): Bill | null {
