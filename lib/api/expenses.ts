@@ -58,7 +58,7 @@ export const expensesApi = {
 
   // Update an expense
   async updateExpense(id: string, updates: Partial<CreateExpenseRequest>): Promise<Expense> {
-    const response = await apiClient.put<{ expense: Expense }>(`/expenses/${id}`, updates)
+    const response = await apiClient.patch<{ expense: Expense }>(`/expenses/${id}`, updates)
     return response.data.expense
   },
 
