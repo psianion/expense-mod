@@ -91,9 +91,9 @@ export function handleApiError(error: any): NextResponse<ApiResponse> {
     )
   }
 
-  console.error('API Error:', error)
-
-  // Zod validation errors
+  // Zod validation errors — must be checked before console.error to avoid
+  // ZodError internal serialisation crashing with "Cannot read properties of
+  // undefined (reading 'value')" when console tries to format the error object.
   if (error instanceof ZodError) {
     return errorResponse(
       'Validation failed',
@@ -102,6 +102,8 @@ export function handleApiError(error: any): NextResponse<ApiResponse> {
       error.issues
     )
   }
+
+  console.error('API Error:', error)
 
   // Known error types
   if (error?.code === 'PGRST116') {
