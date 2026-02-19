@@ -87,7 +87,6 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
       <SidebarContent>
         <NavMain items={allNavItems} />
         <SidebarGroup>
-          <SidebarGroupLabel>Actions</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>

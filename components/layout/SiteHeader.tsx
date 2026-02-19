@@ -20,7 +20,7 @@ import { ThemeTogglerButton } from '@/components/animations/components/buttons/t
 interface SiteHeaderProps {}
 
 const getPageTitle = (pathname: string): string => {
-  if (pathname === "/") return "Home"
+  if (pathname === "/" || pathname === "/dashboard") return "Dashboard"
   if (pathname === "/expenses") return "Expenses"
   if (pathname === "/analytics") return "Analytics"
   if (pathname === "/bills") return "Bills"

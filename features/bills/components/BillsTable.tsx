@@ -163,12 +163,12 @@ export default function BillsPage() {
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-semibold">Bills & Instances</h2>
+                <h2 className="text-xl font-semibold">Bills & Instances</h2>
                 <p className="text-sm text-muted-foreground">
                   Track due, paid, and skipped bill instances with filters.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Input
                   placeholder="Search by name or type"
                   value={search}
