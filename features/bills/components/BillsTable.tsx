@@ -1,11 +1,13 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, Check, X, Plus } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { AppLayoutClient } from '@components/layout/AppLayoutClient'
 import { useBillsQuery, useBillInstancesQuery, useUpdateBillInstanceMutation, useCreateBillInstanceMutation } from '@/lib/query/hooks'
+import { queryKeys } from '@/lib/query/queryKeys'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -68,6 +70,7 @@ export default function BillsPage() {
   const statusArray = status === 'ALL' ? undefined : [status as 'DUE' | 'PAID' | 'SKIPPED']
   const { data: instances = [], isLoading: loading } = useBillInstancesQuery(statusArray)
   const { data: bills = [] } = useBillsQuery()
+  const queryClient = useQueryClient()
   const updateBillInstanceMutation = useUpdateBillInstanceMutation()
   const createBillInstanceMutation = useCreateBillInstanceMutation()
 
@@ -199,7 +202,10 @@ export default function BillsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" onClick={() => window.location.reload()} disabled={loading}>
+                <Button variant="outline" onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: queryKeys.bills.all })
+                  queryClient.invalidateQueries({ queryKey: queryKeys.billInstances.all })
+                }}>
                   <RefreshCw className="mr-2 h-4 w-4" /> Refresh
                 </Button>
                 <Button onClick={() => setManualOpen(true)}>
