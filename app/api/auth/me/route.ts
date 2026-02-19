@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@server/auth/context'
-import { successResponse, handleApiError } from '../../middleware'
+import { successResponse, handleApiError, errorResponse } from '../../middleware'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser(request)
     if (!user) {
-      const { errorResponse } = await import('../../middleware')
       return errorResponse('Authentication required', 401, 'UNAUTHORIZED')
     }
     return successResponse({
