@@ -6,6 +6,7 @@ import Providers from './providers'
 export const metadata: Metadata = {
   title: 'Expense Tracker',
   description: 'AI-powered expense tracking app',
+  icons: { icon: '/favicon.svg', shortcut: '/favicon.svg' },
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
