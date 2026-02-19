@@ -8,7 +8,7 @@ export interface UserContext {
   email: string | null
   isMaster: boolean
   isDemo: boolean
-  roles: string[]
+  roles: readonly string[]
 }
 
 const DEMO_EMAIL = 'demo@expense-tracker.app'
