@@ -168,6 +168,7 @@ const mockSupabaseClient = {
 vi.mock('@server/db/supabase', () => ({
   supabase: mockSupabaseClient,
   getServiceRoleClient: () => mockSupabaseClient,
+  getServiceRoleClientIfAvailable: () => null,
   DB_UNAVAILABLE_MESSAGE: 'Database unavailable.',
 }))
 
