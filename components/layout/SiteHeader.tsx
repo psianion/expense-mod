@@ -48,7 +48,7 @@ export function SiteHeader({}: SiteHeaderProps) {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="#">
+              <BreadcrumbLink href="/">
                 Expense Tracker
               </BreadcrumbLink>
             </BreadcrumbItem>
