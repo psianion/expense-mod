@@ -6,8 +6,6 @@ import dayjs from 'dayjs'
 import { AppLayoutClient } from '@components/layout/AppLayoutClient'
 import { PreviewModal } from '@features/expenses/components/PreviewModal'
 import { DataTable } from '@components/common/DataTable'
-import { FloatingActionButton } from '@components/common/FloatingActionButton'
-import { useExpenseUIProvider } from '@/app/providers/index'
 import { useExpensesQuery, useCreateExpenseMutation } from '@/lib/query/hooks'
 import {
   BillMatchCandidate,
@@ -25,7 +23,6 @@ type ExpenseFilter = 'ALL' | 'EXPENSE' | 'INFLOW'
 import type { DateRange } from "react-day-picker"
 
 export default function ExpensesPage() {
-  // const { openExpenseDrawer } = useExpenseUIProvider()
   const { data: expenses = [], isLoading: isLoadingExpenses } = useExpensesQuery()
   const createExpenseMutation = useCreateExpenseMutation()
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false)
@@ -186,7 +183,6 @@ export default function ExpensesPage() {
         billMatch={billMatch}
       />
 
-      {/* <FloatingActionButton onClick={openExpenseDrawer} /> */}
     </>
   )
 }
