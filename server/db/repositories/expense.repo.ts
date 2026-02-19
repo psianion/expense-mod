@@ -19,6 +19,7 @@ export interface CreateExpenseData {
   raw_text: string | null
   source: ExpenseSource
   bill_id: string | null
+  bill_instance_id?: string | null
 }
 
 export interface ExpenseFilters {

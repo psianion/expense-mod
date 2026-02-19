@@ -57,6 +57,7 @@ describe('Export Utilities', () => {
         raw_text: null,
         source: 'MANUAL',
         bill_id: null,
+        bill_instance_id: null,
         created_at: '2026-02-08T10:00:00Z',
       },
       {
@@ -73,6 +74,7 @@ describe('Export Utilities', () => {
         raw_text: 'uber ride to office',
         source: 'AI',
         bill_id: null,
+        bill_instance_id: null,
         created_at: '2026-02-07T15:30:00Z',
       },
     ]
