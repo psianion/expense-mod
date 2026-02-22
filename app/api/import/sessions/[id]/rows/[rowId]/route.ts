@@ -8,13 +8,14 @@ export const dynamic = 'force-dynamic'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; rowId: string } }
+  { params }: { params: Promise<{ id: string; rowId: string }> }
 ) {
   try {
     const user = await requireAuth(request)
+    const { rowId } = await params
     const body = await request.json()
     const input = confirmRowSchema.parse(body)
-    const row = await importService.confirmRow(params.rowId, input, user)
+    const row = await importService.confirmRow(rowId, input, user)
     return successResponse({ row })
   } catch (error) {
     return handleApiError(error)

@@ -8,13 +8,14 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth(request)
+    const { id } = await params
     const body = await request.json()
     const { scope } = confirmAllSchema.parse(body)
-    const result = await importService.confirmAll(params.id, scope, user)
+    const result = await importService.confirmAll(id, scope, user)
     return successResponse(result)
   } catch (error) {
     return handleApiError(error)

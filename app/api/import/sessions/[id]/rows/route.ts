@@ -5,11 +5,12 @@ import { successResponse, handleApiError } from '../../../../middleware'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth(request)
+    const { id } = await params
     // V7 fix: status check moved into service.getRows()
-    const rows = await importService.getRows(params.id, user)
+    const rows = await importService.getRows(id, user)
     return successResponse({ rows })
   } catch (error) {
     return handleApiError(error)

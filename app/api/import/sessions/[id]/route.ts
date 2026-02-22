@@ -5,10 +5,11 @@ import { successResponse, handleApiError } from '../../../middleware'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth(request)
-    const session = await importService.getSession(params.id, user)
+    const { id } = await params
+    const session = await importService.getSession(id, user)
     return successResponse({ session })
   } catch (error) {
     return handleApiError(error)
