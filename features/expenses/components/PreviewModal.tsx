@@ -5,6 +5,8 @@ import { Input } from '@components/ui/input'
 import { Textarea } from '@components/ui/textarea'
 import { Calendar } from '@components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/popover'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
+import { Label } from '@components/ui/label'
 import { BillMatchCandidate, ParsedExpense } from '@/types'
 import { Loader2, CalendarIcon, Clock } from 'lucide-react'
 import dayjs from 'dayjs'
@@ -20,11 +22,11 @@ interface PreviewModalProps {
   billMatch?: BillMatchCandidate | null
 }
 
-export function PreviewModal({ 
-  open, 
-  onOpenChange, 
-  parsedExpense, 
-  onSave, 
+export function PreviewModal({
+  open,
+  onOpenChange,
+  parsedExpense,
+  onSave,
   isLoading,
   billMatch,
 }: PreviewModalProps) {
@@ -63,8 +65,8 @@ export function PreviewModal({
   if (!open) return null
 
   return (
-    <Drawer 
-      open={open} 
+    <Drawer
+      open={open}
       onOpenChange={onOpenChange}
       title="Preview & Edit Expense"
       description="Review the parsed data and make any necessary changes before saving."
@@ -80,7 +82,7 @@ export function PreviewModal({
         )}
         <div className="grid grid-cols-1 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Amount *</label>
+            <Label>Amount *</Label>
             <Input
               type="number"
               step="0.01"
@@ -91,46 +93,45 @@ export function PreviewModal({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Category</label>
+            <Label>Category</Label>
             <Input
               value={editedExpense.category || ''}
               onChange={(e) => updateField('category', e.target.value || null)}
               placeholder="Food, Transport, etc."
             />
           </div>
-          
+
           <div className="space-y-2">
-            <label className="text-sm font-medium">Platform</label>
+            <Label>Platform</Label>
             <Input
               value={editedExpense.platform || ''}
               onChange={(e) => updateField('platform', e.target.value || null)}
               placeholder="Swiggy, Amazon, etc."
             />
           </div>
-          
+
           <div className="space-y-2">
-            <label className="text-sm font-medium">Payment Method</label>
+            <Label>Payment Method</Label>
             <Input
               value={editedExpense.payment_method || ''}
               onChange={(e) => updateField('payment_method', e.target.value || null)}
               placeholder="Card, UPI, Cash, etc."
             />
           </div>
-          
+
           <div className="space-y-2">
-            <label className="text-sm font-medium">Type</label>
-            <select
-              value={editedExpense.type}
-              onChange={(e) => updateField('type', e.target.value as 'EXPENSE' | 'INFLOW')}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <option value="EXPENSE">Expense</option>
-              <option value="INFLOW">Inflow</option>
-            </select>
+            <Label>Type</Label>
+            <Select value={editedExpense.type} onValueChange={(v) => updateField('type', v as 'EXPENSE' | 'INFLOW')}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="EXPENSE">Expense</SelectItem>
+                <SelectItem value="INFLOW">Inflow</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          
+
           <div className="space-y-2">
-            <label className="text-sm font-medium">Tags</label>
+            <Label>Tags</Label>
             <Input
               value={editedExpense.tags?.join(', ') || ''}
               onChange={(e) => {
@@ -141,9 +142,9 @@ export function PreviewModal({
               placeholder="Trip, Meeting, etc. (comma separated)"
             />
           </div>
-          
+
           <div className="space-y-2">
-            <label className="text-sm font-medium">Date & Time</label>
+            <Label>Date &amp; Time</Label>
             <div className="flex space-x-2">
               <Popover>
                 <PopoverTrigger asChild>
@@ -155,7 +156,7 @@ export function PreviewModal({
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {editedExpense.datetime 
+                    {editedExpense.datetime
                       ? localISOToDate(editedExpense.datetime).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                       : "Pick a date"
                     }
@@ -193,13 +194,13 @@ export function PreviewModal({
             </div>
           </div>
         </div>
-        
+
         <div className="flex justify-end space-x-2 pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={!editedExpense.amount || isLoading}
           >
             {isLoading ? (

@@ -5,6 +5,7 @@ import { Textarea } from '@components/ui/textarea'
 import { Calendar } from '@components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
+import { Label } from '@components/ui/label'
 import { Loader2, CalendarIcon } from 'lucide-react'
 import dayjs from 'dayjs'
 import { cn } from '@lib/utils'
@@ -75,7 +76,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium">Amount *</label>
+          <Label>Amount *</Label>
           <Input
             type="number"
             step="0.01"
@@ -84,9 +85,9 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
             placeholder="0.00"
           />
         </div>
-        
+
         <div className="space-y-2">
-          <label className="text-sm font-medium">Category</label>
+          <Label>Category</Label>
           <Select value={formData.category} onValueChange={(value) => updateField('category', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select category" />
@@ -102,7 +103,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Platform</label>
+          <Label>Platform</Label>
           <Select value={formData.platform} onValueChange={(value) => updateField('platform', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select platform" />
@@ -118,7 +119,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Payment Method</label>
+          <Label>Payment Method</Label>
           <Select value={formData.payment_method} onValueChange={(value) => updateField('payment_method', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select payment method" />
@@ -132,30 +133,29 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
             </SelectContent>
           </Select>
         </div>
-        
+
         <div className="space-y-2">
-          <label className="text-sm font-medium">Type</label>
-          <select
-            value={formData.type}
-            onChange={(e) => updateField('type', e.target.value as 'EXPENSE' | 'INFLOW')}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            <option value="EXPENSE">Expense</option>
-            <option value="INFLOW">Inflow</option>
-          </select>
+          <Label>Type</Label>
+          <Select value={formData.type} onValueChange={(v) => updateField('type', v as 'EXPENSE' | 'INFLOW')}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="EXPENSE">Expense</SelectItem>
+              <SelectItem value="INFLOW">Inflow</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        
+
         <div className="space-y-2">
-          <label className="text-sm font-medium">Tags</label>
+          <Label>Tags</Label>
           <Input
             value={formData.tags.join(', ')}
             onChange={(e) => updateField('tags', e.target.value.split(',').map(tag => tag.trim()).filter(Boolean))}
             placeholder="Trip to Goa, Office lunch, etc. (comma separated)"
           />
         </div>
-        
+
         <div className="space-y-2">
-          <label className="text-sm font-medium">Date & Time</label>
+          <Label>Date &amp; Time</Label>
           <div className="flex space-x-2">
             <Popover>
               <PopoverTrigger asChild>
@@ -167,7 +167,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.datetime 
+                  {formData.datetime
                     ? dayjs(formData.datetime).format("MMM DD, YYYY")
                     : "Pick a date"
                   }
@@ -204,12 +204,12 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
             />
           </div>
         </div>
-        
+
       </div>
-      
+
       <div className="flex justify-end space-x-2 pt-4">
-        <Button 
-          onClick={handleSave} 
+        <Button
+          onClick={handleSave}
           disabled={!formData.amount || isLoading}
           className="w-full"
         >
