@@ -5,6 +5,7 @@ import { Expense } from '@/types'
 import dayjs from 'dayjs'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { formatPrice } from '@/lib/formatPrice'
+import { cn } from '@/lib/utils'
 
 interface ExpensesListProps {
   expenses: Expense[]
@@ -20,7 +21,7 @@ export function ExpensesList({ expenses, isLoading }: ExpensesListProps) {
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
             <p className="text-muted-foreground mt-2">Loading expenses...</p>
           </div>
         </CardContent>
@@ -59,11 +60,12 @@ export function ExpensesList({ expenses, isLoading }: ExpensesListProps) {
               className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-full ${
-                  expense.type === 'EXPENSE' 
-                    ? 'bg-red-100 text-red-600' 
-                    : 'bg-green-100 text-green-600'
-                }`}>
+                <div className={cn(
+                  'p-2 rounded-full',
+                  expense.type === 'EXPENSE'
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                )}>
                   {expense.type === 'EXPENSE' ? (
                     <ArrowDownRight className="h-4 w-4" />
                   ) : (
@@ -97,9 +99,12 @@ export function ExpensesList({ expenses, isLoading }: ExpensesListProps) {
                 </div>
               </div>
               <div className="text-right">
-                <div className={`text-sm font-medium ${
-                  expense.type === 'EXPENSE' ? 'text-red-600' : 'text-green-600'
-                }`}>
+                <div className={cn(
+                  'text-sm font-medium',
+                  expense.type === 'EXPENSE'
+                    ? 'text-destructive'
+                    : 'text-emerald-600 dark:text-emerald-400'
+                )}>
                   {expense.type === 'EXPENSE' ? '-' : '+'}{formatPrice(expense.amount)}
                 </div>
                 {expense.parsed_by_ai && (
