@@ -307,7 +307,7 @@ git commit -m "feat: extend ExpenseFilters with search, sort_by, sort_order, pag
 
 ## Task 3: Update expense repository (search, sort, pagination, count, facets)
 
-> **Skill:** `api-route` — invoke with `"Update getExpenses in server/db/repositories/expense.repo.ts to support search (or/ilike), sort_by/sort_order, page-based pagination using range(), and count: exact. Add getFacets() method returning distinct categories/platforms/payment_methods. Return {expenses, total} instead of Expense[]."`
+> **Skill:** `api-route` — invoke with `"Update getExpenses in server/db/repositories/expense.repo.ts to support search (or/ilike across category, platform, payment_method, tags::text, raw_text — NOTE: no 'notes' column exists), sort_by/sort_order, page-based pagination using range(), and count: exact. Add getFacets() method returning distinct categories/platforms/payment_methods. Return {expenses, total} instead of Expense[]."`
 
 **Files:**
 - Modify: `server/db/repositories/expense.repo.ts`
@@ -356,11 +356,13 @@ async getExpenses(
   if (filters?.source) query = query.eq('source', filters.source)
   if (filters?.bill_instance_id) query = query.eq('bill_instance_id', filters.bill_instance_id)
 
-  // Full-text search across category, platform, tags (cast to text), notes
+  // Full-text search across category, platform, payment_method, tags (cast to text), raw_text
+  // NOTE: Expense type has no 'notes' column. Searchable columns: category, platform,
+  // payment_method, tags (array cast to text as "{food,lunch}"), raw_text.
   if (filters?.search) {
     const s = filters.search.replace(/[%_]/g, '\\$&') // escape special chars
     query = query.or(
-      `category.ilike.%${s}%,platform.ilike.%${s}%,tags::text.ilike.%${s}%,notes.ilike.%${s}%`
+      `category.ilike.%${s}%,platform.ilike.%${s}%,payment_method.ilike.%${s}%,tags::text.ilike.%${s}%,raw_text.ilike.%${s}%`
     )
   }
 
