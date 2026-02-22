@@ -49,6 +49,10 @@ export interface ExpenseFilters {
   date_to?: string
   source?: 'MANUAL' | 'AI' | 'RECURRING'
   bill_instance_id?: string
+  search?: string
+  sort_by?: 'datetime' | 'amount' | 'category'
+  sort_order?: 'asc' | 'desc'
+  page?: number
   limit?: number
   offset?: number
 }

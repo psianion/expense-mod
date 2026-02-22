@@ -23,6 +23,8 @@ function generateId(): string {
 function createQueryBuilder(table: TableName) {
   type Row = Record<string, unknown>
   let filters: { op: string; col: string; value: unknown }[] = []
+  let orFilters: { col: string; pattern: string }[] = []
+  let countMode = false
   let orderBy: { col: string; ascending: boolean } | null = null
   let limitVal: number | null = null
   let rangeStart: number | null = null
@@ -38,6 +40,15 @@ function createQueryBuilder(table: TableName) {
       else if (f.op === 'gte') result = result.filter((r) => (r[f.col] as string) >= (f.value as string))
       else if (f.op === 'lte') result = result.filter((r) => (r[f.col] as string) <= (f.value as string))
       else if (f.op === 'in') result = result.filter((r) => (f.value as unknown[]).includes(r[f.col] as never))
+    }
+    if (orFilters.length > 0) {
+      result = result.filter((r) =>
+        orFilters.some(({ col, pattern }) => {
+          const val = r[col]
+          if (Array.isArray(val)) return val.some((v) => String(v).toLowerCase().includes(pattern))
+          return String(val ?? '').toLowerCase().includes(pattern)
+        })
+      )
     }
     if (orderBy) {
       result.sort((a, b) => {
@@ -56,7 +67,32 @@ function createQueryBuilder(table: TableName) {
       insertRows = Array.isArray(rows) ? rows : [rows]
       return chain
     },
-    select() {
+    select(_cols = '*', opts: { count?: 'exact' } = {}) {
+      if (opts.count === 'exact') countMode = true
+      return chain
+    },
+    or(filterStr: string) {
+      // Parse "col.ilike.%pattern%,col2.ilike.%pattern2%" format
+      for (const part of filterStr.split(',')) {
+        const dotIdx = part.indexOf('.')
+        const rest = part.slice(dotIdx + 1)
+        const dotIdx2 = rest.indexOf('.')
+        const col = part.slice(0, dotIdx)
+        const rawPattern = rest.slice(dotIdx2 + 1).replace(/%/g, '').toLowerCase()
+        if (!col) continue
+        // PostgREST does NOT support SQL cast syntax (::type) in or() column names.
+        // Throw here so tests catch this class of bug before it reaches production.
+        if (col.includes('::')) {
+          throw new Error(
+            `Mock or() received invalid column reference "${col}". ` +
+            `PostgREST or() filters do not support type casts (::). ` +
+            `Use a plain column name instead.`
+          )
+        }
+        if (rawPattern) {
+          orFilters.push({ col, pattern: rawPattern })
+        }
+      }
       return chain
     },
     single() {
@@ -100,7 +136,7 @@ function createQueryBuilder(table: TableName) {
       deleteMode = true
       return chain
     },
-    then(resolve: (value: { data: unknown; error: unknown }) => void) {
+    then(resolve: (value: { data: unknown; error: unknown; count: number | null }) => void) {
       const tableData = store[table] as Row[]
       try {
         if (insertRows) {
@@ -111,18 +147,18 @@ function createQueryBuilder(table: TableName) {
             updated_at: (row as { updated_at?: string }).updated_at ?? new Date().toISOString(),
           }))
           tableData.push(...toInsert)
-          resolve({ data: singleMode ? toInsert[0] : toInsert, error: null })
+          resolve({ data: singleMode ? toInsert[0] : toInsert, error: null, count: null })
           return Promise.resolve(undefined as never)
         }
         if (updatePayload) {
           const idVal = filters.find((f) => f.col === 'id')?.value as string
           const idx = tableData.findIndex((r) => r.id === idVal)
           if (idx === -1) {
-            resolve({ data: null, error: { code: 'PGRST116', message: 'Not found' } })
+            resolve({ data: null, error: { code: 'PGRST116', message: 'Not found' }, count: null })
             return Promise.resolve(undefined as never)
           }
           tableData[idx] = { ...tableData[idx], ...updatePayload, updated_at: new Date().toISOString() }
-          resolve({ data: singleMode ? tableData[idx] : [tableData[idx]], error: null })
+          resolve({ data: singleMode ? tableData[idx] : [tableData[idx]], error: null, count: null })
           return Promise.resolve(undefined as never)
         }
         if (deleteMode) {
@@ -131,8 +167,16 @@ function createQueryBuilder(table: TableName) {
             const idx = tableData.findIndex((r) => r.id === idFilter.value)
             if (idx !== -1) tableData.splice(idx, 1)
           }
-          resolve({ data: null, error: null })
+          resolve({ data: null, error: null, count: null })
           return Promise.resolve(undefined as never)
+        }
+        // Compute total count before applying range/limit
+        let countTotal: number | null = null
+        if (countMode) {
+          const savedRangeStart = rangeStart; const savedRangeEnd = rangeEnd; const savedLimit = limitVal
+          rangeStart = null; rangeEnd = null; limitVal = null
+          countTotal = applyFilters(tableData).length
+          rangeStart = savedRangeStart; rangeEnd = savedRangeEnd; limitVal = savedLimit
         }
         const filtered = applyFilters(tableData)
         if (table === 'bill_instances' && filtered.length > 0) {
@@ -146,12 +190,12 @@ function createQueryBuilder(table: TableName) {
         }
         const data = singleMode ? filtered[0] ?? null : filtered
         if (singleMode && !filtered[0]) {
-          resolve({ data: null, error: { code: 'PGRST116', message: 'Not found' } })
+          resolve({ data: null, error: { code: 'PGRST116', message: 'Not found' }, count: null })
           return Promise.resolve(undefined as never)
         }
-        resolve({ data, error: null })
+        resolve({ data, error: null, count: countTotal })
       } catch (err) {
-        resolve({ data: null, error: { message: err instanceof Error ? err.message : String(err) } })
+        resolve({ data: null, error: { message: err instanceof Error ? err.message : String(err) }, count: null })
       }
       return Promise.resolve(undefined as never)
     },
@@ -162,6 +206,42 @@ function createQueryBuilder(table: TableName) {
 const mockSupabaseClient = {
   from(table: TableName) {
     return createQueryBuilder(table)
+  },
+  rpc(fnName: string, params: Record<string, unknown>, opts: { count?: 'exact' } = {}) {
+    if (fnName !== 'get_expenses') throw new Error(`Mock rpc(): unknown function "${fnName}"`)
+    const chain = createQueryBuilder('expenses')
+    if (opts.count === 'exact') chain.select('*', { count: 'exact' })
+    const p = params as {
+      p_user_id?: string | null
+      p_use_master_access?: boolean
+      p_type?: string | null
+      p_category?: string | null
+      p_platform?: string | null
+      p_payment_method?: string | null
+      p_date_from?: string | null
+      p_date_to?: string | null
+      p_source?: string | null
+      p_bill_instance_id?: string | null
+      p_search?: string | null
+    }
+    if (!p.p_use_master_access && p.p_user_id) chain.eq('user_id', p.p_user_id)
+    if (p.p_type) chain.eq('type', p.p_type)
+    if (p.p_category) chain.eq('category', p.p_category)
+    if (p.p_platform) chain.eq('platform', p.p_platform)
+    if (p.p_payment_method) chain.eq('payment_method', p.p_payment_method)
+    if (p.p_date_from) chain.gte('datetime', p.p_date_from)
+    if (p.p_date_to) chain.lte('datetime', p.p_date_to)
+    if (p.p_source) chain.eq('source', p.p_source)
+    if (p.p_bill_instance_id) chain.eq('bill_instance_id', p.p_bill_instance_id)
+    if (p.p_search) {
+      const s = p.p_search.replace(/[%_]/g, '\\$&')
+      // 'tags' (plain array column) — mock's orFilters handler checks Array.isArray(val)
+      // and does substring matching on each element, equivalent to array_to_string ILIKE in SQL.
+      chain.or(
+        `category.ilike.%${s}%,platform.ilike.%${s}%,payment_method.ilike.%${s}%,raw_text.ilike.%${s}%,tags.ilike.%${s}%`
+      )
+    }
+    return chain
   },
 }
 

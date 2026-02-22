@@ -32,7 +32,7 @@ export class AnalyticsService {
   async getAnalyticsData(user: UserContext) {
     const auth = toRepoAuth(user)
     // Get recent expenses for analytics (last 100 for performance)
-    const expenses = await expenseRepository.getExpenses({ limit: 100 }, auth)
+    const { expenses } = await expenseRepository.getExpenses({ limit: 100 }, auth)
 
     // Convert UTC times to local times for calculations
     const expensesWithLocalTime = expenses.map((expense) => ({

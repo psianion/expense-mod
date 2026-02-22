@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { expensesApi } from '@/lib/api'
 import { queryKeys } from '../queryKeys'
 import { fromUTC } from '@/lib/datetime'
@@ -17,9 +17,19 @@ export function useExpensesQuery(filters?: ExpenseFilters) {
   return useQuery({
     queryKey: queryKeys.expenses.list(filters),
     queryFn: async () => {
-      const data = await expensesApi.getExpenses(filters)
-      return data.map(normalizeExpense)
+      const { expenses, total } = await expensesApi.getExpenses(filters)
+      return { expenses: expenses.map(normalizeExpense), total }
     },
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  })
+}
+
+export function useExpenseFacetsQuery() {
+  return useQuery({
+    queryKey: queryKeys.expenses.facets(),
+    queryFn: expensesApi.getExpenseFacets,
+    staleTime: 5 * 60_000,
   })
 }
 
@@ -39,19 +49,20 @@ export function useCreateExpenseMutation() {
   return useMutation({
     mutationFn: expensesApi.createExpense,
     onMutate: async (variables) => {
-      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: queryKeys.expenses.all })
 
-      // Snapshot all active expense list cache entries so we can roll back any of them on error
-      const previousQueriesData = queryClient.getQueriesData<Expense[]>({
+      const previousQueriesData = queryClient.getQueriesData<{ expenses: Expense[]; total: number }>({
         queryKey: queryKeys.expenses.lists(),
       })
 
-      // Optimistically prepend the new expense to every active filtered/unfiltered expense list
       if (variables.expense) {
         const optimisticExpense: Expense = {
           ...variables.expense,
-          id: `temp-${Date.now()}`, // Temporary ID
+          category: variables.expense.category ?? 'Other',
+          platform: variables.expense.platform ?? 'Other',
+          payment_method: variables.expense.payment_method ?? 'Other',
+          tags: variables.expense.tags ?? [],
+          id: `temp-${Date.now()}`,
           user_id: null,
           bill_id: null,
           created_at: new Date().toISOString(),
@@ -61,20 +72,18 @@ export function useCreateExpenseMutation() {
           bill_instance_id: variables.billMatch?.bill_id ? `temp-${Date.now()}` : null,
         }
 
-        queryClient.setQueriesData<Expense[]>(
+        queryClient.setQueriesData<{ expenses: Expense[]; total: number }>(
           { queryKey: queryKeys.expenses.lists() },
           (old) => {
-            if (!old) return [optimisticExpense]
-            return [optimisticExpense, ...old]
+            if (!old) return { expenses: [optimisticExpense], total: 1 }
+            return { expenses: [optimisticExpense, ...old.expenses], total: old.total + 1 }
           }
         )
       }
 
-      // Return a context object with the snapshotted values for rollback
       return { previousQueriesData }
     },
-    onError: (err, variables, context) => {
-      // If the mutation fails, roll back every expense list cache entry to its prior state
+    onError: (_err, _variables, context) => {
       if (context?.previousQueriesData) {
         for (const [queryKey, data] of context.previousQueriesData) {
           queryClient.setQueryData(queryKey, data)
@@ -82,9 +91,6 @@ export function useCreateExpenseMutation() {
       }
     },
     onSettled: () => {
-      // Always invalidate all expense queries after error or success so every
-      // filtered view (by category, platform, date range, etc.) reflects the
-      // latest server state rather than staying stale.
       queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.billInstances.all })
     },

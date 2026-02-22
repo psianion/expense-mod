@@ -31,6 +31,10 @@ export interface ExpenseFilters {
   date_to?: string
   source?: 'MANUAL' | 'AI' | 'RECURRING'
   bill_instance_id?: string
+  search?: string
+  sort_by?: 'datetime' | 'amount' | 'category'
+  sort_order?: 'asc' | 'desc'
+  page?: number
   limit?: number
   offset?: number
 }
@@ -59,50 +63,51 @@ export class ExpenseRepository {
     return expense as Expense
   }
 
-  async getExpenses(filters?: ExpenseFilters, auth?: RepoAuthContext | null): Promise<Expense[]> {
+  async getExpenses(
+    filters?: ExpenseFilters,
+    auth?: RepoAuthContext | null
+  ): Promise<{ expenses: Expense[]; total: number }> {
     const client = getClient(auth)
-    let query = client
-      .from('expenses')
-      .select('*')
-      .order('datetime', { ascending: false })
 
-    if (auth && !auth.useMasterAccess && auth.userId) {
-      query = query.eq('user_id', auth.userId)
-    }
+    // All filtering (including tags substring search) is handled inside the SQL function.
+    // PostgREST chains .order() and .range() on the SETOF result.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query = (client as any)
+      .rpc(
+        'get_expenses',
+        {
+          p_user_id: auth?.userId ?? null,
+          p_use_master_access: auth?.useMasterAccess ?? false,
+          p_type: filters?.type ?? null,
+          p_category: filters?.category ?? null,
+          p_platform: filters?.platform ?? null,
+          p_payment_method: filters?.payment_method ?? null,
+          p_date_from: filters?.date_from ?? null,
+          p_date_to: filters?.date_to ?? null,
+          p_source: filters?.source ?? null,
+          p_bill_instance_id: filters?.bill_instance_id ?? null,
+          p_search: filters?.search ?? null,
+        },
+        { count: 'exact' }
+      )
 
-    // Apply filters
-    if (filters?.type) {
-      query = query.eq('type', filters.type)
-    }
-    if (filters?.category) {
-      query = query.eq('category', filters.category)
-    }
-    if (filters?.platform) {
-      query = query.eq('platform', filters.platform)
-    }
-    if (filters?.payment_method) {
-      query = query.eq('payment_method', filters.payment_method)
-    }
-    if (filters?.date_from) {
-      query = query.gte('datetime', filters.date_from)
-    }
-    if (filters?.date_to) {
-      query = query.lte('datetime', filters.date_to)
-    }
-    if (filters?.source) {
-      query = query.eq('source', filters.source)
-    }
-    if (filters?.bill_instance_id) {
-      query = query.eq('bill_instance_id', filters.bill_instance_id)
-    }
-    if (filters?.limit) {
-      query = query.limit(filters.limit)
-    }
-    if (filters?.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1)
+    // Sort
+    const sortCol = filters?.sort_by ?? 'datetime'
+    const ascending = filters?.sort_order === 'asc'
+    query = query.order(sortCol, { ascending })
+
+    // Pagination: prefer page over raw offset
+    const limit = filters?.limit ?? 25
+    if (filters?.page && filters.page > 0) {
+      const offset = (filters.page - 1) * limit
+      query = query.range(offset, offset + limit - 1)
+    } else if (filters?.offset !== undefined) {
+      query = query.range(filters.offset, filters.offset + limit - 1)
+    } else if (filters?.limit) {
+      query = query.limit(limit)
     }
 
-    const { data, error } = await query
+    const { data, error, count } = await query
 
     if (error) {
       const msg = error.message ?? ''
@@ -112,7 +117,38 @@ export class ExpenseRepository {
       throw new Error(error.message)
     }
 
-    return data as Expense[]
+    return { expenses: data as Expense[], total: count ?? 0 }
+  }
+
+  async getFacets(auth?: RepoAuthContext | null): Promise<{
+    categories: string[]
+    platforms: string[]
+    payment_methods: string[]
+  }> {
+    const client = getClient(auth)
+
+    const buildFacetQuery = (col: string) => {
+      let q = client.from('expenses').select(col)
+      if (auth && !auth.useMasterAccess && auth.userId) {
+        q = q.eq('user_id', auth.userId)
+      }
+      return q
+    }
+
+    const [catRes, platRes, pmRes] = await Promise.all([
+      buildFacetQuery('category'),
+      buildFacetQuery('platform'),
+      buildFacetQuery('payment_method'),
+    ])
+
+    const unique = (arr: unknown[], key: string): string[] =>
+      Array.from(new Set((arr as Record<string, unknown>[])?.map((r) => r[key]).filter(Boolean))).sort() as string[]
+
+    return {
+      categories: unique(catRes.data ?? [], 'category'),
+      platforms: unique(platRes.data ?? [], 'platform'),
+      payment_methods: unique(pmRes.data ?? [], 'payment_method'),
+    }
   }
 
   async getExpenseById(id: string, auth?: RepoAuthContext | null): Promise<Expense | null> {

@@ -22,6 +22,8 @@
 .DS_Store
 *.pem
 /.cursor/
+/.claude/
+/.playwright-mcp/
 
 # debug
 npm-debug.log*

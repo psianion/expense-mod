@@ -8,6 +8,7 @@ export const queryKeys = {
     list: (filters?: ExpenseFilters) => [...queryKeys.expenses.lists(), filters] as const,
     recent: (limit: number) => [...queryKeys.expenses.all, 'recent', limit] as const,
     detail: (id: string) => [...queryKeys.expenses.all, 'detail', id] as const,
+    facets: () => [...queryKeys.expenses.all, 'facets'] as const,
   },
   bills: {
     all: ['bills'] as const,
