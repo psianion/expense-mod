@@ -96,8 +96,10 @@ export class ExpenseRepository {
     // payment_method, tags (array cast to text as "{food,lunch}"), raw_text.
     if (filters?.search) {
       const s = filters.search.replace(/[%_]/g, '\\$&')
+      // Note: tags is a Postgres array — it cannot be searched with ilike via PostgREST's or()
+      // filter (type cast syntax like tags::text is not supported in or() column names).
       query = query.or(
-        `category.ilike.%${s}%,platform.ilike.%${s}%,payment_method.ilike.%${s}%,tags::text.ilike.%${s}%,raw_text.ilike.%${s}%`
+        `category.ilike.%${s}%,platform.ilike.%${s}%,payment_method.ilike.%${s}%,raw_text.ilike.%${s}%`
       )
     }
 

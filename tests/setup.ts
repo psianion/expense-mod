@@ -79,7 +79,17 @@ function createQueryBuilder(table: TableName) {
         const dotIdx2 = rest.indexOf('.')
         const col = part.slice(0, dotIdx)
         const rawPattern = rest.slice(dotIdx2 + 1).replace(/%/g, '').toLowerCase()
-        if (col && rawPattern) {
+        if (!col) continue
+        // PostgREST does NOT support SQL cast syntax (::type) in or() column names.
+        // Throw here so tests catch this class of bug before it reaches production.
+        if (col.includes('::')) {
+          throw new Error(
+            `Mock or() received invalid column reference "${col}". ` +
+            `PostgREST or() filters do not support type casts (::). ` +
+            `Use a plain column name instead.`
+          )
+        }
+        if (rawPattern) {
           orFilters.push({ col, pattern: rawPattern })
         }
       }
