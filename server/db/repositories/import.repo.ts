@@ -35,7 +35,7 @@ export const importRepo = {
       .eq('id', id)
       .eq('user_id', userId)
       .single()
-    if (error || !data) throw new Error('Session not found')
+    if (error || !data) throw Object.assign(new Error('Session not found'), { status: 404 })
     return data as ImportSession
   },
 
@@ -43,6 +43,7 @@ export const importRepo = {
     const { data } = await supabase.from('import_rows').insert(
       rows.map(r => ({
         session_id: r.session_id,
+        status: 'PENDING',
         raw_data: r.raw_data,
         amount: r.amount,
         datetime: r.datetime,
@@ -56,7 +57,7 @@ export const importRepo = {
         confidence: r.confidence,
         classified_by: r.classified_by,
       }))
-    ).select('id, classified_by, amount')
+    ).select('id, classified_by, amount, status')
     return (data ?? []) as Array<{ id: string; classified_by: string; amount: number | null }>
   },
 

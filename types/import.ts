@@ -52,6 +52,25 @@ export interface ImportSession {
   created_at: string
 }
 
+// Input types for import actions (also inferred by Zod schemas in server/validators/import.schema.ts)
+export interface ConfirmRowInput {
+  action: 'CONFIRM' | 'SKIP'
+  fields?: {
+    amount?: number
+    datetime?: string
+    type?: 'EXPENSE' | 'INFLOW'
+    category?: string
+    platform?: string
+    payment_method?: string
+    notes?: string
+    tags?: string[]
+  }
+}
+
+export interface ConfirmAllInput {
+  scope: 'AUTO' | 'ALL'
+}
+
 // DB shape of import_rows
 export interface ImportRow {
   id: string

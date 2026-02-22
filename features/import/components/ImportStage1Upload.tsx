@@ -1,11 +1,12 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { Upload, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { importApi } from '@/lib/api/import'
+import { useUploadStatement } from '../hooks/useUploadStatement'
+import { useState } from 'react'
 
 interface Props {
   onSuccess: (sessionId: string) => void
@@ -13,25 +14,21 @@ interface Props {
 
 export function ImportStage1Upload({ onSuccess }: Props) {
   const [dragging, setDragging] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const { mutate: upload, isPending: uploading } = useUploadStatement()
 
-  const upload = async (file: File) => {
-    setUploading(true)
-    try {
-      const { sessionId } = await importApi.uploadFile(file)
-      onSuccess(sessionId)
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Upload failed')
-      setUploading(false)
-    }
+  const handleFile = (file: File) => {
+    upload(file, {
+      onSuccess: ({ sessionId }) => onSuccess(sessionId),
+      onError: (e) => toast.error(e instanceof Error ? e.message : 'Upload failed'),
+    })
   }
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragging(false)
     const file = e.dataTransfer.files[0]
-    if (file) upload(file)
+    if (file) handleFile(file)
   }
 
   return (
@@ -65,7 +62,7 @@ export function ImportStage1Upload({ onSuccess }: Props) {
         type="file"
         accept=".csv,.xlsx,.xls"
         className="hidden"
-        onChange={e => { const f = e.target.files?.[0]; if (f) upload(f) }}
+        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
       />
 
       <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" disabled>

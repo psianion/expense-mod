@@ -2,8 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/queryKeys'
 import { importApi } from '@/lib/api/import'
-import type { ImportRow } from '@/types/import'
-import type { ConfirmRowInput } from '@server/validators/import.schema'
+import type { ImportRow, ConfirmRowInput } from '@/types/import'
 
 export function useConfirmRow(sessionId: string) {
   const qc = useQueryClient()

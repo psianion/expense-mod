@@ -17,6 +17,21 @@ For each transaction, return:
 Return ONLY a valid JSON array. No markdown, no explanation.`
 
 async function aiHandler(batch: RawImportRow[]): Promise<ClassifiedRow[]> {
+  // AI_MOCK=true: skip real API calls and return deterministic canned responses (used in E2E tests)
+  if (process.env.AI_MOCK === 'true') {
+    return batch.map(row => ({
+      ...row,
+      category: 'Other',
+      platform: null,
+      payment_method: 'UPI',
+      notes: null,
+      tags: [],
+      recurring_flag: false,
+      confidence: { category: 0.75, platform: 0, payment_method: 0.75 },
+      classified_by: 'AI' as const,
+    }))
+  }
+
   const input = batch.map((row, i) => ({
     index: i,
     narration: row.narration,

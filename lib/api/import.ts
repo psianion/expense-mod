@@ -1,6 +1,5 @@
 // lib/api/import.ts
-import type { ImportSession, ImportRow } from '@/types/import'
-import type { ConfirmRowInput, ConfirmAllInput } from '@server/validators/import.schema'
+import type { ImportSession, ImportRow, ConfirmRowInput, ConfirmAllInput } from '@/types/import'
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
