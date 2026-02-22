@@ -164,7 +164,7 @@ export default function BillsPage() {
     <>
       <AppLayoutClient>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-xl font-semibold">Bills & Instances</h2>
                 <p className="text-sm text-muted-foreground">
@@ -176,7 +176,7 @@ export default function BillsPage() {
                   placeholder="Search by name or type"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-48"
+                  className="w-full sm:w-48 h-9"
                 />
                 <Select value={view} onValueChange={(v) => setView(v as ViewFilter)}>
                   <SelectTrigger className="w-full sm:w-32">
@@ -220,7 +220,7 @@ export default function BillsPage() {
                 <CardDescription>Latest generated or pending instances</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border overflow-hidden">
+                <div className="overflow-x-auto rounded-md border">
                   <Table>
                     <TableHeader>
                       <TableRow>

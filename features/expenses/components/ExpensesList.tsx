@@ -82,9 +82,7 @@ export function ExpensesList({ expenses, isLoading, className }: ExpensesListPro
                         {formatPrice(expense.amount)}
                       </span>
                       {expense.category && (
-                        <span className="px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded-full">
-                          {expense.category}
-                        </span>
+                        <Badge variant="secondary">{expense.category}</Badge>
                       )}
                     {expense.source === 'RECURRING' && (
                       <Badge variant="secondary">Recurring</Badge>

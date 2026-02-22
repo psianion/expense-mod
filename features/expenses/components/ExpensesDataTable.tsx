@@ -353,7 +353,7 @@ export function ExpensesDataTable({ currency = '₹' }: { currency?: string }) {
                     : undefined
                 }
                 onSelect={(range) => handleDateSelect(range as DateRange | undefined)}
-                numberOfMonths={2}
+                numberOfMonths={1}
               />
               {(dateFrom || dateTo) && (
                 <div className="border-t p-2 flex justify-end">
@@ -521,36 +521,42 @@ export function ExpensesDataTable({ currency = '₹' }: { currency?: string }) {
       {/* CardContent — Table                                               */}
       {/* ---------------------------------------------------------------- */}
       <CardContent className="p-0 pb-4">
-        <div className="rounded-md border mx-6">
+        <div className="overflow-x-auto rounded-md border mx-6">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>
-                  <button
-                    className="flex items-center font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-medium text-muted-foreground hover:text-foreground"
                     onClick={() => handleSortToggle('datetime')}
                   >
                     Date
                     <SortIcon col="datetime" />
-                  </button>
+                  </Button>
                 </TableHead>
                 <TableHead>
-                  <button
-                    className="flex items-center font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-medium text-muted-foreground hover:text-foreground"
                     onClick={() => handleSortToggle('amount')}
                   >
                     Amount
                     <SortIcon col="amount" />
-                  </button>
+                  </Button>
                 </TableHead>
                 <TableHead>
-                  <button
-                    className="flex items-center font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-medium text-muted-foreground hover:text-foreground"
                     onClick={() => handleSortToggle('category')}
                   >
                     Category
                     <SortIcon col="category" />
-                  </button>
+                  </Button>
                 </TableHead>
                 <TableHead className="text-muted-foreground font-medium">Platform</TableHead>
                 <TableHead className="text-muted-foreground font-medium">Payment</TableHead>
@@ -571,13 +577,13 @@ export function ExpensesDataTable({ currency = '₹' }: { currency?: string }) {
                   className="[&_tr:last-child]:border-0"
                 >
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <tr key={i} className="border-b">
+                    <TableRow key={i}>
                       {Array.from({ length: 8 }).map((__, j) => (
-                        <td key={j} className="p-2 align-middle">
+                        <TableCell key={j}>
                           <Skeleton className="h-4 w-full" />
-                        </td>
+                        </TableCell>
                       ))}
-                    </tr>
+                    </TableRow>
                   ))}
                 </motion.tbody>
               ) : expenses.length === 0 ? (
@@ -589,13 +595,13 @@ export function ExpensesDataTable({ currency = '₹' }: { currency?: string }) {
                   transition={{ duration: 0.08 }}
                   className="[&_tr:last-child]:border-0"
                 >
-                  <tr>
-                    <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                  <TableRow>
+                    <TableCell colSpan={8} className="p-8 text-center text-muted-foreground">
                       {hasAnyFilters
                         ? 'No expenses match the current filters.'
                         : 'No expenses yet. Add your first expense to get started.'}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 </motion.tbody>
               ) : (
                 <motion.tbody
