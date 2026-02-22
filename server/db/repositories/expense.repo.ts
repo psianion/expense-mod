@@ -63,50 +63,56 @@ export class ExpenseRepository {
     return expense as Expense
   }
 
-  async getExpenses(filters?: ExpenseFilters, auth?: RepoAuthContext | null): Promise<Expense[]> {
+  async getExpenses(
+    filters?: ExpenseFilters,
+    auth?: RepoAuthContext | null
+  ): Promise<{ expenses: Expense[]; total: number }> {
     const client = getClient(auth)
     let query = client
       .from('expenses')
-      .select('*')
-      .order('datetime', { ascending: false })
+      .select('*', { count: 'exact' })
+
+    // Sort
+    const sortCol = filters?.sort_by ?? 'datetime'
+    const ascending = filters?.sort_order === 'asc'
+    query = query.order(sortCol, { ascending })
 
     if (auth && !auth.useMasterAccess && auth.userId) {
       query = query.eq('user_id', auth.userId)
     }
 
-    // Apply filters
-    if (filters?.type) {
-      query = query.eq('type', filters.type)
-    }
-    if (filters?.category) {
-      query = query.eq('category', filters.category)
-    }
-    if (filters?.platform) {
-      query = query.eq('platform', filters.platform)
-    }
-    if (filters?.payment_method) {
-      query = query.eq('payment_method', filters.payment_method)
-    }
-    if (filters?.date_from) {
-      query = query.gte('datetime', filters.date_from)
-    }
-    if (filters?.date_to) {
-      query = query.lte('datetime', filters.date_to)
-    }
-    if (filters?.source) {
-      query = query.eq('source', filters.source)
-    }
-    if (filters?.bill_instance_id) {
-      query = query.eq('bill_instance_id', filters.bill_instance_id)
-    }
-    if (filters?.limit) {
-      query = query.limit(filters.limit)
-    }
-    if (filters?.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1)
+    // Exact filters
+    if (filters?.type) query = query.eq('type', filters.type)
+    if (filters?.category) query = query.eq('category', filters.category)
+    if (filters?.platform) query = query.eq('platform', filters.platform)
+    if (filters?.payment_method) query = query.eq('payment_method', filters.payment_method)
+    if (filters?.date_from) query = query.gte('datetime', filters.date_from)
+    if (filters?.date_to) query = query.lte('datetime', filters.date_to)
+    if (filters?.source) query = query.eq('source', filters.source)
+    if (filters?.bill_instance_id) query = query.eq('bill_instance_id', filters.bill_instance_id)
+
+    // Full-text search across category, platform, payment_method, tags (cast to text), raw_text
+    // NOTE: Expense type has no 'notes' column. Searchable columns: category, platform,
+    // payment_method, tags (array cast to text as "{food,lunch}"), raw_text.
+    if (filters?.search) {
+      const s = filters.search.replace(/[%_]/g, '\\$&')
+      query = query.or(
+        `category.ilike.%${s}%,platform.ilike.%${s}%,payment_method.ilike.%${s}%,tags::text.ilike.%${s}%,raw_text.ilike.%${s}%`
+      )
     }
 
-    const { data, error } = await query
+    // Pagination: prefer page over raw offset
+    const limit = filters?.limit ?? 25
+    if (filters?.page && filters.page > 0) {
+      const offset = (filters.page - 1) * limit
+      query = query.range(offset, offset + limit - 1)
+    } else if (filters?.offset !== undefined) {
+      query = query.range(filters.offset, filters.offset + limit - 1)
+    } else if (filters?.limit) {
+      query = query.limit(limit)
+    }
+
+    const { data, error, count } = await query
 
     if (error) {
       const msg = error.message ?? ''
@@ -116,7 +122,38 @@ export class ExpenseRepository {
       throw new Error(error.message)
     }
 
-    return data as Expense[]
+    return { expenses: data as Expense[], total: count ?? 0 }
+  }
+
+  async getFacets(auth?: RepoAuthContext | null): Promise<{
+    categories: string[]
+    platforms: string[]
+    payment_methods: string[]
+  }> {
+    const client = getClient(auth)
+
+    const buildFacetQuery = (col: string) => {
+      let q = client.from('expenses').select(col)
+      if (auth && !auth.useMasterAccess && auth.userId) {
+        q = q.eq('user_id', auth.userId)
+      }
+      return q
+    }
+
+    const [catRes, platRes, pmRes] = await Promise.all([
+      buildFacetQuery('category'),
+      buildFacetQuery('platform'),
+      buildFacetQuery('payment_method'),
+    ])
+
+    const unique = (arr: Record<string, unknown>[], key: string): string[] =>
+      [...new Set(arr?.map((r) => r[key]).filter(Boolean))].sort() as string[]
+
+    return {
+      categories: unique(catRes.data ?? [], 'category'),
+      platforms: unique(platRes.data ?? [], 'platform'),
+      payment_methods: unique(pmRes.data ?? [], 'payment_method'),
+    }
   }
 
   async getExpenseById(id: string, auth?: RepoAuthContext | null): Promise<Expense | null> {
