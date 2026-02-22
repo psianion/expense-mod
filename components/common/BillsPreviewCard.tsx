@@ -8,15 +8,20 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useUpcomingBillInstancesQuery } from '@/lib/query/hooks'
 import { formatPrice } from '@/lib/formatPrice'
+import { cn } from '@/lib/utils'
 
-export function BillsPreviewCard() {
+interface BillsPreviewCardProps {
+  className?: string
+}
+
+export function BillsPreviewCard({ className }: BillsPreviewCardProps) {
   const { data: billInstances = [], isLoading } = useUpcomingBillInstancesQuery(5)
 
   const totalAmount = billInstances.reduce((sum, instance) => sum + instance.amount, 0)
 
   if (isLoading) {
     return (
-      <Card className="relative">
+      <Card className={cn('relative', className)}>
         <CardHeader className="pb-2">
           <Skeleton className="h-5 w-20" />
           <Skeleton className="h-4 w-40" />
@@ -33,7 +38,7 @@ export function BillsPreviewCard() {
   }
 
   return (
-    <Card className="relative">
+    <Card className={cn('relative', className)}>
       <Link
         href="/bills"
         className="absolute top-3 right-3 p-1 rounded-full hover:bg-muted transition-colors"
