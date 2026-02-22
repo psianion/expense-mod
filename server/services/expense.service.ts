@@ -73,9 +73,21 @@ export class ExpenseService {
     return { expense, matchedBillId, creditCardId: creditCardBillId }
   }
 
-  async getExpenses(filters?: ExpenseFilters, user?: UserContext): Promise<Expense[]> {
+  async getExpenses(
+    filters?: ExpenseFilters,
+    user?: UserContext
+  ): Promise<{ expenses: Expense[]; total: number }> {
     const auth = user ? toRepoAuth(user) : undefined
     return expenseRepository.getExpenses(filters, auth)
+  }
+
+  async getFacets(user: UserContext): Promise<{
+    categories: string[]
+    platforms: string[]
+    payment_methods: string[]
+  }> {
+    const auth = toRepoAuth(user)
+    return expenseRepository.getFacets(auth)
   }
 
   async updateExpense(id: string, updates: UpdateExpenseInput, user: UserContext): Promise<Expense> {

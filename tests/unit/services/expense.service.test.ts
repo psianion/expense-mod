@@ -63,9 +63,10 @@ describe('ExpenseService', () => {
   })
 
   describe('getExpenses', () => {
-    it('returns empty array when no expenses', async () => {
-      const expenses = await expenseService.getExpenses(undefined, demoUser)
+    it('returns empty expenses and zero total when no expenses', async () => {
+      const { expenses, total } = await expenseService.getExpenses(undefined, demoUser)
       expect(expenses).toEqual([])
+      expect(total).toBe(0)
     })
 
     it('returns expenses with filters', async () => {
@@ -73,7 +74,7 @@ describe('ExpenseService', () => {
         ...createExpensePayload,
         expense: { ...createExpensePayload.expense, category: 'Food' },
       }, demoUser)
-      const expenses = await expenseService.getExpenses({ category: 'Food' }, demoUser)
+      const { expenses } = await expenseService.getExpenses({ category: 'Food' }, demoUser)
       expect(expenses.length).toBe(1)
       expect(expenses[0].category).toBe('Food')
     })
