@@ -146,8 +146,8 @@ export class ExpenseRepository {
       buildFacetQuery('payment_method'),
     ])
 
-    const unique = (arr: Record<string, unknown>[], key: string): string[] =>
-      [...new Set(arr?.map((r) => r[key]).filter(Boolean))].sort() as string[]
+    const unique = (arr: unknown[], key: string): string[] =>
+      Array.from(new Set((arr as Record<string, unknown>[])?.map((r) => r[key]).filter(Boolean))).sort() as string[]
 
     return {
       categories: unique(catRes.data ?? [], 'category'),

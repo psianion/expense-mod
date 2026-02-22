@@ -58,6 +58,10 @@ export function useCreateExpenseMutation() {
       if (variables.expense) {
         const optimisticExpense: Expense = {
           ...variables.expense,
+          category: variables.expense.category ?? 'Other',
+          platform: variables.expense.platform ?? 'Other',
+          payment_method: variables.expense.payment_method ?? 'Other',
+          tags: variables.expense.tags ?? [],
           id: `temp-${Date.now()}`,
           user_id: null,
           bill_id: null,

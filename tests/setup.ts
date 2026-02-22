@@ -185,7 +185,7 @@ function createQueryBuilder(table: TableName) {
         }
         resolve({ data, error: null, count: countTotal })
       } catch (err) {
-        resolve({ data: null, error: { message: err instanceof Error ? err.message : String(err) } })
+        resolve({ data: null, error: { message: err instanceof Error ? err.message : String(err) }, count: null })
       }
       return Promise.resolve(undefined as never)
     },
