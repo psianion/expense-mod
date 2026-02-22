@@ -179,7 +179,7 @@ export default function BillsPage() {
                   className="w-48"
                 />
                 <Select value={view} onValueChange={(v) => setView(v as ViewFilter)}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-full sm:w-32">
                     <SelectValue placeholder="Flow" />
                   </SelectTrigger>
                   <SelectContent>
@@ -191,7 +191,7 @@ export default function BillsPage() {
                   </SelectContent>
                 </Select>
                 <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-full sm:w-32">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -353,7 +353,7 @@ export default function BillsPage() {
             />
           </div>
 
-          {manualError && <p className="text-sm text-red-500">{manualError}</p>}
+          {manualError && <p className="text-sm text-destructive">{manualError}</p>}
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setManualOpen(false)}>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useRecentExpensesQuery } from '@/lib/query/hooks'
 import { formatPrice } from '@/lib/formatPrice'
+import { cn } from '@/lib/utils'
 import type { Expense } from '@/types'
 
 function expenseLabel(expense: Expense): string {
@@ -16,14 +17,18 @@ function expenseLabel(expense: Expense): string {
   return 'Expense'
 }
 
-export function ExpensesPreviewCard() {
+interface ExpensesPreviewCardProps {
+  className?: string
+}
+
+export function ExpensesPreviewCard({ className }: ExpensesPreviewCardProps) {
   const { data: expenses = [], isLoading } = useRecentExpensesQuery(5)
 
   const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0)
 
   if (isLoading) {
     return (
-      <Card className="relative">
+      <Card className={cn('relative', className)}>
         <CardHeader className="pb-2">
           <Skeleton className="h-5 w-24" />
           <Skeleton className="h-4 w-48" />
@@ -40,7 +45,7 @@ export function ExpensesPreviewCard() {
   }
 
   return (
-    <Card className="relative">
+    <Card className={cn('relative', className)}>
       <Link
         href="/expenses"
         className="absolute top-3 right-3 p-1 rounded-full hover:bg-muted transition-colors"

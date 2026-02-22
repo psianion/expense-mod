@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 
 import type { Expense } from '@/types'
+import { cn } from '@/lib/utils'
 import { getUserPreferences } from '@/lib/userPreferences'
 import { getCurrentStatementPeriod, formatStatementPeriod } from '@/lib/creditCardUtils'
 import { getCreditCardPeriodExpenses } from '@/lib/analytics'
@@ -162,7 +163,7 @@ export function BillReconciliation({ expenses, onReconciliationComplete }: BillR
               {selectedCard && reconciliation && (
                 <>
                   {/* Period Info */}
-                  <div className="bg-muted p-3 rounded-lg">
+                  <div className="rounded-md bg-muted/60 p-3">
                     <div className="text-sm font-medium mb-1">
                       {formatStatementPeriod(reconciliation.period)}
                     </div>
@@ -240,14 +241,14 @@ export function BillReconciliation({ expenses, onReconciliationComplete }: BillR
                   </div>
 
                   {/* Reconciliation Summary */}
-                  <div className="bg-muted p-3 rounded-lg space-y-2">
+                  <div className="rounded-md bg-muted/60 p-3 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Tracked Expenses:</span>
                       <span>{formatPrice(reconciliation.trackedAmount)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Adjustments:</span>
-                      <span className={reconciliation.adjustments >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      <span className={cn(reconciliation.adjustments >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>
                         {reconciliation.adjustments >= 0 ? '+' : ''}{formatPrice(reconciliation.adjustments)}
                       </span>
                     </div>

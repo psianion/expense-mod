@@ -70,7 +70,7 @@ export function DataTable({
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
             <p className="text-muted-foreground mt-2">Loading expenses...</p>
           </div>
         </CardContent>
@@ -110,7 +110,7 @@ export function DataTable({
               <Button
                 variant="outline"
                 className={cn(
-                  "w-[280px] justify-start text-left font-normal",
+                  "w-full sm:w-[280px] justify-start text-left font-normal",
                   !dateRange.from && "text-muted-foreground"
                 )}
               >
@@ -175,7 +175,7 @@ export function DataTable({
             </SelectContent>
           </Select>
 
-          <div className="flex items-center gap-2 ml-4">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Sort Controls */}
             <Button
               variant={sortField === 'date' ? 'default' : 'outline'}
@@ -259,7 +259,7 @@ export function DataTable({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <span className={`${expense.type === 'EXPENSE' ? 'text-red-600' : 'text-green-600'}`}>
+                      <span className={cn(expense.type === 'EXPENSE' ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400')}>
                         {expense.type === 'EXPENSE' ? (
                           <ArrowDownRight className="h-4 w-4 inline" />
                         ) : (

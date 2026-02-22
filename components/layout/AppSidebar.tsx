@@ -3,6 +3,7 @@
 import * as React from "react"
 import { usePathname } from "next/navigation"
 import { Wallet, Plus } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -92,10 +93,10 @@ export function AppSidebar({ ...props }: AppSidebarProps) {
               <SidebarMenuItem>
                 <Button
                   variant="default"
-                  className={`${state !== "collapsed" ? "w-full" : "w-8"} flex justify-center items-center p-0 h-8`}
+                  className={cn('flex justify-center items-center p-0 h-8', state !== 'collapsed' ? 'w-full' : 'w-8')}
                   onClick={openExpenseDrawer}
                 >
-                  <Plus className="mr-0 h-4 w-4" />
+                  <Plus className={cn('h-4 w-4', state !== 'collapsed' && 'mr-1.5')} />
                   {state !== "collapsed" && <span>Add Expense</span>}
                 </Button>
               </SidebarMenuItem>

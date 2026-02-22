@@ -1,5 +1,6 @@
 import * as React from 'react'
 
+import { cn } from '@/lib/utils'
 import { TrendPeriod, getCategoryTotals, getCategoryTrend, getAvailableCategories, getPaymentMethodStats, getPlatformStats, getFilteredSpendingTrend, getSummaryTotals, getCreditCardAnalytics, getCreditCardComparison } from '@lib/analytics'
 import { Expense } from '@/types'
 import { Button } from '@components/ui/button'
@@ -276,18 +277,18 @@ export function AnalyticsDashboard({ expenses, isLoading, currency, filters }: A
                 <CardTitle>Category trends</CardTitle>
                 <p className="text-sm text-muted-foreground">Track spending by category over time.</p>
               </div>
-            <div className="flex gap-2">
-              {(Object.keys(periodLabels) as TrendPeriod[]).map((period) => (
-                <AnimatedButton
-                  key={period}
-                  variant={trendPeriod === period ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTrendPeriod(period)}
-                >
-                  {periodLabels[period]}
-                </AnimatedButton>
-              ))}
-            </div>
+              <div className="flex gap-2">
+                {(Object.keys(periodLabels) as TrendPeriod[]).map((period) => (
+                  <AnimatedButton
+                    key={period}
+                    variant={trendPeriod === period ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTrendPeriod(period)}
+                  >
+                    {periodLabels[period]}
+                  </AnimatedButton>
+                ))}
+              </div>
             </CardHeader>
             <CardContent>
               <CategoryTrendsChart
@@ -409,7 +410,7 @@ function SummaryStat({ label, value, currency, tone }: SummaryStatProps) {
   return (
     <div className="rounded-lg border bg-muted/40 p-4">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className={`text-2xl font-semibold ${isExpense ? 'text-red-600' : 'text-green-600'}`}>
+      <p className={cn('text-2xl font-semibold', isExpense ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400')}>
         {isExpense && value > 0 ? '-' : value > 0 ? '+' : ''}
         {formatted}
       </p>

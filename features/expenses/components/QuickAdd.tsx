@@ -4,13 +4,15 @@ import { Textarea } from '@components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card'
 import { Loader2 } from 'lucide-react'
 import { AnimatedCard, SlideIn } from '@/components/animations'
+import { cn } from '@/lib/utils'
 
 interface QuickAddProps {
   onParse: (text: string) => Promise<void>
   isLoading: boolean
+  className?: string
 }
 
-export function QuickAdd({ onParse, isLoading }: QuickAddProps) {
+export function QuickAdd({ onParse, isLoading, className }: QuickAddProps) {
   const [text, setText] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,7 +24,7 @@ export function QuickAdd({ onParse, isLoading }: QuickAddProps) {
   }
 
   return (
-    <SlideIn className="mb-6">
+    <SlideIn className={cn(className)}>
       <AnimatedCard>
         <CardHeader>
           <CardTitle>Quick Add Expense</CardTitle>

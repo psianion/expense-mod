@@ -10,6 +10,7 @@ import { aiApi } from '@/lib/api'
 import { BillMatchCandidate, ExpenseSource, ExpenseType, ParsedExpense } from '@/types'
 import { getLocalISO } from '@/lib/datetime'
 import { useCreateExpenseMutation } from '@/lib/query/hooks'
+import { StaggerContainer, StaggerItem } from '@/components/animations'
 
 export default function Page() {
   const [isParsing, setIsParsing] = useState(false)
@@ -82,11 +83,17 @@ export default function Page() {
         </div>
 
         {/* Preview Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <ExpensesPreviewCard />
-          <BillsPreviewCard />
-          <AnalyticsPreviewCard />
-        </div>
+        <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StaggerItem>
+            <ExpensesPreviewCard />
+          </StaggerItem>
+          <StaggerItem>
+            <BillsPreviewCard />
+          </StaggerItem>
+          <StaggerItem>
+            <AnalyticsPreviewCard />
+          </StaggerItem>
+        </StaggerContainer>
       </div>
 
       <PreviewModal

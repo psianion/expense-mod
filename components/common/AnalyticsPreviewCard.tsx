@@ -8,8 +8,13 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { analyticsApi } from '@/lib/api'
 import { formatPrice } from '@/lib/formatPrice'
+import { cn } from '@/lib/utils'
 
-export function AnalyticsPreviewCard() {
+interface AnalyticsPreviewCardProps {
+  className?: string
+}
+
+export function AnalyticsPreviewCard({ className }: AnalyticsPreviewCardProps) {
   const [analyticsData, setAnalyticsData] = useState<{
     summary: { expenseTotal: number; inflowTotal: number; net: number }
     topCategories: Array<{ name: string; value: number }>
@@ -39,7 +44,7 @@ export function AnalyticsPreviewCard() {
 
   if (isLoading) {
     return (
-      <Card className="relative">
+      <Card className={cn('relative', className)}>
         <CardHeader className="pb-2">
           <Skeleton className="h-5 w-20" />
           <Skeleton className="h-4 w-32" />
@@ -56,7 +61,7 @@ export function AnalyticsPreviewCard() {
   }
 
   return (
-    <Card className="relative">
+    <Card className={cn('relative', className)}>
       <Link
         href="/analytics"
         className="absolute top-3 right-3 p-1 rounded-full hover:bg-muted transition-colors"
@@ -69,12 +74,12 @@ export function AnalyticsPreviewCard() {
         <CardTitle className="text-lg">Analytics</CardTitle>
         <CardDescription>
           {totalTransactions} transaction{totalTransactions !== 1 ? 's' : ''} •           {summary.net >= 0 ? (
-            <span className="text-green-600 flex items-center gap-1">
+            <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               +{formatPrice(summary.net)}
             </span>
           ) : (
-            <span className="text-red-600 flex items-center gap-1">
+            <span className="text-destructive flex items-center gap-1">
               <TrendingDown className="h-3 w-3" />
               -{formatPrice(Math.abs(summary.net))}
             </span>
@@ -87,11 +92,11 @@ export function AnalyticsPreviewCard() {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Expenses</p>
-              <p className="font-medium text-red-600">{formatPrice(summary.expenseTotal)}</p>
+              <p className="font-medium text-destructive">{formatPrice(summary.expenseTotal)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Income</p>
-              <p className="font-medium text-green-600">{formatPrice(summary.inflowTotal)}</p>
+              <p className="font-medium text-emerald-600 dark:text-emerald-400">{formatPrice(summary.inflowTotal)}</p>
             </div>
           </div>
 
