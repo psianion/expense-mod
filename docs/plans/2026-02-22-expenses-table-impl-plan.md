@@ -12,7 +12,55 @@
 
 ---
 
+## Agent & Skill Strategy
+
+This plan uses specialised agents and skills to keep each task focused and high-quality. Use the **executing-plans** skill to drive execution sequentially, but dispatch parallel subagents wherever tasks are independent.
+
+### Skill / Agent → Task mapping
+
+| Task | Skill / Agent | Why |
+|------|--------------|-----|
+| 1 — Mock store + tests | `test-suite` skill | Writes Vitest tests matching project patterns and mock store |
+| 2 — Types | *(inline, no agent)* | Pure interface additions — straightforward |
+| 3 — Repository | `api-route` skill | Knows the layered architecture: repo → service boundary |
+| 4 — Service | `api-route` skill | Same layer; call together with Task 3 |
+| 5 — API route | `api-route` skill | Thin route handler — exactly what this skill is for |
+| 6 — Facets route | `api-route` skill | New endpoint; same skill, same pattern |
+| 7 — API client + queryKeys | *(inline)* | Simple type and client updates |
+| 8 — React Query hooks | `react-query-hook` skill | Knows `keepPreviousData`, stale times, optimistic updates |
+| 9 — ExpensesDataTable UI | `tailwind-shadcn-styler` agent | Knows shadcn new-york style, CSS vars, `cn()`, motion animations |
+| 10 — page.tsx refactor | *(inline)* | Trivial shell; no agent needed |
+| 11 — E2E tests | `test-suite` skill or `test-writer` agent | Knows Playwright patterns, `navigateToExpenses` helpers |
+| 12 — Regression sweep | `test-all` skill + `architecture-guardian` agent | Full suite + layer violation check |
+
+### Parallelisation opportunities
+
+After **Task 2** (types) is committed, **Tasks 3–6** are independent of each other (different files, same interface contract). Use `superpowers:dispatching-parallel-agents` to run them simultaneously — one agent per task — then merge results.
+
+Similarly, **Task 9** (UI component) and **Task 11** (E2E tests) can run in parallel after Tasks 1–8 are complete.
+
+```
+Task 1 → Task 2 → [Tasks 3, 4, 5, 6 in parallel]
+                       ↓
+                   Task 7 → Task 8 → [Task 9, Task 11 in parallel]
+                                           ↓
+                                       Task 10 → Task 12
+```
+
+### Execution mode
+
+Run this plan with:
+- **`superpowers:executing-plans`** — for sequential, task-by-task execution with review checkpoints
+- **`superpowers:subagent-driven-development`** — for dispatching fresh subagents per task in the current session
+- **`superpowers:dispatching-parallel-agents`** — for the parallel groups identified above
+
+After all tasks pass: run `superpowers:requesting-code-review` then `pr-review-toolkit:review-pr`.
+
+---
+
 ## Task 1: Extend mock store to support `or()`, `ilike`, and `count`
+
+> **Skill:** `test-suite` — invoke with `"Extend the Vitest mock store in tests/setup.ts to support or(), ilike pattern matching, and count mode for pagination; then write integration tests for expense search and pagination at tests/integration/api/expenses-search.test.ts"`
 
 The test mock in `tests/setup.ts` does not support `or()` filters or returning row counts. We need these for the search and pagination tests to work.
 
@@ -183,6 +231,8 @@ git commit -m "test: extend mock store with or/ilike/count support; add expense 
 
 ## Task 2: Extend ExpenseFilters types
 
+> **No agent needed** — pure interface additions in two files. Handle inline.
+
 Add `search`, `page`, `sort_by`, `sort_order` to both the client types and the repo interface. No logic changes yet.
 
 **Files:**
@@ -256,6 +306,8 @@ git commit -m "feat: extend ExpenseFilters with search, sort_by, sort_order, pag
 ---
 
 ## Task 3: Update expense repository (search, sort, pagination, count, facets)
+
+> **Skill:** `api-route` — invoke with `"Update getExpenses in server/db/repositories/expense.repo.ts to support search (or/ilike), sort_by/sort_order, page-based pagination using range(), and count: exact. Add getFacets() method returning distinct categories/platforms/payment_methods. Return {expenses, total} instead of Expense[]."`
 
 **Files:**
 - Modify: `server/db/repositories/expense.repo.ts`
@@ -395,6 +447,8 @@ git commit -m "feat: repo getExpenses returns {expenses, total}, adds search/sor
 
 ## Task 4: Update expense service
 
+> **Skill:** `api-route` — invoke with `"Update ExpenseService.getExpenses in server/services/expense.service.ts to return {expenses, total} by passing through to the updated repo. Add getFacets(user) method delegating to expenseRepository.getFacets(auth)."`
+
 **Files:**
 - Modify: `server/services/expense.service.ts`
 
@@ -463,6 +517,8 @@ git commit -m "feat: expense service getExpenses returns {expenses, total}, adds
 ---
 
 ## Task 5: Update GET /api/expenses route + fix existing integration tests
+
+> **Skill:** `api-route` — invoke with `"Update GET /api/expenses in app/api/expenses/route.ts to parse search, sort_by, sort_order, page, limit params and return {expenses, total}. Also update tests/integration/api/expenses.test.ts to expect total in response body."`
 
 **Files:**
 - Modify: `app/api/expenses/route.ts`
@@ -534,6 +590,8 @@ git commit -m "feat: GET /api/expenses returns {expenses, total}, adds search/so
 ---
 
 ## Task 6: Add GET /api/expenses/facets route
+
+> **Skill:** `api-route` — invoke with `"Create GET /api/expenses/facets route at app/api/expenses/facets/route.ts that calls expenseService.getFacets(user) and returns {categories, platforms, payment_methods}. Follow the successResponse/handleApiError pattern. Also write integration tests at tests/integration/api/expenses-facets.test.ts."`
 
 **Files:**
 - Create: `app/api/expenses/facets/route.ts`
@@ -630,6 +688,8 @@ git commit -m "feat: add GET /api/expenses/facets endpoint for distinct filter v
 
 ## Task 7: Update API client (`lib/api/expenses.ts`) and queryKeys
 
+> **No agent needed** — straightforward client-side updates following existing patterns. Handle inline.
+
 **Files:**
 - Modify: `lib/api/expenses.ts`
 - Modify: `lib/query/queryKeys.ts`
@@ -712,6 +772,8 @@ git commit -m "feat: update expenses API client to return {expenses, total}, add
 ---
 
 ## Task 8: Update React Query hooks
+
+> **Skill:** `react-query-hook` — invoke with `"Update useExpensesQuery in lib/query/hooks/useExpensesQuery.ts: change return type to {expenses, total}, add placeholderData: keepPreviousData, staleTime: 60_000. Add useExpenseFacetsQuery with staleTime: 5*60_000. Update useCreateExpenseMutation optimistic update to handle the new {expenses, total} cache shape. Export useExpenseFacetsQuery from the hooks barrel."`
 
 **Files:**
 - Modify: `lib/query/hooks/useExpensesQuery.ts`
@@ -864,6 +926,10 @@ git commit -m "feat: update React Query hooks for paginated expenses + add useEx
 ---
 
 ## Task 9: Build `ExpensesDataTable` component
+
+> **Agent:** `tailwind-shadcn-styler` — invoke with: `"Build features/expenses/components/ExpensesDataTable.tsx — a self-contained expenses table that reads/writes Next.js URL search params for all filter state. Includes: debounced search input, date range picker, type/category selects, collapsible advanced panel (platform, payment method, source, sort controls) with motion/react slide animation, active filter chips with spring pop-in/out, skeleton loading rows, animated table rows (0.12s fade+slide, 15ms stagger), pagination controls with page size selector (10/25/50), and a summary bar. Uses shadcn/ui new-york style, cn(), CSS variables. Hooks: useExpensesQuery(filters) and useExpenseFacetsQuery(). The full component spec and code are in docs/plans/2026-02-22-expenses-table-impl-plan.md Task 9."`
+>
+> Note: `shadcn-component` skill can be used alongside for any specific shadcn primitives that need configuration (e.g. if `Skeleton` is not yet installed: `npx shadcn@latest add skeleton`).
 
 This is the main UI component. It reads/writes URL search params and is fully self-contained.
 
@@ -1498,6 +1564,8 @@ git commit -m "feat: add ExpensesDataTable with server-side filters, URL params,
 
 ## Task 10: Simplify `app/expenses/page.tsx`
 
+> **No agent needed** — trivial refactor: remove filter state, wrap `ExpensesDataTable` in `<Suspense>`. Handle inline.
+
 **Files:**
 - Modify: `app/expenses/page.tsx`
 
@@ -1600,6 +1668,10 @@ git commit -m "refactor: expenses page is now thin shell; ExpensesDataTable owns
 
 ## Task 11: Update E2E tests for new filter UI
 
+> **Skill:** `test-suite` (or **agent:** `test-writer`) — invoke with: `"Update tests/e2e/ui/expenses-flow/view-filter-expenses.e2e.test.ts with Playwright tests for: page load, search input debounce updates URL (?search=), type filter updates URL (?type=EXPENSE), advanced filters panel toggle (platform visible after click), pagination controls visible with data, clear-all button resets URL. Use navigateToExpenses() helper from tests/helpers/testE2E.ts."`
+>
+> Can run in **parallel** with Task 9 (UI build) since tests reference the UI but don't depend on the code being merged yet.
+
 **Files:**
 - Modify: `tests/e2e/ui/expenses-flow/view-filter-expenses.e2e.test.ts`
 
@@ -1682,6 +1754,10 @@ git commit -m "test: update E2E tests for new expenses filter UI"
 
 ## Task 12: Run full test suite and fix any regressions
 
+> **Skill:** `test-all` — runs unit + integration + E2E suites and reports failures.
+> **Agent:** `architecture-guardian` — run after all code is written to verify no layer violations (components calling repos directly, routes importing UI, etc).
+> **Skill:** `superpowers:verification-before-completion` — REQUIRED before claiming this task done. Must show actual passing test output, not just assert it passed.
+
 **Step 1: Run all unit + integration tests**
 
 ```bash
@@ -1710,9 +1786,13 @@ git commit -m "fix: address test regressions after expenses table redesign"
 
 ## Final Verification Checklist
 
-Before opening a PR:
+> **Run before opening PR:**
+> 1. `superpowers:verification-before-completion` — confirms tests pass with real output
+> 2. `superpowers:requesting-code-review` — self-review against the design doc
+> 3. `pr-review-toolkit:review-pr` — automated PR review (runs code-reviewer, silent-failure-hunter, type-design-analyzer)
+> 4. `architecture-guardian` agent — confirms no layer violations introduced
 
-- [ ] `npm run test:run` → all green
+- [ ] `npm run test:run` → all green (show actual output)
 - [ ] `npx tsc --noEmit` → no errors
 - [ ] `npm run lint` → no warnings
 - [ ] Dev server runs: `npm run dev` → open `/expenses`
@@ -1724,6 +1804,7 @@ Before opening a PR:
   - [ ] Sort by clicking column headers works
   - [ ] Filters persist on browser refresh
   - [ ] Browser back button restores previous filter state
+- [ ] Open PR with `git-pr` skill or `commit-commands:commit-push-pr`
 
 ---
 
