@@ -37,7 +37,7 @@ vi.mock('@server/queue/ai-classification-queue', () => ({
   },
 }))
 
-import { importService } from '@server/import/import.service'
+import { importService } from '@server/services/import.service'
 
 const demoUser = getDemoUserContext()
 
@@ -52,14 +52,21 @@ beforeEach(() => clearMockStore())
 describe('ImportService.createSession', () => {
   it('returns a sessionId immediately', async () => {
     const buf = Buffer.from('csv content')
-    const result = await importService.createSession(buf, 'test.csv', demoUser)
+    const result = await importService.createSession(buf, 'test.csv', 'text/csv', demoUser)
     expect(result.sessionId).toBeDefined()
     expect(typeof result.sessionId).toBe('string')
   })
 
+  it('rejects unsupported file types', async () => {
+    const buf = Buffer.from('pdf content')
+    await expect(
+      importService.createSession(buf, 'report.pdf', 'application/pdf', demoUser)
+    ).rejects.toThrow('Unsupported file type')
+  })
+
   it('splits rows into auto and review queues by confidence threshold', async () => {
     const buf = Buffer.from('csv content')
-    const { sessionId } = await importService.createSession(buf, 'test.csv', demoUser)
+    const { sessionId } = await importService.createSession(buf, 'test.csv', 'text/csv', demoUser)
     await flushPipeline()
     const session = await importService.getSession(sessionId, demoUser)
     expect(session.auto_count).toBe(0)    // Zomato missing payment_method confidence
@@ -67,10 +74,23 @@ describe('ImportService.createSession', () => {
   })
 })
 
+describe('ImportService.getRows', () => {
+  it('throws 409 when session is still PARSING', async () => {
+    const buf = Buffer.from('csv content')
+    const { sessionId } = await importService.createSession(buf, 'test.csv', 'text/csv', demoUser)
+    // Session is PARSING immediately after creation (before pipeline completes)
+    const store = getMockStore()
+    const session = store.import_sessions.find(s => s.id === sessionId)
+    // Force session to stay PARSING
+    if (session) (session as Record<string, unknown>).status = 'PARSING'
+    await expect(importService.getRows(sessionId, demoUser)).rejects.toThrow('still parsing')
+  })
+})
+
 describe('ImportService.confirmRow', () => {
   it('creates an expense and marks row CONFIRMED', async () => {
     const buf = Buffer.from('csv content')
-    const { sessionId } = await importService.createSession(buf, 'test.csv', demoUser)
+    const { sessionId } = await importService.createSession(buf, 'test.csv', 'text/csv', demoUser)
     await flushPipeline()
     const rows = await importService.getRows(sessionId, demoUser)
     const row = rows[0]

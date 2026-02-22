@@ -24,8 +24,8 @@ export const queryKeys = {
   },
   importSessions: {
     all: ['import-sessions'] as const,
-    detail: (id: string) => ['import-sessions', id] as const,
-    rows: (id: string) => ['import-sessions', id, 'rows'] as const,
+    detail: (id: string) => [...queryKeys.importSessions.all, id] as const,
+    rows: (id: string) => [...queryKeys.importSessions.all, id, 'rows'] as const,
   },
   analytics: {
     all: ['analytics'] as const,

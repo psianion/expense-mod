@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { requireAuth } from '@server/auth/context'
-import { importService } from '@server/import/import.service'
+import { importService } from '@server/services/import.service'
 import { successResponse, handleApiError } from '../../../middleware'
 
 export const dynamic = 'force-dynamic'

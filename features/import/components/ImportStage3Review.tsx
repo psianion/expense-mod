@@ -1,0 +1,78 @@
+'use client'
+
+import { Button } from '@/components/ui/button'
+import { ReviewRow } from './ReviewRow'
+import { useConfirmAll } from '../hooks/useConfirmAll'
+import type { ImportRow, ImportSession } from '@/types/import'
+import { toast } from 'sonner'
+
+interface Props {
+  session: ImportSession
+  rows: ImportRow[]
+  onDone: () => void
+}
+
+export function ImportStage3Review({ session, rows, onDone }: Props) {
+  const { mutate: confirmAll, isPending } = useConfirmAll(session.id)
+
+  const pending = rows.filter(r => r.status === 'PENDING').length
+  const needsAttention = rows.filter(r =>
+    r.status === 'PENDING' &&
+    (Object.values(r.confidence).some(v => (v ?? 0) < 0.6))
+  ).length
+
+  const handleConfirmAll = () => {
+    confirmAll('ALL', {
+      onSuccess: ({ imported }) => {
+        toast.success(`${imported} transactions imported`)
+        onDone()
+      },
+      onError: () => toast.error('Failed to import transactions'),
+    })
+  }
+
+  return (
+    <div className="flex flex-col h-[80vh]">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b">
+        <div>
+          <h2 className="text-base font-semibold">Review Transactions</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {session.auto_count} auto-classified · {session.review_count} need review
+            {needsAttention > 0 && <span className="text-red-500 ml-2">⚠ {needsAttention} still need attention</span>}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => confirmAll('AUTO')} disabled={isPending}>
+            Confirm Auto
+          </Button>
+          <Button size="sm" onClick={handleConfirmAll} disabled={isPending || pending === 0}>
+            Save & Import ({pending})
+          </Button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="flex-1 overflow-y-auto px-6">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-background">
+            <tr className="border-b text-xs text-muted-foreground">
+              <th className="py-2 px-3 text-left font-medium">Date</th>
+              <th className="py-2 px-3 text-left font-medium">Amount</th>
+              <th className="py-2 px-3 text-left font-medium">Description</th>
+              <th className="py-2 px-3 text-left font-medium">Category</th>
+              <th className="py-2 px-3 text-left font-medium">Payment</th>
+              <th className="py-2 px-3 text-left font-medium"></th>
+              <th className="py-2 px-3 text-left font-medium"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(row => (
+              <ReviewRow key={row.id} row={row} sessionId={session.id} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
