@@ -4,6 +4,7 @@ import * as React from "react"
 import { ArrowUpRight, ArrowDownRight, TrendingUp } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StaggerContainer, StaggerItem, AnimatedNumber, AnimatedIcon, AnimatedCard } from "@/components/animations"
+import { cn } from "@/lib/utils"
 
 interface SectionCardsProps {
   expenseTotal: number
@@ -27,7 +28,7 @@ export function SectionCards({ expenseTotal, inflowTotal, net, currency }: Secti
             />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               {currency}{" "}
               <AnimatedNumber
                 value={expenseTotal}
@@ -53,7 +54,7 @@ export function SectionCards({ expenseTotal, inflowTotal, net, currency }: Secti
             />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               {currency}{" "}
               <AnimatedNumber
                 value={inflowTotal}
@@ -79,7 +80,7 @@ export function SectionCards({ expenseTotal, inflowTotal, net, currency }: Secti
             />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={cn('text-2xl font-bold', net >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>
               {net >= 0 ? '+' : ''}{currency}{" "}
               <AnimatedNumber
                 value={Math.abs(net)}
