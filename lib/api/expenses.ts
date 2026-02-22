@@ -9,7 +9,7 @@ import type {
 // Expenses API module
 export const expensesApi = {
   // Get all expenses with optional filters
-  async getExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
+  async getExpenses(filters?: ExpenseFilters): Promise<{ expenses: Expense[]; total: number }> {
     const params = new URLSearchParams()
 
     if (filters?.type) params.append('type', filters.type)
@@ -20,19 +20,38 @@ export const expensesApi = {
     if (filters?.date_to) params.append('date_to', filters.date_to!)
     if (filters?.source) params.append('source', filters.source)
     if (filters?.bill_instance_id) params.append('bill_instance_id', filters.bill_instance_id!)
+    if (filters?.search) params.append('search', filters.search)
+    if (filters?.sort_by) params.append('sort_by', filters.sort_by)
+    if (filters?.sort_order) params.append('sort_order', filters.sort_order)
+    if (filters?.page) params.append('page', filters.page.toString())
     if (filters?.limit) params.append('limit', filters.limit.toString())
-    if (filters?.offset) params.append('offset', filters.offset.toString())
+    if (filters?.offset !== undefined) params.append('offset', filters.offset.toString())
 
     const response = await apiClient.get<ExpensesResponse>(
       `/expenses${params.toString() ? `?${params.toString()}` : ''}`
     )
 
-    return response.data.expenses
+    return { expenses: response.data.expenses, total: response.data.total ?? 0 }
   },
 
   // Get recent expenses (for preview cards)
   async getRecentExpenses(limit = 5): Promise<Expense[]> {
-    return this.getExpenses({ limit })
+    const { expenses } = await this.getExpenses({ limit })
+    return expenses
+  },
+
+  // Get distinct filter values (categories, platforms, payment methods)
+  async getExpenseFacets(): Promise<{
+    categories: string[]
+    platforms: string[]
+    payment_methods: string[]
+  }> {
+    const response = await apiClient.get<{
+      categories: string[]
+      platforms: string[]
+      payment_methods: string[]
+    }>('/expenses/facets')
+    return response.data
   },
 
   // Get expense by ID
