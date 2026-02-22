@@ -23,6 +23,8 @@ function generateId(): string {
 function createQueryBuilder(table: TableName) {
   type Row = Record<string, unknown>
   let filters: { op: string; col: string; value: unknown }[] = []
+  let orFilters: { col: string; pattern: string }[] = []
+  let countMode = false
   let orderBy: { col: string; ascending: boolean } | null = null
   let limitVal: number | null = null
   let rangeStart: number | null = null
@@ -38,6 +40,15 @@ function createQueryBuilder(table: TableName) {
       else if (f.op === 'gte') result = result.filter((r) => (r[f.col] as string) >= (f.value as string))
       else if (f.op === 'lte') result = result.filter((r) => (r[f.col] as string) <= (f.value as string))
       else if (f.op === 'in') result = result.filter((r) => (f.value as unknown[]).includes(r[f.col] as never))
+    }
+    if (orFilters.length > 0) {
+      result = result.filter((r) =>
+        orFilters.some(({ col, pattern }) => {
+          const val = r[col]
+          if (Array.isArray(val)) return val.some((v) => String(v).toLowerCase().includes(pattern))
+          return String(val ?? '').toLowerCase().includes(pattern)
+        })
+      )
     }
     if (orderBy) {
       result.sort((a, b) => {
@@ -56,7 +67,22 @@ function createQueryBuilder(table: TableName) {
       insertRows = Array.isArray(rows) ? rows : [rows]
       return chain
     },
-    select() {
+    select(_cols = '*', opts: { count?: 'exact' } = {}) {
+      if (opts.count === 'exact') countMode = true
+      return chain
+    },
+    or(filterStr: string) {
+      // Parse "col.ilike.%pattern%,col2.ilike.%pattern2%" format
+      for (const part of filterStr.split(',')) {
+        const dotIdx = part.indexOf('.')
+        const rest = part.slice(dotIdx + 1)
+        const dotIdx2 = rest.indexOf('.')
+        const col = part.slice(0, dotIdx)
+        const rawPattern = rest.slice(dotIdx2 + 1).replace(/%/g, '').toLowerCase()
+        if (col && rawPattern) {
+          orFilters.push({ col, pattern: rawPattern })
+        }
+      }
       return chain
     },
     single() {
@@ -100,7 +126,7 @@ function createQueryBuilder(table: TableName) {
       deleteMode = true
       return chain
     },
-    then(resolve: (value: { data: unknown; error: unknown }) => void) {
+    then(resolve: (value: { data: unknown; error: unknown; count: number | null }) => void) {
       const tableData = store[table] as Row[]
       try {
         if (insertRows) {
@@ -111,18 +137,18 @@ function createQueryBuilder(table: TableName) {
             updated_at: (row as { updated_at?: string }).updated_at ?? new Date().toISOString(),
           }))
           tableData.push(...toInsert)
-          resolve({ data: singleMode ? toInsert[0] : toInsert, error: null })
+          resolve({ data: singleMode ? toInsert[0] : toInsert, error: null, count: null })
           return Promise.resolve(undefined as never)
         }
         if (updatePayload) {
           const idVal = filters.find((f) => f.col === 'id')?.value as string
           const idx = tableData.findIndex((r) => r.id === idVal)
           if (idx === -1) {
-            resolve({ data: null, error: { code: 'PGRST116', message: 'Not found' } })
+            resolve({ data: null, error: { code: 'PGRST116', message: 'Not found' }, count: null })
             return Promise.resolve(undefined as never)
           }
           tableData[idx] = { ...tableData[idx], ...updatePayload, updated_at: new Date().toISOString() }
-          resolve({ data: singleMode ? tableData[idx] : [tableData[idx]], error: null })
+          resolve({ data: singleMode ? tableData[idx] : [tableData[idx]], error: null, count: null })
           return Promise.resolve(undefined as never)
         }
         if (deleteMode) {
@@ -131,8 +157,16 @@ function createQueryBuilder(table: TableName) {
             const idx = tableData.findIndex((r) => r.id === idFilter.value)
             if (idx !== -1) tableData.splice(idx, 1)
           }
-          resolve({ data: null, error: null })
+          resolve({ data: null, error: null, count: null })
           return Promise.resolve(undefined as never)
+        }
+        // Compute total count before applying range/limit
+        let countTotal: number | null = null
+        if (countMode) {
+          const savedRangeStart = rangeStart; const savedRangeEnd = rangeEnd; const savedLimit = limitVal
+          rangeStart = null; rangeEnd = null; limitVal = null
+          countTotal = applyFilters(tableData).length
+          rangeStart = savedRangeStart; rangeEnd = savedRangeEnd; limitVal = savedLimit
         }
         const filtered = applyFilters(tableData)
         if (table === 'bill_instances' && filtered.length > 0) {
@@ -146,10 +180,10 @@ function createQueryBuilder(table: TableName) {
         }
         const data = singleMode ? filtered[0] ?? null : filtered
         if (singleMode && !filtered[0]) {
-          resolve({ data: null, error: { code: 'PGRST116', message: 'Not found' } })
+          resolve({ data: null, error: { code: 'PGRST116', message: 'Not found' }, count: null })
           return Promise.resolve(undefined as never)
         }
-        resolve({ data, error: null })
+        resolve({ data, error: null, count: countTotal })
       } catch (err) {
         resolve({ data: null, error: { message: err instanceof Error ? err.message : String(err) } })
       }
