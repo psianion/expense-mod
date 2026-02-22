@@ -11,11 +11,13 @@ process.env.DEMO_USER_ID = process.env.DEMO_USER_ID ?? '00000000-0000-0000-0000-
 process.env.DEMO_USER_EMAIL = process.env.DEMO_USER_EMAIL ?? 'demo@expense-tracker.app'
 
 // Inline mock for @server/db/supabase (vi.mock is hoisted and require() cannot resolve .ts)
-type TableName = 'expenses' | 'bills' | 'bill_instances'
+type TableName = 'expenses' | 'bills' | 'bill_instances' | 'import_sessions' | 'import_rows'
 const store: Record<TableName, Record<string, unknown>[]> = {
   expenses: [],
   bills: [],
   bill_instances: [],
+  import_sessions: [],
+  import_rows: [],
 }
 function generateId(): string {
   return crypto.randomUUID?.() ?? `mock-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -257,6 +259,8 @@ export function clearMockStore() {
   store.expenses.length = 0
   store.bills.length = 0
   store.bill_instances.length = 0
+  store.import_sessions.length = 0
+  store.import_rows.length = 0
 }
 export function getMockStore() {
   return store
