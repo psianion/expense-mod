@@ -22,6 +22,11 @@ export const queryKeys = {
     list: (status?: string[]) => [...queryKeys.billInstances.lists(), status] as const,
     upcoming: (limit: number) => [...queryKeys.billInstances.all, 'upcoming', limit] as const,
   },
+  importSessions: {
+    all: ['import-sessions'] as const,
+    detail: (id: string) => ['import-sessions', id] as const,
+    rows: (id: string) => ['import-sessions', id, 'rows'] as const,
+  },
   analytics: {
     all: ['analytics'] as const,
     filtered: (filters?: AnalyticsFilters) => [...queryKeys.analytics.all, 'filtered', filters] as const,
