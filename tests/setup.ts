@@ -207,6 +207,42 @@ const mockSupabaseClient = {
   from(table: TableName) {
     return createQueryBuilder(table)
   },
+  rpc(fnName: string, params: Record<string, unknown>, opts: { count?: 'exact' } = {}) {
+    if (fnName !== 'get_expenses') throw new Error(`Mock rpc(): unknown function "${fnName}"`)
+    const chain = createQueryBuilder('expenses')
+    if (opts.count === 'exact') chain.select('*', { count: 'exact' })
+    const p = params as {
+      p_user_id?: string | null
+      p_use_master_access?: boolean
+      p_type?: string | null
+      p_category?: string | null
+      p_platform?: string | null
+      p_payment_method?: string | null
+      p_date_from?: string | null
+      p_date_to?: string | null
+      p_source?: string | null
+      p_bill_instance_id?: string | null
+      p_search?: string | null
+    }
+    if (!p.p_use_master_access && p.p_user_id) chain.eq('user_id', p.p_user_id)
+    if (p.p_type) chain.eq('type', p.p_type)
+    if (p.p_category) chain.eq('category', p.p_category)
+    if (p.p_platform) chain.eq('platform', p.p_platform)
+    if (p.p_payment_method) chain.eq('payment_method', p.p_payment_method)
+    if (p.p_date_from) chain.gte('datetime', p.p_date_from)
+    if (p.p_date_to) chain.lte('datetime', p.p_date_to)
+    if (p.p_source) chain.eq('source', p.p_source)
+    if (p.p_bill_instance_id) chain.eq('bill_instance_id', p.p_bill_instance_id)
+    if (p.p_search) {
+      const s = p.p_search.replace(/[%_]/g, '\\$&')
+      // 'tags' (plain array column) — mock's orFilters handler checks Array.isArray(val)
+      // and does substring matching on each element, equivalent to array_to_string ILIKE in SQL.
+      chain.or(
+        `category.ilike.%${s}%,platform.ilike.%${s}%,payment_method.ilike.%${s}%,raw_text.ilike.%${s}%,tags.ilike.%${s}%`
+      )
+    }
+    return chain
+  },
 }
 
 vi.mock('@server/db/supabase', () => ({

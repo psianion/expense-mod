@@ -68,40 +68,33 @@ export class ExpenseRepository {
     auth?: RepoAuthContext | null
   ): Promise<{ expenses: Expense[]; total: number }> {
     const client = getClient(auth)
-    let query = client
-      .from('expenses')
-      .select('*', { count: 'exact' })
+
+    // All filtering (including tags substring search) is handled inside the SQL function.
+    // PostgREST chains .order() and .range() on the SETOF result.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query = (client as any)
+      .rpc(
+        'get_expenses',
+        {
+          p_user_id: auth?.userId ?? null,
+          p_use_master_access: auth?.useMasterAccess ?? false,
+          p_type: filters?.type ?? null,
+          p_category: filters?.category ?? null,
+          p_platform: filters?.platform ?? null,
+          p_payment_method: filters?.payment_method ?? null,
+          p_date_from: filters?.date_from ?? null,
+          p_date_to: filters?.date_to ?? null,
+          p_source: filters?.source ?? null,
+          p_bill_instance_id: filters?.bill_instance_id ?? null,
+          p_search: filters?.search ?? null,
+        },
+        { count: 'exact' }
+      )
 
     // Sort
     const sortCol = filters?.sort_by ?? 'datetime'
     const ascending = filters?.sort_order === 'asc'
     query = query.order(sortCol, { ascending })
-
-    if (auth && !auth.useMasterAccess && auth.userId) {
-      query = query.eq('user_id', auth.userId)
-    }
-
-    // Exact filters
-    if (filters?.type) query = query.eq('type', filters.type)
-    if (filters?.category) query = query.eq('category', filters.category)
-    if (filters?.platform) query = query.eq('platform', filters.platform)
-    if (filters?.payment_method) query = query.eq('payment_method', filters.payment_method)
-    if (filters?.date_from) query = query.gte('datetime', filters.date_from)
-    if (filters?.date_to) query = query.lte('datetime', filters.date_to)
-    if (filters?.source) query = query.eq('source', filters.source)
-    if (filters?.bill_instance_id) query = query.eq('bill_instance_id', filters.bill_instance_id)
-
-    // Full-text search across category, platform, payment_method, tags (cast to text), raw_text
-    // NOTE: Expense type has no 'notes' column. Searchable columns: category, platform,
-    // payment_method, tags (array cast to text as "{food,lunch}"), raw_text.
-    if (filters?.search) {
-      const s = filters.search.replace(/[%_]/g, '\\$&')
-      // Note: tags is a Postgres array — it cannot be searched with ilike via PostgREST's or()
-      // filter (type cast syntax like tags::text is not supported in or() column names).
-      query = query.or(
-        `category.ilike.%${s}%,platform.ilike.%${s}%,payment_method.ilike.%${s}%,raw_text.ilike.%${s}%`
-      )
-    }
 
     // Pagination: prefer page over raw offset
     const limit = filters?.limit ?? 25

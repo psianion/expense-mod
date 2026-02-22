@@ -173,6 +173,27 @@ describe('search (or / ilike)', () => {
     expect(total).toBe(0)
   })
 
+  it('matches by tag substring (case-insensitive)', async () => {
+    seedExpense({ tags: ['Urban', 'Transport'], category: 'Misc', platform: 'Other', raw_text: null })
+    seedExpense({ tags: ['Board', 'Games'], category: 'Entertainment', platform: 'Other', raw_text: null })
+    seedExpense({ tags: [], category: 'Food', platform: 'Other', raw_text: null })
+    const { expenses } = await expenseRepository.getExpenses(
+      { search: 'urb' },
+      auth
+    )
+    expect(expenses).toHaveLength(1)
+    expect((expenses[0] as Record<string, unknown>).tags).toContain('Urban')
+  })
+
+  it('matches tags substring and is case-insensitive for mixed-case query', async () => {
+    seedExpense({ tags: ['Urban', 'Food'], category: 'Misc', platform: 'Other', raw_text: null })
+    const { expenses } = await expenseRepository.getExpenses(
+      { search: 'URBAN' },
+      auth
+    )
+    expect(expenses).toHaveLength(1)
+  })
+
   it('empty search string returns all rows (no or() filter applied)', async () => {
     seedExpense({ category: 'Food' })
     seedExpense({ category: 'Transport' })
@@ -241,21 +262,17 @@ describe('search (or / ilike)', () => {
 
 describe('tags array matching via or()', () => {
   it('matches when search term is contained in a tags array element', async () => {
-    // The mock's or() handles Array values with Array.isArray check.
-    // NOTE: The repo passes tags as "tags::text.ilike.%pattern%" to Supabase.
-    // In the mock, the column lookup key is "tags::text" but the actual stored
-    // key is "tags". This is a known mock limitation: tags search will not match
-    // via the tags::text column alias.
-    // This test documents and pins that behaviour so it is visible if fixed.
+    // With the RPC-based getExpenses, the mock passes "tags.ilike.%pattern%"
+    // (no ::text cast) to or(). The mock's or() handler checks Array.isArray(val)
+    // and does substring matching on each element — so tags DO match now.
     seedExpense({ tags: ['lunch', 'work'], category: 'Food' })
     const { expenses } = await expenseRepository.getExpenses(
       { search: 'lunch' },
       auth
     )
-    // In the mock, 'tags::text' column lookup returns undefined, so the tags
-    // search does NOT match. Category 'Food' does not contain 'lunch' either.
-    // Result: 0 matches — this test documents the current limitation.
-    expect(expenses).toHaveLength(0)
+    // 'lunch' matches the tags array element 'lunch' (case-insensitive).
+    // Category 'Food' does not contain 'lunch', but tags do — result: 1 match.
+    expect(expenses).toHaveLength(1)
   })
 
   it('tags search falls back to other columns — category match is unaffected', async () => {
