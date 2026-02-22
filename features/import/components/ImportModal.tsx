@@ -8,6 +8,7 @@ import { ImportStage2Parsing } from './ImportStage2Parsing'
 import { ImportStage3Review } from './ImportStage3Review'
 import { useImportSession } from '../hooks/useImportSession'
 import { useImportRows } from '../hooks/useImportRows'
+import { toast } from 'sonner'
 
 type Stage = 'upload' | 'parsing' | 'review'
 
@@ -29,9 +30,14 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
   const { data: session } = useImportSession(sessionId)
   const { data: rows } = useImportRows(sessionId, session)
 
-  // Auto-advance stage when session status changes
+  // Auto-advance or recover stage when session status changes
   if (session?.status === 'REVIEWING' && stage === 'parsing') {
     setStage('review')
+  }
+  if (session?.status === 'FAILED' && stage === 'parsing') {
+    toast.error('Import failed. Please try again.')
+    setStage('upload')
+    setSessionId(null)
   }
 
   const modalSize = stage === 'review' ? 'max-w-4xl' : 'max-w-md'

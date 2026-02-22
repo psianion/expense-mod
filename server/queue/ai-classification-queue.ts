@@ -75,7 +75,11 @@ async function aiHandler(batch: RawImportRow[]): Promise<ClassifiedRow[]> {
         classified_by: 'AI' as const,
       }
     })
-  } catch {
+  } catch (err: unknown) {
+    console.error('[AIClassificationQueue] AI classification failed, falling back to unclassified rows', {
+      batchSize: batch.length,
+      error: err instanceof Error ? err.message : String(err),
+    })
     return batch.map(fallbackRow)
   }
 }

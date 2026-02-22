@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/queryKeys'
 import { importApi } from '@/lib/api/import'
 import type { ImportRow, ConfirmRowInput } from '@/types/import'
+import { toast } from 'sonner'
 
 export function useConfirmRow(sessionId: string) {
   const qc = useQueryClient()
@@ -22,10 +23,11 @@ export function useConfirmRow(sessionId: string) {
       )
       return { previous }
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err, _vars, ctx) => {
       if (ctx?.previous) {
         qc.setQueryData(queryKeys.importSessions.rows(sessionId), ctx.previous)
       }
+      toast.error(err instanceof Error ? err.message : 'Failed to update row. Please try again.')
     },
   })
 }

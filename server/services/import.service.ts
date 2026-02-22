@@ -49,7 +49,13 @@ class ImportService {
     const sessionId = session.id
 
     // 3. Run pipeline async (do not await)
-    this.runPipeline(sessionId, rawRows, user).catch(async () => {
+    this.runPipeline(sessionId, rawRows, user).catch(async (err: unknown) => {
+      console.error('[ImportService] Pipeline failed', {
+        sessionId,
+        userId: user.userId,
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      })
       await importRepo.updateSession(sessionId, { status: 'FAILED' })
     })
 

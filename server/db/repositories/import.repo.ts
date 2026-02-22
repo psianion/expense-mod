@@ -25,7 +25,8 @@ export const importRepo = {
     review_count: number
     progress_done: number
   }>): Promise<void> {
-    await supabase.from('import_sessions').update(patch).eq('id', id)
+    const { error } = await supabase.from('import_sessions').update(patch).eq('id', id)
+    if (error) throw new Error(`Failed to update session ${id}: ${error.message}`)
   },
 
   async getSession(id: string, userId: string): Promise<ImportSession> {
@@ -40,7 +41,7 @@ export const importRepo = {
   },
 
   async insertRows(rows: Array<ClassifiedRow & { session_id: string }>): Promise<Array<{ id: string; classified_by: string; amount: number | null }>> {
-    const { data } = await supabase.from('import_rows').insert(
+    const { data, error } = await supabase.from('import_rows').insert(
       rows.map(r => ({
         session_id: r.session_id,
         status: 'PENDING',
@@ -58,11 +59,13 @@ export const importRepo = {
         classified_by: r.classified_by,
       }))
     ).select('id, classified_by, amount, status')
+    if (error) throw new Error(`Failed to insert import rows: ${error.message}`)
     return (data ?? []) as Array<{ id: string; classified_by: string; amount: number | null }>
   },
 
   async updateRow(id: string, patch: Record<string, unknown>): Promise<void> {
-    await supabase.from('import_rows').update(patch).eq('id', id)
+    const { error } = await supabase.from('import_rows').update(patch).eq('id', id)
+    if (error) throw new Error(`Failed to update row ${id}: ${error.message}`)
   },
 
   async getRow(id: string): Promise<ImportRow | null> {
@@ -96,17 +99,20 @@ export const importRepo = {
       query.eq('classified_by', 'RULE')
     }
 
-    const { data } = await query
+    const { data, error } = await query
+    if (error) throw new Error(`Failed to fetch pending rows for session ${sessionId}: ${error.message}`)
     return (data ?? []) as ImportRow[]
   },
 
   async insertExpense(expense: Record<string, unknown>): Promise<{ id: string } | null> {
-    const { data } = await supabase.from('expenses').insert(expense).select('id').single()
+    const { data, error } = await supabase.from('expenses').insert(expense).select('id').single()
+    if (error) throw new Error(`Failed to insert expense: ${error.message}`)
     return data as { id: string } | null
   },
 
   async insertExpenses(expenses: Record<string, unknown>[]): Promise<Array<{ id: string }>> {
-    const { data } = await supabase.from('expenses').insert(expenses).select('id')
+    const { data, error } = await supabase.from('expenses').insert(expenses).select('id')
+    if (error) throw new Error(`Failed to insert expenses: ${error.message}`)
     return (data ?? []) as Array<{ id: string }>
   },
 }

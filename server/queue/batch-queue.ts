@@ -62,8 +62,12 @@ export class BatchQueue<TIn, TOut> {
         ])
       } catch (err) {
         lastError = err
-        if (attempt < retries && backoffMs > 0) {
-          await new Promise(r => setTimeout(r, backoffMs * (attempt + 1)))
+        if (attempt < retries) {
+          const delay = backoffMs * (attempt + 1)
+          console.warn(`[BatchQueue] Attempt ${attempt + 1}/${retries + 1} failed, retrying in ${delay}ms`, {
+            error: err instanceof Error ? err.message : String(err),
+          })
+          if (delay > 0) await new Promise(r => setTimeout(r, delay))
         }
       }
     }
