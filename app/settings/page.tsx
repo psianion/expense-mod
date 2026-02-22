@@ -292,7 +292,7 @@ function BillForm({
             <Label htmlFor="auto_post">Auto post to expenses</Label>
           </div>
         </div>
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <div className="flex justify-end">
           <Button onClick={handleSubmit} disabled={createBillMutation.isPending}>
             {createBillMutation.isPending ? 'Saving...' : 'Save'}
