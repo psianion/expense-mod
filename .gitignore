@@ -21,6 +21,7 @@
 # misc
 .DS_Store
 /.worktrees/
+/docs/plans/
 *.pem
 /.cursor/
 /.claude/
