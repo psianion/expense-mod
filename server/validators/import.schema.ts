@@ -1,7 +1,13 @@
 // server/validators/import.schema.ts
 import { z } from 'zod'
+import type { ConfirmRowInput, ConfirmAllInput } from '@/types/import'
 
-export const confirmRowSchema = z.object({
+// File upload — validates presence and basic metadata at the route boundary
+export const fileUploadSchema = z.object({
+  file: z.unknown().refine((f): f is File => f instanceof File, { message: 'No file provided' }),
+})
+
+export const confirmRowSchema: z.ZodType<ConfirmRowInput> = z.object({
   action: z.enum(['CONFIRM', 'SKIP']),
   fields: z.object({
     amount: z.number().positive().optional(),
@@ -15,9 +21,6 @@ export const confirmRowSchema = z.object({
   }).optional(),
 })
 
-export const confirmAllSchema = z.object({
+export const confirmAllSchema: z.ZodType<ConfirmAllInput> = z.object({
   scope: z.enum(['AUTO', 'ALL']),
 })
-
-export type ConfirmRowInput = z.infer<typeof confirmRowSchema>
-export type ConfirmAllInput = z.infer<typeof confirmAllSchema>

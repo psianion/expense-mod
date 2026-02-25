@@ -28,8 +28,8 @@ const baseSession: ImportSession = {
   review_count: 7,
   progress_done: 5,
   progress_total: 10,
+  expires_at: new Date(Date.now() + 86400000).toISOString(),
   created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
 }
 
 // ────────────────────────────────────────────────────────────

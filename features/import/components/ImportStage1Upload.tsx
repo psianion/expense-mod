@@ -5,7 +5,7 @@ import { Upload, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { useUploadStatement } from '../hooks/useUploadStatement'
+import { useUploadStatement } from '@/lib/query/hooks/useUploadStatement'
 import { useState } from 'react'
 
 interface Props {

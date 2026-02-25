@@ -1,12 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Check, X } from 'lucide-react'
 import { ConfidenceIndicator } from './ConfidenceIndicator'
-import { useConfirmRow } from '../hooks/useConfirmRow'
+import { useConfirmRow } from '@/lib/query/hooks/useConfirmRow'
 import type { ImportRow } from '@/types/import'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -92,6 +91,3 @@ export function ReviewRow({ row, sessionId }: Props) {
     </tr>
   )
 }
-
-// Keep Input in scope to avoid unused import lint error (used by inline editing future work)
-void Input

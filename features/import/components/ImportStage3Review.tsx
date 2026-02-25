@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { ReviewRow } from './ReviewRow'
-import { useConfirmAll } from '../hooks/useConfirmAll'
+import { useConfirmAll } from '@/lib/query/hooks/useConfirmAll'
 import type { ImportRow, ImportSession } from '@/types/import'
 import { toast } from 'sonner'
 
@@ -43,7 +43,9 @@ export function ImportStage3Review({ session, rows, onDone }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => confirmAll('AUTO')} disabled={isPending}>
+          <Button size="sm" variant="outline" onClick={() => confirmAll('AUTO', {
+            onError: () => toast.error('Failed to confirm auto-classified transactions'),
+          })} disabled={isPending}>
             Confirm Auto
           </Button>
           <Button size="sm" onClick={handleConfirmAll} disabled={isPending || pending === 0}>
