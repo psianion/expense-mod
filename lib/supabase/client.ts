@@ -7,7 +7,10 @@ import { createBrowserClient } from '@supabase/ssr'
  * Returns null if env vars are missing.
  */
 export function createSupabaseBrowserClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const proxyEnabled = process.env.NEXT_PUBLIC_SUPABASE_PROXY_ENABLED === 'true'
+  const url = proxyEnabled
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/supabase-proxy`
+    : process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url || !key) return null
   return createBrowserClient(url, key)

@@ -4,8 +4,7 @@ import { parseFile } from '@server/import/file-parser'
 import { classifyRows } from '@server/import/rule-classifier'
 import { aiClassificationQueue } from '@server/queue/ai-classification-queue'
 import type { UserContext } from '@server/auth/context'
-import type { ClassifiedRow, ImportRow, ImportSession } from '@/types/import'
-import type { ConfirmRowInput } from '@server/validators/import.schema'
+import type { ClassifiedRow, ConfirmRowInput, ImportRow, ImportSession } from '@/types/import'
 
 const AUTO_THRESHOLD = 0.80
 const SUPPORTED_EXTENSIONS = /\.(csv|xlsx|xls)$/i
