@@ -74,7 +74,10 @@ export const importRepo = {
       .select('*')
       .eq('id', id)
       .single()
-    if (error || !data) return null
+    if (error) {
+      if (error.code === 'PGRST116') return null // row genuinely not found
+      throw new Error(`Failed to fetch import row ${id}: ${error.message}`)
+    }
     return data as ImportRow
   },
 

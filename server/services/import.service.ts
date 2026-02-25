@@ -56,7 +56,12 @@ class ImportService {
         error: err instanceof Error ? err.message : String(err),
         stack: err instanceof Error ? err.stack : undefined,
       })
-      await importRepo.updateSession(sessionId, { status: 'FAILED' })
+      await importRepo.updateSession(sessionId, { status: 'FAILED' }).catch((updateErr: unknown) => {
+        console.error('[ImportService] CRITICAL: Could not mark session FAILED — session is stuck in PARSING', {
+          sessionId,
+          updateError: updateErr instanceof Error ? updateErr.message : String(updateErr),
+        })
+      })
     })
 
     return { sessionId }
@@ -91,7 +96,10 @@ class ImportService {
       for (let i = 0; i < aiResults.length; i++) {
         const aiRow = aiResults[i]
         const dbRow = dbFallbackRows[i]
-        if (!dbRow) continue
+        if (!dbRow) {
+          console.error('[ImportService] AI result index mismatch — no matching DB row', { sessionId, aiIndex: i })
+          continue
+        }
         await importRepo.updateRow(dbRow.id, {
           category: aiRow.category,
           platform: aiRow.platform,
@@ -133,7 +141,10 @@ class ImportService {
 
   async confirmRow(rowId: string, input: ConfirmRowInput, user: UserContext): Promise<ImportRow> {
     const row = await importRepo.getRow(rowId)
-    if (!row) throw new Error('Row not found')
+    if (!row) throw Object.assign(new Error('Row not found'), { status: 404 })
+
+    // Authorization: verify the row belongs to the authenticated user
+    await this.getSession(row.session_id, user)
 
     if (input.action === 'SKIP') {
       await importRepo.updateRow(rowId, { status: 'SKIPPED' })

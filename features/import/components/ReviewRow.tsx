@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button'
 import { Check, X } from 'lucide-react'
 import { ConfidenceIndicator } from './ConfidenceIndicator'
-import { useConfirmRow } from '../hooks/useConfirmRow'
+import { useConfirmRow } from '@/lib/query/hooks/useConfirmRow'
 import type { ImportRow } from '@/types/import'
 import { formatDistanceToNow } from 'date-fns'
 

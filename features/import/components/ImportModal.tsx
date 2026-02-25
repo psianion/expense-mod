@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { ImportStage1Upload } from './ImportStage1Upload'
 import { ImportStage2Parsing } from './ImportStage2Parsing'
 import { ImportStage3Review } from './ImportStage3Review'
-import { useImportSession } from '../hooks/useImportSession'
-import { useImportRows } from '../hooks/useImportRows'
+import { useImportSession } from '@/lib/query/hooks/useImportSession'
+import { useImportRows } from '@/lib/query/hooks/useImportRows'
 import { toast } from 'sonner'
 
 type Stage = 'upload' | 'parsing' | 'review'
@@ -27,18 +27,41 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
   const [stage, setStage] = useState<Stage>('upload')
   const [sessionId, setSessionId] = useState<string | null>(null)
 
-  const { data: session } = useImportSession(sessionId)
-  const { data: rows } = useImportRows(sessionId, session)
+  const { data: session, error: sessionError } = useImportSession(sessionId)
+  const { data: rows, error: rowsError } = useImportRows(sessionId, session)
 
-  // Auto-advance or recover stage when session status changes
-  if (session?.status === 'REVIEWING' && stage === 'parsing') {
-    setStage('review')
-  }
-  if (session?.status === 'FAILED' && stage === 'parsing') {
-    toast.error('Import failed. Please try again.')
+  const resetToUpload = () => {
     setStage('upload')
     setSessionId(null)
   }
+
+  // Advance to review when session is ready
+  useEffect(() => {
+    if (session?.status === 'REVIEWING' && stage === 'parsing') setStage('review')
+  }, [session?.status, stage])
+
+  // Surface pipeline failure and unblock user
+  useEffect(() => {
+    if (session?.status === 'FAILED' && stage === 'parsing') {
+      toast.error('Import failed. Please try again.')
+      resetToUpload()
+    }
+  }, [session?.status, stage])
+
+  // Unblock user if polling loses connection during parsing
+  useEffect(() => {
+    if (sessionError && stage === 'parsing') {
+      toast.error('Lost connection while processing. Please try again.')
+      resetToUpload()
+    }
+  }, [sessionError, stage])
+
+  // Surface rows fetch error in review stage
+  useEffect(() => {
+    if (rowsError && stage === 'review') {
+      toast.error('Failed to load transactions. Please close and reopen.')
+    }
+  }, [rowsError, stage])
 
   const modalSize = stage === 'review' ? 'max-w-4xl' : 'max-w-md'
 
@@ -48,9 +71,8 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
   }
 
   const handleClose = () => {
-    if (stage === 'parsing') return // block close during parsing
-    setStage('upload')
-    setSessionId(null)
+    if (stage === 'parsing') return // block close while pipeline is running
+    resetToUpload()
     onOpenChange(false)
   }
 
@@ -76,7 +98,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
               <ImportStage3Review
                 session={session}
                 rows={rows}
-                onDone={() => { setStage('upload'); setSessionId(null); onOpenChange(false) }}
+                onDone={() => { resetToUpload(); onOpenChange(false) }}
               />
             </motion.div>
           )}

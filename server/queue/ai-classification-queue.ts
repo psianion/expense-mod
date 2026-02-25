@@ -76,11 +76,14 @@ async function aiHandler(batch: RawImportRow[]): Promise<ClassifiedRow[]> {
       }
     })
   } catch (err: unknown) {
-    console.error('[AIClassificationQueue] AI classification failed, falling back to unclassified rows', {
+    // Rethrow so BatchQueue.runWithRetry can retry the batch.
+    // The service's .catch handler will mark the session FAILED and surface the error.
+    // Do NOT silently fall back here — the user must know if AI classification failed.
+    console.error('[AIClassificationQueue] AI classification error', {
       batchSize: batch.length,
       error: err instanceof Error ? err.message : String(err),
     })
-    return batch.map(fallbackRow)
+    throw err
   }
 }
 
@@ -94,7 +97,7 @@ function fallbackRow(row: RawImportRow): ClassifiedRow {
     tags: [],
     recurring_flag: false,
     confidence: {},
-    classified_by: 'AI' as const,
+    classified_by: 'RULE' as const,
   }
 }
 

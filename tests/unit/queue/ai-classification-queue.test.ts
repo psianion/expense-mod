@@ -44,12 +44,9 @@ describe('classifyWithAI', () => {
     expect(results[1].category).toBe('Transport')
   })
 
-  it('returns original rows with low confidence on AI parse failure', async () => {
+  it('throws on AI API failure so the caller can handle it and mark the session FAILED', async () => {
     mockOpenRouter.chat.send.mockRejectedValue(new Error('API error'))
     const rows = [makeRow('unknown thing')]
-    const results = await classifyWithAI(rows)
-    expect(results).toHaveLength(1)
-    expect(results[0].classified_by).toBe('AI')
-    expect(results[0].category).toBeNull()
+    await expect(classifyWithAI(rows)).rejects.toThrow('API error')
   })
 })
