@@ -3,7 +3,7 @@ import { importRepo } from '@server/db/repositories/import.repo'
 import { parseFile } from '@server/import/file-parser'
 import { classifyRows } from '@server/import/rule-classifier'
 import { aiClassificationQueue } from '@server/queue/ai-classification-queue'
-import type { AuthContext } from '@server/auth/context'
+import type { UserContext } from '@server/auth/context'
 import type { ClassifiedRow, ImportRow, ImportSession } from '@/types/import'
 import type { ConfirmRowInput } from '@server/validators/import.schema'
 
@@ -28,7 +28,7 @@ class ImportService {
     buffer: Buffer,
     filename: string,
     fileMime: string,
-    user: AuthContext,
+    user: UserContext,
   ): Promise<{ sessionId: string }> {
     // Validate file type (domain rule — belongs in service)
     if (!SUPPORTED_MIME.includes(fileMime) && !SUPPORTED_EXTENSIONS.test(filename)) {
@@ -65,7 +65,7 @@ class ImportService {
   private async runPipeline(
     sessionId: string,
     rawRows: Awaited<ReturnType<typeof parseFile>>['rows'],
-    _user: AuthContext,
+    _user: UserContext,
   ): Promise<void> {
     // 4. Rule classify all rows
     const classified = classifyRows(rawRows)
@@ -118,11 +118,11 @@ class ImportService {
     })
   }
 
-  async getSession(sessionId: string, user: AuthContext): Promise<ImportSession> {
+  async getSession(sessionId: string, user: UserContext): Promise<ImportSession> {
     return importRepo.getSession(sessionId, user.userId)
   }
 
-  async getRows(sessionId: string, user: AuthContext): Promise<ImportRow[]> {
+  async getRows(sessionId: string, user: UserContext): Promise<ImportRow[]> {
     // V7 fix: domain rule belongs in service, not route
     const session = await this.getSession(sessionId, user)
     if (session.status === 'PARSING') {
@@ -131,7 +131,7 @@ class ImportService {
     return importRepo.getRowsBySession(sessionId)
   }
 
-  async confirmRow(rowId: string, input: ConfirmRowInput, user: AuthContext): Promise<ImportRow> {
+  async confirmRow(rowId: string, input: ConfirmRowInput, user: UserContext): Promise<ImportRow> {
     const row = await importRepo.getRow(rowId)
     if (!row) throw new Error('Row not found')
 
@@ -167,7 +167,7 @@ class ImportService {
     return { ...merged, status: 'CONFIRMED' } as ImportRow
   }
 
-  async confirmAll(sessionId: string, scope: 'AUTO' | 'ALL', user: AuthContext): Promise<{ imported: number }> {
+  async confirmAll(sessionId: string, scope: 'AUTO' | 'ALL', user: UserContext): Promise<{ imported: number }> {
     await this.getSession(sessionId, user)
 
     const rows = await importRepo.getPendingRows(sessionId, scope)

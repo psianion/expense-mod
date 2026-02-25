@@ -19,8 +19,8 @@ interface ImportModalProps {
 
 const stageVariants = {
   enter: { opacity: 0, x: 40 },
-  center: { opacity: 1, x: 0, transition: { duration: 0.25, ease: 'easeOut' } },
-  exit: { opacity: 0, x: -40, transition: { duration: 0.18, ease: 'easeIn' } },
+  center: { opacity: 1, x: 0, transition: { duration: 0.25, ease: 'easeOut' as const } },
+  exit: { opacity: 0, x: -40, transition: { duration: 0.18, ease: 'easeIn' as const } },
 }
 
 export function ImportModal({ open, onOpenChange }: ImportModalProps) {
