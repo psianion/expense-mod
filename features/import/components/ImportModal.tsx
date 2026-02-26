@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { ImportStage1Upload } from './ImportStage1Upload'
 import { ImportStage2Parsing } from './ImportStage2Parsing'
 import { ImportStage3Review } from './ImportStage3Review'
@@ -82,6 +82,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
         className={`${modalSize} transition-all duration-300 overflow-hidden p-0`}
         onInteractOutside={e => { if (stage === 'parsing') e.preventDefault() }}
       >
+        <DialogTitle className="sr-only">Import Bank Statement</DialogTitle>
         <AnimatePresence mode="wait" initial={false}>
           {stage === 'upload' && (
             <motion.div key="upload" variants={stageVariants} initial="enter" animate="center" exit="exit">
