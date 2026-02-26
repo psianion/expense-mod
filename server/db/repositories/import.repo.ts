@@ -15,7 +15,7 @@ export const importRepo = {
       .insert({ ...data, status: 'PARSING' })
       .select('id')
       .single()
-    if (error || !session) throw new Error('Failed to create import session')
+    if (error || !session) throw new Error(`Failed to create import session: ${error?.message ?? 'no data returned'}`)
     return session as { id: string }
   },
 

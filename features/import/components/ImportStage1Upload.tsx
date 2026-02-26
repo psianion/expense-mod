@@ -57,15 +57,15 @@ export function ImportStage1Upload({ onSuccess }: Props) {
   }
 
   return (
-    <div className="p-8 flex flex-col items-center gap-6">
+    <div className="p-6 flex flex-col items-center gap-5">
       <div className="text-center">
-        <h2 className="text-lg font-semibold">Import Bank Statement</h2>
+        <h2 className="text-base font-semibold">Import Bank Statement</h2>
         <p className="text-sm text-muted-foreground mt-1">Upload a PDF statement from any bank</p>
       </div>
 
       <div
         className={cn(
-          'w-full border-2 border-dashed rounded-xl p-12 flex flex-col items-center gap-3 cursor-pointer transition-colors',
+          'w-full border-2 border-dashed rounded-lg p-8 flex flex-col items-center gap-2.5 cursor-pointer transition-colors',
           dragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50',
           selectedFile && 'border-primary/40 bg-primary/5',
         )}
@@ -74,10 +74,10 @@ export function ImportStage1Upload({ onSuccess }: Props) {
         onDrop={onDrop}
         onClick={() => inputRef.current?.click()}
       >
-        <div className="rounded-full bg-muted p-4">
-          <FileText className="h-6 w-6 text-muted-foreground" />
+        <div className="rounded-full bg-muted p-3">
+          <FileText className="h-5 w-5 text-muted-foreground" />
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground text-center truncate max-w-full">
           {selectedFile ? selectedFile.name : 'Drop your PDF here or click to browse'}
         </p>
         <p className="text-xs text-muted-foreground/60">.pdf</p>

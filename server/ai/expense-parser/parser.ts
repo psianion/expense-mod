@@ -75,7 +75,7 @@ export async function parseExpense(text: string): Promise<ParseExpenseResult> {
   ]
 
   const response = await openRouter.chat.send({
-    model: 'mistralai/devstral-2512:free',
+    model: 'mistralai/devstral-2512',
     messages,
     temperature: 0.0,
     maxTokens: 500,

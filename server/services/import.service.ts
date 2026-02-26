@@ -122,7 +122,9 @@ class ImportService {
           category: aiRow.category,
           platform: aiRow.platform,
           payment_method: aiRow.payment_method,
+          notes: aiRow.notes,
           tags: aiRow.tags,
+          type: aiRow.type,
           confidence: aiRow.confidence,
           classified_by: 'AI',
         })

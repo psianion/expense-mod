@@ -10,9 +10,14 @@ For each transaction, return:
   "category": string | null,   // Food, Transport, Shopping, Entertainment, Health, Utilities, Rent, Salary, EMI, Insurance, Education, Other, or null
   "platform": string | null,   // merchant name, normalized (e.g. "Swiggy", "Netflix")
   "payment_method": string | null, // UPI, Credit Card, Debit Card, Bank Transfer, Cash, or null
-  "tags": string[],
-  "type": "EXPENSE" | "INFLOW"
+  "tags": string[],            // 1-3 short meaningful tags (e.g. ["food delivery", "dinner"], ["cab", "commute"])
+  "type": "EXPENSE" | "INFLOW",
+  "description": string | null // Short human-readable description of the transaction (e.g. "Swiggy food delivery", "Uber ride", "Netflix subscription", "Salary credit"). Clean up the raw bank narration into something a human would write.
 }
+
+Important classification notes:
+- BBPS payments received (credits) are usually credit card bill payments, NOT salary. Classify as category "EMI", type "EXPENSE" if the narration suggests bill payment.
+- Large credits with narration containing "BBPS" should be flagged as EMI/bill payment, not Salary.
 
 Return ONLY a valid JSON array. No markdown, no explanation.`
 
@@ -41,7 +46,7 @@ async function aiHandler(batch: RawImportRow[]): Promise<ClassifiedRow[]> {
 
   try {
     const response = await openRouter.chat.send({
-      model: 'mistralai/devstral-2512:free',
+      model: 'mistralai/devstral-2512',
       messages: [
         { role: 'system', content: BATCH_SYSTEM_PROMPT },
         { role: 'user', content: JSON.stringify(input) },
@@ -58,6 +63,7 @@ async function aiHandler(batch: RawImportRow[]): Promise<ClassifiedRow[]> {
       payment_method: string | null
       tags: string[]
       type: 'EXPENSE' | 'INFLOW'
+      description: string | null
     }>
 
     return batch.map((row, i) => {
@@ -68,8 +74,9 @@ async function aiHandler(batch: RawImportRow[]): Promise<ClassifiedRow[]> {
         category: ai.category ?? null,
         platform: ai.platform ?? null,
         payment_method: ai.payment_method ?? null,
-        notes: null,
+        notes: ai.description ?? null,
         tags: ai.tags ?? [],
+        type: ai.type ?? row.type,
         recurring_flag: false,
         confidence: { category: 0.75, platform: 0.7, payment_method: 0.7 },
         classified_by: 'AI' as const,

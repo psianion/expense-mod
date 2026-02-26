@@ -8,12 +8,12 @@ export function ImportStage2Parsing({ session }: { session: ImportSession }) {
     : 0
 
   return (
-    <div className="p-8 flex flex-col items-center gap-6">
-      <div className="rounded-full bg-muted p-4">
-        <FileText className="h-6 w-6 animate-pulse text-primary" />
+    <div className="p-6 flex flex-col items-center gap-5">
+      <div className="rounded-full bg-muted p-3">
+        <FileText className="h-5 w-5 animate-pulse text-primary" />
       </div>
       <div className="text-center">
-        <h2 className="text-lg font-semibold">Analysing your statement</h2>
+        <h2 className="text-base font-semibold">Analysing your statement</h2>
         <p className="text-sm text-muted-foreground mt-1">{session.source_file}</p>
       </div>
       <div className="w-full space-y-2">

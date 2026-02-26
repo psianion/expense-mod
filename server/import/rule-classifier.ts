@@ -61,16 +61,25 @@ export function classifyRows(rows: RawImportRow[]): ClassifiedRow[] {
   }
 
   return rows.map(row => {
-    const { category, confidence: catConf } = classifyCategory(row.narration)
+    let { category, confidence: catConf } = classifyCategory(row.narration)
     const { method: payment_method, confidence: pmConf } = classifyPaymentMethod(row.narration)
 
     const merchantKey = extractMerchantKey(row.narration)
     const recurring_flag = (merchantCounts[merchantKey] ?? 0) >= 2
 
+    // BBPS inflows are typically credit card bill payments, not salary
+    let type = row.type
+    const isBbps = isBbpsPayment(row.narration)
+    if (isBbps && row.type === 'INFLOW') {
+      type = 'EXPENSE'
+      category = 'EMI'
+      catConf = 0.5 // low confidence to force review
+    }
+
     const confidence: ConfidenceScores = {
       amount: row.amount !== null ? 1.0 : 0,
       datetime: row.datetime !== null ? 0.95 : 0,
-      type: row.type !== null ? 1.0 : 0,
+      type: isBbps ? 0.4 : (row.type !== null ? 1.0 : 0),
       category: catConf,
       platform: catConf > 0 ? 0.8 : 0,
       payment_method: pmConf,
@@ -83,16 +92,22 @@ export function classifyRows(rows: RawImportRow[]): ClassifiedRow[] {
 
     return {
       ...row,
+      type,
       category,
       platform,
       payment_method,
       notes: null,
-      tags: [],
+      tags: isBbps ? ['bill-payment', 'bbps'] : [],
       recurring_flag,
       confidence,
       classified_by: 'RULE' as const,
     }
   })
+}
+
+function isBbpsPayment(narration: string): boolean {
+  const lower = narration.toLowerCase()
+  return lower.includes('bbps') || lower.includes('billdesk') || lower.includes('bill payment received')
 }
 
 function narrationToMerchantName(narration: string): string | null {

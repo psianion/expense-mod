@@ -1,8 +1,6 @@
 // server/import/pdf-extractor.ts
 // Runs server-side only. Uses pdfjs-dist (legacy build) to extract raw text from PDFs.
 
-import { join } from 'path'
-
 export class PdfPasswordError extends Error {
   constructor(public readonly code: 'PASSWORD_REQUIRED' | 'WRONG_PASSWORD') {
     super(code)
@@ -15,20 +13,11 @@ export async function extractPdfText(buffer: Buffer, password?: string): Promise
     throw new Error('PDF buffer is empty')
   }
 
-  // Use legacy build for Node.js compatibility (no DOMMatrix)
+  // Use legacy build for Node.js compatibility (no DOMMatrix).
+  // Do NOT set GlobalWorkerOptions.workerSrc — in Node.js, pdfjs uses a
+  // "fake worker" (inline, no separate thread) which avoids Turbopack
+  // module resolution issues entirely.
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
-
-  // Resolve the worker file from node_modules using an absolute path
-  // This bypasses Turbopack's module resolution issues
-  const workerPath = join(
-    process.cwd(),
-    'node_modules',
-    'pdfjs-dist',
-    'legacy',
-    'build',
-    'pdf.worker.mjs'
-  )
-  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(`file://${workerPath}`).href
 
   const loadingTask = pdfjsLib.getDocument({
     data: new Uint8Array(buffer),
@@ -55,11 +44,31 @@ export async function extractPdfText(buffer: Buffer, password?: string): Promise
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i)
     const content = await page.getTextContent()
-    const pageText = content.items
-      .filter((item) => 'str' in item)
-      .map(item => (item as { str: string }).str)
-      .join(' ')
-    pages.push(pageText)
+
+    // Reconstruct lines using Y-position to preserve row structure.
+    // This keeps column data (e.g. "CR" suffix, separate debit/credit columns)
+    // on the same line instead of flattening everything.
+    const items = content.items
+      .filter((item): item is typeof item & { str: string; transform: number[] } => 'str' in item && (item as { str: string }).str.trim().length > 0)
+      .map(item => ({
+        str: (item as { str: string }).str,
+        x: (item as { transform: number[] }).transform[4],
+        y: Math.round((item as { transform: number[] }).transform[5] / 3) * 3, // merge items within 3pt
+      }))
+
+    // Group by Y, sort rows top-to-bottom (descending Y), items left-to-right
+    const rows: Record<number, typeof items> = {}
+    for (const item of items) {
+      if (!rows[item.y]) rows[item.y] = []
+      rows[item.y].push(item)
+    }
+
+    const lines = Object.keys(rows)
+      .map(Number)
+      .sort((a, b) => b - a)
+      .map(y => rows[y].sort((a, b) => a.x - b.x).map(i => i.str).join(' '))
+
+    pages.push(lines.join('\n'))
   }
 
   return pages.join('\n\n')

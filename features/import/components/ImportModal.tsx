@@ -63,7 +63,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
     }
   }, [rowsError, stage])
 
-  const modalSize = stage === 'review' ? 'max-w-4xl' : 'max-w-md'
+  const maxWidth = stage === 'review' ? '64rem' : '28rem'
 
   const handleUploadSuccess = (id: string) => {
     setSessionId(id)
@@ -79,7 +79,8 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
-        className={`${modalSize} transition-all duration-300 overflow-hidden p-0`}
+        className="transition-all duration-300 overflow-hidden p-0 sm:rounded-lg"
+        style={{ maxHeight: '90vh', maxWidth }}
         onInteractOutside={e => { if (stage === 'parsing') e.preventDefault() }}
       >
         <DialogTitle className="sr-only">Import Bank Statement</DialogTitle>
@@ -95,7 +96,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
             </motion.div>
           )}
           {stage === 'review' && session && rows && (
-            <motion.div key="review" variants={stageVariants} initial="enter" animate="center" exit="exit">
+            <motion.div key="review" variants={stageVariants} initial="enter" animate="center" exit="exit" className="overflow-hidden flex flex-col" style={{ maxHeight: '90vh' }}>
               <ImportStage3Review
                 session={session}
                 rows={rows}
