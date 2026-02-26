@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Check, X } from 'lucide-react'
+import { Check, X, RefreshCw } from 'lucide-react'
 import { ConfidenceIndicator } from './ConfidenceIndicator'
 import { useConfirmRow } from '@/lib/query/hooks/useConfirmRow'
 import type { ImportRow } from '@/types/import'
 import { format } from 'date-fns'
+import { cn } from '@/lib/utils'
 
 const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Entertainment', 'Health', 'Utilities', 'Rent', 'Salary', 'EMI', 'Insurance', 'Education', 'Travel', 'Other']
 
@@ -44,24 +45,28 @@ export function ReviewRow({ row, sessionId }: Props) {
   const isInflow = row.type === 'INFLOW'
 
   return (
-    <tr className={`border-b transition-opacity ${isDone ? 'opacity-40' : ''}`}>
+    <tr className={cn('border-b transition-opacity', isDone && 'opacity-40')}>
       <td className="py-2 px-3 text-xs text-muted-foreground whitespace-nowrap">
         {row.datetime ? format(new Date(row.datetime), 'dd MMM') : '—'}
       </td>
-      <td className={`py-2 px-3 font-mono text-xs text-right whitespace-nowrap ${isInflow ? 'text-green-600 dark:text-green-400' : ''}`}>
+      <td className={cn(
+        'py-2 px-3 font-mono text-xs text-right whitespace-nowrap',
+        isInflow ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
+      )}>
         {isInflow ? '+' : ''}₹{row.amount?.toLocaleString('en-IN') ?? '—'}
       </td>
       <td className="py-2 px-3 text-center">
-        <span className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded ${
+        <span className={cn(
+          'inline-block text-[10px] font-medium px-1.5 py-0.5 rounded',
           isInflow
-            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+            : 'bg-destructive/10 text-destructive'
+        )}>
           {isInflow ? 'Credit' : 'Debit'}
         </span>
       </td>
       <td className="py-2 px-3 max-w-[200px]">
-        <p className="truncate text-xs" title={getDescription(row)}>
+        <p className="truncate text-xs text-foreground" title={getDescription(row)}>
           {getDescription(row)}
         </p>
         {row.notes && (
@@ -70,9 +75,14 @@ export function ReviewRow({ row, sessionId }: Props) {
           </p>
         )}
         {(row.payment_method || row.recurring_flag) && (
-          <p className="text-[10px] text-muted-foreground mt-0.5">
+          <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
             {row.payment_method && <span>{row.payment_method}</span>}
-            {row.recurring_flag && <span className="text-orange-500 ml-1">&#x21bb; recurring</span>}
+            {row.recurring_flag && (
+              <span className="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+                <RefreshCw className="h-2.5 w-2.5" />
+                recurring
+              </span>
+            )}
           </p>
         )}
       </td>
@@ -81,7 +91,7 @@ export function ReviewRow({ row, sessionId }: Props) {
           <ConfidenceIndicator score={row.confidence.category} label={val('category') ?? '—'} />
         ) : (
           <Select value={val('category') ?? ''} onValueChange={v => set('category', v)}>
-            <SelectTrigger className="h-7 text-xs w-[110px]">
+            <SelectTrigger className="h-7 text-xs w-[120px]">
               <ConfidenceIndicator score={row.confidence.category} label={val('category') ?? 'Select'} />
             </SelectTrigger>
             <SelectContent>
@@ -93,17 +103,33 @@ export function ReviewRow({ row, sessionId }: Props) {
       <td className="py-2 px-3">
         {!isDone ? (
           <div className="flex gap-0.5 justify-center">
-            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={confirm} disabled={isPending}>
-              <Check className="h-3 w-3 text-green-600" />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+              onClick={confirm}
+              disabled={isPending}
+            >
+              <Check className="h-3 w-3" />
             </Button>
-            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={skip} disabled={isPending}>
-              <X className="h-3 w-3 text-red-600" />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={skip}
+              disabled={isPending}
+            >
+              <X className="h-3 w-3" />
             </Button>
           </div>
         ) : (
-          <span className="text-xs text-muted-foreground text-center block">
-            {row.status === 'CONFIRMED' ? '✓' : '—'}
-          </span>
+          <div className="flex justify-center">
+            {row.status === 'CONFIRMED' ? (
+              <Check className="h-3.5 w-3.5 text-muted-foreground" />
+            ) : (
+              <span className="text-xs text-muted-foreground">—</span>
+            )}
+          </div>
         )}
       </td>
     </tr>

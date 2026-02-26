@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { BarChart3 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { TrendPeriod, getCategoryTotals, getCategoryTrend, getAvailableCategories, getPaymentMethodStats, getPlatformStats, getFilteredSpendingTrend, getSummaryTotals, getCreditCardAnalytics, getCreditCardComparison } from '@lib/analytics'
@@ -8,6 +9,7 @@ import { formatPrice } from '@/lib/formatPrice'
 import { getUserPreferences, getDefaultPreferences } from '@/lib/userPreferences'
 import { AnimatedButton } from '@components/animations'
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { CategoryPieChart } from '@features/analytics/components/CategoryPieChart'
 import { PlatformBarChart } from './PlatformBarChart'
 import { PaymentMethodChart } from './PaymentMethodChart'
@@ -153,19 +155,24 @@ export function AnalyticsDashboard({ expenses, isLoading, currency, filters }: A
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Analytics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-40 items-center justify-center">
-            <div className="flex items-center space-x-3 text-muted-foreground">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <span>Crunching the numbers...</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {/* Metrics skeleton */}
+        <div className="grid grid-cols-1 gap-4 @sm:grid-cols-2 @lg:grid-cols-3 @2xl:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-4">
+                <Skeleton className="h-4 w-20 mb-2" />
+                <Skeleton className="h-7 w-28" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        {/* Charts skeleton */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card><CardContent className="p-6"><Skeleton className="h-[300px] w-full rounded-md" /></CardContent></Card>
+          <Card><CardContent className="p-6"><Skeleton className="h-[300px] w-full rounded-md" /></CardContent></Card>
+        </div>
+      </div>
     )
   }
 
@@ -179,11 +186,18 @@ export function AnalyticsDashboard({ expenses, isLoading, currency, filters }: A
           availablePaymentMethods={availablePaymentMethods}
         />
         <Card>
-          <CardHeader>
-            <CardTitle>Analytics</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            No expenses found for the selected filters. Try adjusting your filters or add some expenses to get started.
+          <CardContent className="py-0">
+            <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+              <div className="rounded-full bg-muted p-4">
+                <BarChart3 className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-semibold">No expenses to analyze</h3>
+                <p className="text-sm text-muted-foreground max-w-[300px]">
+                  Start tracking your expenses to see analytics and spending insights here.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -363,12 +377,14 @@ export function AnalyticsDashboard({ expenses, isLoading, currency, filters }: A
                 <CardTitle>Credit Card Insights</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {creditCardComparison.map((card) => (
-                    <div key={card.name} className="rounded-lg border p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-sm">{card.name}</span>
-                        <span className="text-lg font-bold">{formatPrice(card.expense)}</span>
+                    <div key={card.name} className="rounded-lg border bg-muted/40 p-3 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground truncate">{card.name}</span>
+                        <span className="text-base font-bold tabular-nums text-foreground ml-2 shrink-0">
+                          {formatPrice(card.expense)}
+                        </span>
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {((card.expense / summary.expenseTotal) * 100).toFixed(1)}% of spending
@@ -378,10 +394,10 @@ export function AnalyticsDashboard({ expenses, isLoading, currency, filters }: A
                 </div>
 
                 {creditCardComparison.length > 0 && (
-                  <div className="pt-2 border-t">
+                  <div className="pt-3 border-t">
                     <div className="flex items-center justify-between text-sm">
-                      <span>Total Credit Card Spending:</span>
-                      <span className="font-semibold">
+                      <span className="text-muted-foreground">Total credit card spending</span>
+                      <span className="font-semibold tabular-nums">
                         {formatPrice(creditCardComparison.reduce((sum, card) => sum + card.expense, 0))}
                       </span>
                     </div>

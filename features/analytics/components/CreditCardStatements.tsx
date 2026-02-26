@@ -70,66 +70,66 @@ export function CreditCardStatements({ expenses }: CreditCardStatementsProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-          <CreditCardIcon className="h-6 w-6" />
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <CreditCardIcon className="h-5 w-5" />
           Credit Card Statements
         </h2>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground mt-1">
           Track spending across your billing cycles
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {creditCardData.map(({ card, analytics, currentPeriod, periodExpenses, periodAmount }) => (
-          <Card key={card.id} className="relative">
+          <Card key={card.id}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{card.name}</CardTitle>
+                <CardTitle className="text-base">{card.name}</CardTitle>
                 <Badge variant="secondary">
-                  {analytics.transactionCount} transactions
+                  {analytics.transactionCount} txns
                 </Badge>
               </div>
               <CardDescription>
-                Statement period: {formatStatementPeriod(currentPeriod)}
+                {formatStatementPeriod(currentPeriod)}
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
               {/* Current Period Summary */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Current period</span>
-                  <span className="font-medium">{formatPrice(periodAmount)}</span>
+                  <span className="font-medium tabular-nums">{formatPrice(periodAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Transactions</span>
-                  <span className="font-medium">{periodExpenses}</span>
+                  <span className="font-medium tabular-nums">{periodExpenses}</span>
                 </div>
               </div>
 
               <Separator />
 
               {/* Total Card Analytics */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Total spent</span>
-                  <span className="font-semibold text-lg">{formatPrice(analytics.totalSpent)}</span>
+                  <span className="font-semibold text-base tabular-nums">{formatPrice(analytics.totalSpent)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Avg transaction</span>
-                  <span className="font-medium">{formatPrice(analytics.averageTransaction)}</span>
+                  <span className="font-medium tabular-nums">{formatPrice(analytics.averageTransaction)}</span>
                 </div>
               </div>
 
               {/* Top Categories This Period */}
               {analytics.categories.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Top categories</h4>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Top categories</p>
                   <div className="space-y-1">
-                    {analytics.categories.slice(0, 3).map((category, index) => (
+                    {analytics.categories.slice(0, 3).map((category) => (
                       <div key={category.name} className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">{category.name}</span>
-                        <span className="font-medium">{formatPrice(category.value)}</span>
+                        <span className="text-muted-foreground truncate">{category.name}</span>
+                        <span className="font-medium tabular-nums ml-2 shrink-0">{formatPrice(category.value)}</span>
                       </div>
                     ))}
                   </div>
@@ -137,14 +137,17 @@ export function CreditCardStatements({ expenses }: CreditCardStatementsProps) {
               )}
 
               {/* Statement Due Date */}
-              <div className="text-center pt-2 border-t">
-                <div className="text-xs text-muted-foreground">
-                  Payment due: {currentPeriod.dueDate.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </div>
+              <div className="pt-2 border-t text-center">
+                <p className="text-xs text-muted-foreground">
+                  Payment due:{' '}
+                  <span className="font-medium text-foreground">
+                    {currentPeriod.dueDate.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -154,34 +157,34 @@ export function CreditCardStatements({ expenses }: CreditCardStatementsProps) {
       {/* Summary Stats */}
       {creditCardData.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Credit Overview</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Credit Overview</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">
-                  {creditCardData.reduce((sum, card) => sum + card.periodAmount, 0).toFixed(0)}
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <div className="text-xl font-bold text-primary tabular-nums">
+                  {formatPrice(creditCardData.reduce((sum, card) => sum + card.periodAmount, 0))}
                 </div>
-                <div className="text-xs text-muted-foreground">Current period total</div>
+                <div className="text-xs text-muted-foreground mt-1">Current period total</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <div className="text-xl font-bold text-primary tabular-nums">
                   {creditCardData.reduce((sum, card) => sum + card.periodExpenses, 0)}
                 </div>
-                <div className="text-xs text-muted-foreground">Transactions this period</div>
+                <div className="text-xs text-muted-foreground mt-1">Transactions this period</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">
-                  {creditCardData.reduce((sum, card) => sum + card.analytics.totalSpent, 0).toFixed(0)}
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <div className="text-xl font-bold text-primary tabular-nums">
+                  {formatPrice(creditCardData.reduce((sum, card) => sum + card.analytics.totalSpent, 0))}
                 </div>
-                <div className="text-xs text-muted-foreground">Total spent across cards</div>
+                <div className="text-xs text-muted-foreground mt-1">Total spent across cards</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">
+              <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <div className="text-xl font-bold text-primary tabular-nums">
                   {creditCards.length}
                 </div>
-                <div className="text-xs text-muted-foreground">Active cards</div>
+                <div className="text-xs text-muted-foreground mt-1">Active cards</div>
               </div>
             </div>
           </CardContent>

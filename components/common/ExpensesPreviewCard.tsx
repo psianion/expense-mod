@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Receipt } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -35,9 +35,15 @@ export function ExpensesPreviewCard({ className }: ExpensesPreviewCardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-5 w-14 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -63,7 +69,12 @@ export function ExpensesPreviewCard({ className }: ExpensesPreviewCardProps) {
 
       <CardContent>
         {expenses.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No expenses yet</p>
+          <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+            <div className="rounded-full bg-muted p-3">
+              <Receipt className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">No expenses yet</p>
+          </div>
         ) : (
           <div className="space-y-2">
             {expenses.map((expense) => (
@@ -76,7 +87,7 @@ export function ExpensesPreviewCard({ className }: ExpensesPreviewCardProps) {
                     {expense.type}
                   </Badge>
                 </div>
-                <span className="font-medium">{formatPrice(expense.amount)}</span>
+                <span className="font-medium tabular-nums">{formatPrice(expense.amount)}</span>
               </div>
             ))}
           </div>

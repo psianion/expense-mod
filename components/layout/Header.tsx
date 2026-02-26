@@ -26,13 +26,13 @@ export function Header({ monthlyTotal, currency, view, onViewChange }: HeaderPro
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm text-muted-foreground">Monthly Total ({currentMonth})</p>
-            <p className={`text-3xl font-bold ${monthlyTotal < 0 ? 'text-red-600' : 'text-green-600'}`}>
+            <p className={`text-3xl font-bold tabular-nums ${monthlyTotal < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}`}>
               {monthlyTotal < 0 ? '-' : ''}{formatPrice(Math.abs(monthlyTotal))}
             </p>
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Net Balance</p>
-            <p className={`text-lg font-semibold ${monthlyTotal < 0 ? 'text-red-600' : 'text-green-600'}`}>
+            <p className={`text-lg font-semibold ${monthlyTotal < 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}`}>
               {monthlyTotal < 0 ? 'Expenses' : 'Surplus'}
             </p>
           </div>

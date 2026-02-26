@@ -5,6 +5,7 @@ import { ReviewRow } from './ReviewRow'
 import { useConfirmAll } from '@/lib/query/hooks/useConfirmAll'
 import type { ImportRow, ImportSession } from '@/types/import'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 interface Props {
   session: ImportSession
@@ -34,37 +35,52 @@ export function ImportStage3Review({ session, rows, onDone }: Props) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
+      <div className="flex items-center justify-between px-6 py-4 border-b shrink-0 bg-card">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold">Review Transactions</h2>
+          <h2 className="text-sm font-semibold text-foreground">Review Transactions</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             {session.auto_count} auto · {session.review_count} review
-            {needsAttention > 0 && <span className="text-red-500 ml-1">({needsAttention} low confidence)</span>}
+            {needsAttention > 0 && (
+              <span className={cn('ml-1 text-destructive')}>
+                ({needsAttention} low confidence)
+              </span>
+            )}
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => confirmAll('AUTO', {
-            onError: () => toast.error('Failed to confirm auto-classified transactions'),
-          })} disabled={isPending}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs"
+            onClick={() => confirmAll('AUTO', {
+              onError: () => toast.error('Failed to confirm auto-classified transactions'),
+            })}
+            disabled={isPending}
+          >
             Confirm Auto
           </Button>
-          <Button size="sm" className="h-7 text-xs" onClick={handleConfirmAll} disabled={isPending || pending === 0}>
+          <Button
+            size="sm"
+            className="h-8 text-xs"
+            onClick={handleConfirmAll}
+            disabled={isPending || pending === 0}
+          >
             Import ({pending})
           </Button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-y-auto min-h-0 px-3">
+      <div className="flex-1 overflow-y-auto min-h-0">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-background z-10">
-            <tr className="border-b text-xs text-muted-foreground">
-              <th className="py-2 px-3 text-left font-medium w-[72px]">Date</th>
-              <th className="py-2 px-3 text-right font-medium w-[90px]">Amount</th>
-              <th className="py-2 px-3 text-center font-medium w-[52px]">Type</th>
-              <th className="py-2 px-3 text-left font-medium">Description</th>
-              <th className="py-2 px-3 text-left font-medium w-[140px]">Category</th>
-              <th className="py-2 px-3 text-center font-medium w-[64px]"></th>
+          <thead className="sticky top-0 bg-card z-10 border-b">
+            <tr className="text-xs text-muted-foreground">
+              <th className="py-2.5 px-3 text-left font-medium w-[72px]">Date</th>
+              <th className="py-2.5 px-3 text-right font-medium w-[90px]">Amount</th>
+              <th className="py-2.5 px-3 text-center font-medium w-[52px]">Type</th>
+              <th className="py-2.5 px-3 text-left font-medium">Description</th>
+              <th className="py-2.5 px-3 text-left font-medium w-[140px]">Category</th>
+              <th className="py-2.5 px-3 text-center font-medium w-[64px]"></th>
             </tr>
           </thead>
           <tbody>

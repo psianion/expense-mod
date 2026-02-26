@@ -5,6 +5,8 @@ import { Bar, BarChart, XAxis, YAxis } from 'recharts'
 
 import { ComparisonDatum } from '@lib/analytics'
 import { ChartConfig, ChartContainer, ChartTooltip } from '@components/ui/chart'
+import { Skeleton } from '@/components/ui/skeleton'
+import { CreditCard } from 'lucide-react'
 import { formatPrice } from '@/lib/formatPrice'
 
 type PaymentMethodChartProps = {
@@ -46,16 +48,17 @@ export function PaymentMethodChart({ data }: PaymentMethodChartProps) {
   }, [])
 
   if (!mounted) {
-    return (
-      <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-        Preparing chart...
-      </div>
-    )
+    return <Skeleton className="h-64 w-full rounded-md" />
   }
 
   if (data.length === 0) {
     return (
-      <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">No payment data yet.</div>
+      <div className="flex flex-col items-center justify-center gap-2 h-64">
+        <div className="rounded-full bg-muted p-3">
+          <CreditCard className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <p className="text-sm text-muted-foreground">No payment data yet</p>
+      </div>
     )
   }
 

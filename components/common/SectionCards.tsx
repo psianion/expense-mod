@@ -28,7 +28,7 @@ export function SectionCards({ expenseTotal, inflowTotal, net, currency }: Secti
             />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">
+            <div className="text-2xl font-bold tabular-nums text-destructive">
               {currency}{" "}
               <AnimatedNumber
                 value={expenseTotal}
@@ -54,7 +54,7 @@ export function SectionCards({ expenseTotal, inflowTotal, net, currency }: Secti
             />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
               {currency}{" "}
               <AnimatedNumber
                 value={inflowTotal}
@@ -80,7 +80,7 @@ export function SectionCards({ expenseTotal, inflowTotal, net, currency }: Secti
             />
           </CardHeader>
           <CardContent>
-            <div className={cn('text-2xl font-bold', net >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>
+            <div className={cn('text-2xl font-bold tabular-nums', net >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>
               {net >= 0 ? '+' : ''}{currency}{" "}
               <AnimatedNumber
                 value={Math.abs(net)}

@@ -17,8 +17,6 @@ import {
 } from "../ui/sidebar"
 import { ThemeTogglerButton } from '@/components/animations/components/buttons/theme-toggler'
 
-interface SiteHeaderProps {}
-
 const getPageTitle = (pathname: string): string => {
   if (pathname === "/" || pathname === "/dashboard") return "Dashboard"
   if (pathname === "/expenses") return "Expenses"
@@ -28,7 +26,7 @@ const getPageTitle = (pathname: string): string => {
   return "Expense Tracker"
 }
 
-export function SiteHeader({}: SiteHeaderProps) {
+export function SiteHeader() {
   const { theme, setTheme } = useTheme()
   const pathname = usePathname()
   const [mounted, setMounted] = React.useState(false)
@@ -69,14 +67,6 @@ export function SiteHeader({}: SiteHeaderProps) {
             direction="rtl"
             size='lg'
           />
-          {/* <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button> */}
         </div>
       )}
     </header>

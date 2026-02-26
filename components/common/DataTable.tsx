@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import dayjs from "dayjs"
-import { ArrowUpRight, ArrowDownRight, CalendarIcon, Filter, SortAsc, SortDesc } from "lucide-react"
+import { ArrowUpRight, ArrowDownRight, CalendarIcon, Filter, Receipt, SortAsc, SortDesc } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -69,9 +70,16 @@ export function DataTable({
           <CardDescription>Your expense history</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
-            <p className="text-muted-foreground mt-2">Loading expenses...</p>
+          <div className="space-y-3 py-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -86,8 +94,14 @@ export function DataTable({
           <CardDescription>Your expense history</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No expenses yet. Add your first expense!</p>
+          <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+            <div className="rounded-full bg-muted p-3">
+              <Receipt className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">No expenses yet</p>
+              <p className="text-sm text-muted-foreground">Add your first expense to get started</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -266,7 +280,7 @@ export function DataTable({
                           <ArrowUpRight className="h-4 w-4 inline" />
                         )}
                       </span>
-                      <span className="font-medium">
+                      <span className="font-medium tabular-nums">
                         {formatPrice(expense.amount)}
                       </span>
                     </div>

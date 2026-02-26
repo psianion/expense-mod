@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { z } from 'zod'
-import { Calculator, CheckCircle, AlertTriangle, Receipt, Plus, Minus } from 'lucide-react'
+import { Calculator, CheckCircle, AlertTriangle, Receipt, Plus, Minus, CreditCard } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -111,7 +111,32 @@ export function BillReconciliation({ expenses, onReconciliationComplete }: BillR
   }
 
   if (creditCards.length === 0) {
-    return null // Don't show reconciliation if no cards configured
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calculator className="h-5 w-5" />
+            Bill Reconciliation
+          </CardTitle>
+          <CardDescription>
+            Compare your actual credit card bills with tracked expenses
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+            <div className="rounded-full bg-muted p-3">
+              <CreditCard className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">No credit cards configured</p>
+              <p className="text-sm text-muted-foreground">
+                Add credit cards in Settings to start reconciling bills.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -302,13 +327,13 @@ export function BillReconciliation({ expenses, onReconciliationComplete }: BillR
         {/* Quick Stats */}
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
-            <div className="text-lg font-semibold text-primary">
+            <div className="text-lg font-semibold tabular-nums text-primary">
               {creditCards.length}
             </div>
             <div className="text-xs text-muted-foreground">Cards to reconcile</div>
           </div>
           <div>
-            <div className="text-lg font-semibold text-primary">
+            <div className="text-lg font-semibold tabular-nums text-primary">
               {creditCards.filter(card => {
                 const period = getCurrentStatementPeriod(card)
                 const periodExpenses = getCreditCardPeriodExpenses(expenses, card.name, period.periodStart, period.periodEnd)
@@ -318,11 +343,11 @@ export function BillReconciliation({ expenses, onReconciliationComplete }: BillR
             <div className="text-xs text-muted-foreground">Have transactions</div>
           </div>
           <div>
-            <div className="text-lg font-semibold text-primary">0</div>
+            <div className="text-lg font-semibold tabular-nums text-primary">0</div>
             <div className="text-xs text-muted-foreground">Reconciled this month</div>
           </div>
           <div>
-            <div className="text-lg font-semibold text-primary">0</div>
+            <div className="text-lg font-semibold tabular-nums text-primary">0</div>
             <div className="text-xs text-muted-foreground">Pending reconciliations</div>
           </div>
         </div>

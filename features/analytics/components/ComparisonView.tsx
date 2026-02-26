@@ -106,7 +106,7 @@ export function ComparisonView({
         <div className="text-sm font-medium text-muted-foreground">{label}</div>
         <div className="flex items-end justify-between">
           <div>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold tabular-nums">
               {currency}
               {comparison.current.toFixed(2)}
             </div>
@@ -164,7 +164,7 @@ export function ComparisonView({
                 </div>
                 <div className="flex items-end justify-between">
                   <div>
-                    <div className="text-2xl font-bold">{currentExpenses.length}</div>
+                    <div className="text-2xl font-bold tabular-nums">{currentExpenses.length}</div>
                     <div className="text-xs text-muted-foreground">
                       was {previousExpenses.length}
                     </div>
@@ -180,7 +180,7 @@ export function ComparisonView({
                 <div className="text-sm font-medium text-muted-foreground">Average Transaction</div>
                 <div className="flex items-end justify-between">
                   <div>
-                    <div className="text-2xl font-bold">
+                    <div className="text-2xl font-bold tabular-nums">
                       {currency}
                       {currentExpenses.length > 0
                         ? (currentSummary.expenseTotal / currentExpenses.length).toFixed(2)

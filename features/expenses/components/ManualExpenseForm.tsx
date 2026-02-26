@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
-import { Textarea } from '@components/ui/textarea'
 import { Calendar } from '@components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@components/ui/select'
 import { Label } from '@components/ui/label'
+import { Separator } from '@components/ui/separator'
 import { Loader2, CalendarIcon } from 'lucide-react'
 import dayjs from 'dayjs'
 import { cn } from '@lib/utils'
@@ -57,7 +58,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
 
   const handleSave = async () => {
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      alert('Please enter a valid amount.')
+      toast.error('Please enter a valid amount.')
       return
     }
 
@@ -218,20 +219,15 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
 
       </div>
 
-      <div className="flex justify-end space-x-2 pt-4">
+      <div className="pt-2">
+        <Separator className="mb-4" />
         <Button
           onClick={handleSave}
           disabled={!formData.amount || isLoading}
-          className="w-full"
+          className="w-full gap-2"
         >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            'Save Expense'
-          )}
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isLoading ? 'Saving...' : 'Save Expense'}
         </Button>
       </div>
     </div>

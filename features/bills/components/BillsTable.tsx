@@ -164,152 +164,174 @@ export default function BillsPage() {
     <>
       <AppLayoutClient>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold">Bills & Instances</h2>
-                <p className="text-sm text-muted-foreground">
-                  Track due, paid, and skipped bill instances with filters.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Input
-                  placeholder="Search by name or type"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full sm:w-48 h-9"
-                />
-                <Select value={view} onValueChange={(v) => setView(v as ViewFilter)}>
-                  <SelectTrigger className="w-full sm:w-32">
-                    <SelectValue placeholder="Flow" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {viewOptions.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt === 'ALL' ? 'All' : opt === 'INFLOW' ? 'Income' : 'Bills'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
-                  <SelectTrigger className="w-full sm:w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt === 'ALL' ? 'All' : `${opt.charAt(0)}${opt.slice(1).toLowerCase()}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" onClick={() => {
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Bills &amp; Instances</h2>
+              <p className="text-sm text-muted-foreground">
+                Track due, paid, and skipped bill instances with filters.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                placeholder="Search by name or type"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9 w-full sm:w-48"
+              />
+              <Select value={view} onValueChange={(v) => setView(v as ViewFilter)}>
+                <SelectTrigger className="h-9 w-full sm:w-32">
+                  <SelectValue placeholder="Flow" />
+                </SelectTrigger>
+                <SelectContent>
+                  {viewOptions.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt === 'ALL' ? 'All' : opt === 'INFLOW' ? 'Income' : 'Bills'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
+                <SelectTrigger className="h-9 w-full sm:w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt === 'ALL' ? 'All' : `${opt.charAt(0)}${opt.slice(1).toLowerCase()}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 gap-1.5"
+                onClick={() => {
                   queryClient.invalidateQueries({ queryKey: queryKeys.bills.all })
                   queryClient.invalidateQueries({ queryKey: queryKeys.billInstances.all })
-                }}>
-                  <RefreshCw className="mr-2 h-4 w-4" /> Refresh
-                </Button>
-                <Button onClick={() => setManualOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" /> Add instance
-                </Button>
-              </div>
+                }}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </Button>
+              <Button size="sm" className="h-9 gap-1.5" onClick={() => setManualOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Add instance
+              </Button>
             </div>
+          </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Bill instances</CardTitle>
-                <CardDescription>Latest generated or pending instances</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Bill</TableHead>
-                        <TableHead>Due</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Expense link</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filtered.map((instance) => {
-                        const inflow = isInflow(instance.bill)
-                        const label = statusLabel(instance)
-                        return (
-                          <TableRow key={instance.id}>
-                            <TableCell className="font-medium">
-                              {instance.bill?.name ?? 'Recurring item'}
-                              {instance.bill?.notes && (
-                                <div className="text-xs text-muted-foreground">{instance.bill.notes}</div>
-                              )}
-                            </TableCell>
-                            <TableCell>{instance.due_date}</TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                defaultValue={instance.amount}
-                                disabled={instance.status !== 'DUE'}
-                                onChange={(e) =>
-                                  setPendingUpdates((prev) => ({ ...prev, [instance.id]: Number(e.target.value) }))
-                                }
-                                className="max-w-[120px]"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  instance.status === 'DUE'
-                                    ? 'secondary'
-                                    : instance.status === 'PAID'
-                                    ? 'default'
-                                    : 'outline'
-                                }
-                              >
-                                {label}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="capitalize">{instance.bill?.type ?? '-'}</TableCell>
-                            <TableCell>
-                              {instance.posted_expense_id ? (
-                                <Badge variant="outline">expense linked</Badge>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="space-x-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Bill instances</CardTitle>
+              <CardDescription>Latest generated or pending instances</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Bill</TableHead>
+                      <TableHead>Due</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Expense link</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((instance) => {
+                      const inflow = isInflow(instance.bill)
+                      const label = statusLabel(instance)
+                      return (
+                        <TableRow key={instance.id}>
+                          <TableCell className="font-medium">
+                            {instance.bill?.name ?? 'Recurring item'}
+                            {instance.bill?.notes && (
+                              <div className="text-xs text-muted-foreground mt-0.5">{instance.bill.notes}</div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                            {instance.due_date}
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              defaultValue={instance.amount}
+                              disabled={instance.status !== 'DUE'}
+                              onChange={(e) =>
+                                setPendingUpdates((prev) => ({ ...prev, [instance.id]: Number(e.target.value) }))
+                              }
+                              className="h-8 max-w-[110px] tabular-nums"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                instance.status === 'DUE'
+                                  ? 'secondary'
+                                  : instance.status === 'PAID'
+                                  ? 'default'
+                                  : 'outline'
+                              }
+                            >
+                              {label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="capitalize text-sm">{instance.bill?.type ?? '—'}</TableCell>
+                          <TableCell>
+                            {instance.posted_expense_id ? (
+                              <Badge variant="outline">Linked</Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5">
                               <Button
                                 size="sm"
                                 variant="default"
+                                className="h-8 gap-1"
                                 disabled={instance.status !== 'DUE' || actionLoading}
                                 onClick={() => handleConfirm(instance.id)}
                               >
-                                <Check className="mr-1 h-4 w-4" /> {inflow ? 'Mark received' : 'Mark paid'}
+                                <Check className="h-3.5 w-3.5" />
+                                {inflow ? 'Received' : 'Paid'}
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
+                                className="h-8 gap-1"
                                 disabled={instance.status !== 'DUE' || actionLoading}
                                 onClick={() => handleSkip(instance.id)}
                               >
-                                <X className="mr-1 h-4 w-4" /> Skip
+                                <X className="h-3.5 w-3.5" />
+                                Skip
                               </Button>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                  {!filtered.length && (
-                    <div className="p-6 text-sm text-muted-foreground text-center">
-                      {loading ? 'Loading...' : 'No bill instances yet.'}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+                {!filtered.length && (
+                  <div className="flex items-center justify-center p-8">
+                    {loading ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        Loading...
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No bill instances yet.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </AppLayoutClient>
 

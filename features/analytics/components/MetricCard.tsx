@@ -32,7 +32,7 @@ export function MetricCard({ metric, className }: MetricCardProps) {
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
 
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-2xl font-bold @xs:text-3xl">{formatted}</p>
+            <p className="text-2xl font-bold tabular-nums @xs:text-3xl">{formatted}</p>
 
             {comparison && (
               <div className={cn('flex items-center gap-1 text-xs font-medium', getTrendColor())}>

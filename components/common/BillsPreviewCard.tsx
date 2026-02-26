@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, CalendarDays } from 'lucide-react'
 import dayjs from 'dayjs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -28,9 +28,15 @@ export function BillsPreviewCard({ className }: BillsPreviewCardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-5 w-14 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -56,7 +62,12 @@ export function BillsPreviewCard({ className }: BillsPreviewCardProps) {
 
       <CardContent>
         {billInstances.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No upcoming bills</p>
+          <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+            <div className="rounded-full bg-muted p-3">
+              <CalendarDays className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">No upcoming bills</p>
+          </div>
         ) : (
           <div className="space-y-2">
             {billInstances.map((instance) => (
@@ -69,7 +80,7 @@ export function BillsPreviewCard({ className }: BillsPreviewCardProps) {
                     {dayjs(instance.due_date).format('MMM D')}
                   </Badge>
                 </div>
-                <span className="font-medium">{formatPrice(instance.amount)}</span>
+                <span className="font-medium tabular-nums">{formatPrice(instance.amount)}</span>
               </div>
             ))}
           </div>

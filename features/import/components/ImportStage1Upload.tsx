@@ -108,18 +108,9 @@ export function ImportStage1Upload({ onSuccess }: Props) {
               autoComplete="off"
             />
           </div>
-          <Button type="submit" disabled={uploading} className="w-full">
-            {uploading ? (
-              <span className="flex items-center gap-2">
-                <Upload className="h-4 w-4 animate-pulse" />
-                Uploading…
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <Upload className="h-4 w-4" />
-                Import Statement
-              </span>
-            )}
+          <Button type="submit" disabled={uploading} className="w-full gap-2">
+            <Upload className={cn('h-4 w-4', uploading && 'animate-pulse')} />
+            {uploading ? 'Uploading…' : 'Import Statement'}
           </Button>
         </form>
       )}

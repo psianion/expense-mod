@@ -50,10 +50,26 @@ export function AnalyticsPreviewCard({ className }: AnalyticsPreviewCardProps) {
           <Skeleton className="h-4 w-32" />
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Skeleton className="h-3 w-14" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+              <div className="space-y-1">
+                <Skeleton className="h-3 w-14" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-24" />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-5 w-14 rounded-full" />
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -92,11 +108,11 @@ export function AnalyticsPreviewCard({ className }: AnalyticsPreviewCardProps) {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Expenses</p>
-              <p className="font-medium text-destructive">{formatPrice(summary.expenseTotal)}</p>
+              <p className="font-medium tabular-nums text-destructive">{formatPrice(summary.expenseTotal)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Income</p>
-              <p className="font-medium text-emerald-600 dark:text-emerald-400">{formatPrice(summary.inflowTotal)}</p>
+              <p className="font-medium tabular-nums text-emerald-600 dark:text-emerald-400">{formatPrice(summary.inflowTotal)}</p>
             </div>
           </div>
 

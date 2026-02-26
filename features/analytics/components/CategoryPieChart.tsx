@@ -2,9 +2,11 @@
 
 import * as React from 'react'
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
+import { PieChart as PieChartIcon } from 'lucide-react'
 
 import { SimpleDatum } from '@lib/analytics'
 import { ChartConfig, ChartContainer, ChartTooltip } from '@components/ui/chart'
+import { Skeleton } from '@/components/ui/skeleton'
 import { formatPrice } from '@/lib/formatPrice'
 
 type CategoryPieChartProps = {
@@ -59,17 +61,16 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
   }
 
   if (!mounted) {
-    return (
-      <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-        Preparing chart...
-      </div>
-    )
+    return <Skeleton className="h-64 w-64 rounded-full mx-auto" />
   }
 
   if (data.length === 0) {
     return (
-      <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-        No category data available yet.
+      <div className="flex flex-col items-center justify-center gap-2 h-64">
+        <div className="rounded-full bg-muted p-3">
+          <PieChartIcon className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <p className="text-sm text-muted-foreground">No category data available</p>
       </div>
     )
   }

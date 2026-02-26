@@ -3,7 +3,6 @@
 import * as React from 'react'
 import {
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   XAxis,
@@ -12,6 +11,8 @@ import {
 
 import { TrendPoint } from '@lib/analytics'
 import { ChartConfig, ChartContainer, ChartTooltip, ChartLegend, ChartLegendContent } from '@components/ui/chart'
+import { Skeleton } from '@/components/ui/skeleton'
+import { TrendingUp } from 'lucide-react'
 import { formatPrice } from '@/lib/formatPrice'
 
 type SpendingTrendChartProps = {
@@ -59,17 +60,16 @@ export function SpendingTrendChart({ data }: SpendingTrendChartProps) {
   }, [])
 
   if (!mounted) {
-    return (
-      <div className="flex h-80 items-center justify-center text-sm text-muted-foreground">
-        Preparing chart...
-      </div>
-    )
+    return <Skeleton className="h-80 w-full rounded-md" />
   }
 
   if (data.length === 0) {
     return (
-      <div className="flex h-80 items-center justify-center text-sm text-muted-foreground">
-        Not enough data to show a trend yet.
+      <div className="flex flex-col items-center justify-center gap-2 h-80">
+        <div className="rounded-full bg-muted p-3">
+          <TrendingUp className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <p className="text-sm text-muted-foreground">Not enough data to show a trend yet</p>
       </div>
     )
   }

@@ -17,17 +17,17 @@ export function ConfidenceIndicator({ score, label }: Props) {
       title={score !== undefined ? `Confidence: ${Math.round(score * 100)}%` : 'Unknown'}
       className={cn(
         'inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-md',
-        level === 'high'   && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-        level === 'medium' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-        level === 'low'    && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+        level === 'high'   && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+        level === 'medium' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+        level === 'low'    && 'bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-red-400',
         level === 'none'   && 'bg-muted text-muted-foreground',
       )}
     >
       <span className={cn(
         'h-1.5 w-1.5 rounded-full',
-        level === 'high'   && 'bg-green-500',
-        level === 'medium' && 'bg-yellow-500',
-        level === 'low'    && 'bg-red-500',
+        level === 'high'   && 'bg-emerald-500',
+        level === 'medium' && 'bg-amber-500',
+        level === 'low'    && 'bg-destructive',
         level === 'none'   && 'bg-muted-foreground',
       )} />
       {label ?? '—'}

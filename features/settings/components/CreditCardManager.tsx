@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import type { CreditCard } from '@/lib/constants'
 import { getUserPreferences, addCreditCard, updateCreditCard, removeCreditCard, getCombinedPaymentMethods } from '@/lib/userPreferences'
 import { getCurrentStatementPeriod, getNextStatementPeriod, formatStatementPeriod } from '@/lib/creditCardUtils'
+import { toast } from 'sonner'
 
 const creditCardSchema = z.object({
   name: z.string().min(1, 'Card name is required'),
@@ -59,7 +60,7 @@ export function CreditCardManager({ onCreditCardsChange }: CreditCardManagerProp
   const handleAddCard = () => {
     const validation = creditCardSchema.safeParse(formData)
     if (!validation.success) {
-      alert('Please fill in all required fields correctly.')
+      toast.error('Please fill in all required fields correctly.')
       return
     }
 
@@ -78,7 +79,7 @@ export function CreditCardManager({ onCreditCardsChange }: CreditCardManagerProp
       resetForm()
       onCreditCardsChange?.()
     } catch (error) {
-      alert('Failed to add credit card.')
+      toast.error('Failed to add credit card.')
     }
   }
 
@@ -97,7 +98,7 @@ export function CreditCardManager({ onCreditCardsChange }: CreditCardManagerProp
 
     const validation = creditCardSchema.safeParse(formData)
     if (!validation.success) {
-      alert('Please fill in all required fields correctly.')
+      toast.error('Please fill in all required fields correctly.')
       return
     }
 
@@ -116,7 +117,7 @@ export function CreditCardManager({ onCreditCardsChange }: CreditCardManagerProp
       resetForm()
       onCreditCardsChange?.()
     } catch (error) {
-      alert('Failed to update credit card.')
+      toast.error('Failed to update credit card.')
     }
   }
 

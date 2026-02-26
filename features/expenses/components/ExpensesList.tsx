@@ -24,9 +24,9 @@ export function ExpensesList({ expenses, isLoading, className }: ExpensesListPro
           <CardTitle>Recent Expenses</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
-            <p className="text-muted-foreground mt-2">Loading expenses...</p>
+          <div className="flex flex-col items-center justify-center py-10 gap-2">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="text-sm text-muted-foreground">Loading expenses...</p>
           </div>
         </CardContent>
       </Card>
@@ -40,8 +40,8 @@ export function ExpensesList({ expenses, isLoading, className }: ExpensesListPro
           <CardTitle>Recent Expenses</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No expenses yet. Add your first expense above!</p>
+          <div className="flex items-center justify-center py-10">
+            <p className="text-sm text-muted-foreground">No expenses yet. Add your first expense above!</p>
           </div>
         </CardContent>
       </Card>
@@ -57,15 +57,13 @@ export function ExpensesList({ expenses, isLoading, className }: ExpensesListPro
         </p>
       </CardHeader>
       <CardContent>
-        <StaggerContainer className="space-y-4">
+        <StaggerContainer className="space-y-3">
           {expenses.map((expense) => (
             <StaggerItem key={expense.id}>
-              <div
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className={cn(
-                    'p-2 rounded-full',
+                    'p-2 rounded-full shrink-0',
                     expense.type === 'EXPENSE'
                       ? 'bg-destructive/10 text-destructive'
                       : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
@@ -76,33 +74,31 @@ export function ExpensesList({ expenses, isLoading, className }: ExpensesListPro
                       <ArrowUpRight className="h-4 w-4" />
                     )}
                   </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">
-                        {formatPrice(expense.amount)}
-                      </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {expense.category && (
                         <Badge variant="secondary">{expense.category}</Badge>
                       )}
-                    {expense.source === 'RECURRING' && (
-                      <Badge variant="secondary">Recurring</Badge>
-                    )}
+                      {expense.source === 'RECURRING' && (
+                        <Badge variant="outline">Recurring</Badge>
+                      )}
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {expense.platform && `${expense.platform} • `}
-                      {expense.payment_method && `${expense.payment_method} • `}
-                      {dayjs(expense.datetime).isValid() ? dayjs(expense.datetime).format('MMM DD, YYYY HH:mm') : expense.datetime}
+                    <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                      {[expense.platform, expense.payment_method, dayjs(expense.datetime).isValid()
+                        ? dayjs(expense.datetime).format('MMM DD, YYYY HH:mm')
+                        : expense.datetime
+                      ].filter(Boolean).join(' · ')}
                     </div>
                     {expense.tags && expense.tags.length > 0 && (
-                      <div className="text-sm text-muted-foreground mt-1">
-                        <span className="font-medium">{expense.tags.join(' • ')}</span>
+                      <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {expense.tags.join(' · ')}
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0 ml-3">
                   <div className={cn(
-                    'text-sm font-medium',
+                    'text-sm font-medium tabular-nums',
                     expense.type === 'EXPENSE'
                       ? 'text-destructive'
                       : 'text-emerald-600 dark:text-emerald-400'
@@ -110,7 +106,7 @@ export function ExpensesList({ expenses, isLoading, className }: ExpensesListPro
                     {expense.type === 'EXPENSE' ? '-' : '+'}{formatPrice(expense.amount)}
                   </div>
                   {expense.parsed_by_ai && (
-                    <div className="text-xs text-muted-foreground">AI Parsed</div>
+                    <div className="text-xs text-muted-foreground">AI parsed</div>
                   )}
                 </div>
               </div>
