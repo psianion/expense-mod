@@ -1,9 +1,9 @@
-// features/import/hooks/useUploadStatement.ts
 import { useMutation } from '@tanstack/react-query'
 import { importApi } from '@/lib/api/import'
 
 export function useUploadStatement() {
   return useMutation({
-    mutationFn: (file: File) => importApi.uploadFile(file),
+    mutationFn: ({ file, password }: { file: File; password?: string }) =>
+      importApi.uploadFile(file, password),
   })
 }

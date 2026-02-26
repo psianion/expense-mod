@@ -1,15 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { clearMockStore, getMockStore, getDemoUserContext } from '../../setup'
 
-// Mock file-parser and classifiers
-vi.mock('@server/import/file-parser', () => ({
-  parseFile: vi.fn(async () => ({
-    format: 'HDFC',
-    rows: [
-      { raw_data: {}, amount: 450, datetime: '2026-02-15T00:00:00', type: 'EXPENSE', narration: 'Zomato' },
-      { raw_data: {}, amount: 200, datetime: '2026-02-14T00:00:00', type: 'EXPENSE', narration: 'XYZABC unknown' },
-    ],
-  })),
+// Mock PDF extractor
+vi.mock('@server/import/pdf-extractor', () => ({
+  extractPdfText: vi.fn(async () => 'fake pdf text content'),
+  PdfPasswordError: class PdfPasswordError extends Error {
+    constructor(public code: string) { super(code) }
+  },
+}))
+
+// Mock AI row extractor
+vi.mock('@server/import/ai-row-extractor', () => ({
+  extractRowsFromText: vi.fn(async () => ([
+    { raw_data: {}, amount: 450, datetime: '2026-02-15T00:00:00', type: 'EXPENSE', narration: 'Zomato' },
+    { raw_data: {}, amount: 200, datetime: '2026-02-14T00:00:00', type: 'EXPENSE', narration: 'XYZABC unknown' },
+  ])),
 }))
 
 vi.mock('@server/import/rule-classifier', () => ({
@@ -41,7 +46,6 @@ import { importService } from '@server/services/import.service'
 
 const demoUser = getDemoUserContext()
 
-// Helper to flush all pending microtasks so the async pipeline completes
 async function flushPipeline() {
   await new Promise(r => setTimeout(r, 0))
   await new Promise(r => setTimeout(r, 0))
@@ -51,37 +55,35 @@ beforeEach(() => clearMockStore())
 
 describe('ImportService.createSession', () => {
   it('returns a sessionId immediately', async () => {
-    const buf = Buffer.from('csv content')
-    const result = await importService.createSession(buf, 'test.csv', 'text/csv', demoUser)
+    const buf = Buffer.from('%PDF-1.4 fake')
+    const result = await importService.createSession(buf, 'statement.pdf', 'application/pdf', demoUser)
     expect(result.sessionId).toBeDefined()
     expect(typeof result.sessionId).toBe('string')
   })
 
-  it('rejects unsupported file types', async () => {
-    const buf = Buffer.from('pdf content')
+  it('rejects non-PDF files', async () => {
+    const buf = Buffer.from('col1,col2\n1,2')
     await expect(
-      importService.createSession(buf, 'report.pdf', 'application/pdf', demoUser)
-    ).rejects.toThrow('Unsupported file type')
+      importService.createSession(buf, 'report.csv', 'text/csv', demoUser)
+    ).rejects.toThrow('Only PDF files are supported')
   })
 
   it('splits rows into auto and review queues by confidence threshold', async () => {
-    const buf = Buffer.from('csv content')
-    const { sessionId } = await importService.createSession(buf, 'test.csv', 'text/csv', demoUser)
+    const buf = Buffer.from('%PDF-1.4 fake')
+    const { sessionId } = await importService.createSession(buf, 'statement.pdf', 'application/pdf', demoUser)
     await flushPipeline()
     const session = await importService.getSession(sessionId, demoUser)
-    expect(session.auto_count).toBe(0)    // Zomato missing payment_method confidence
-    expect(session.review_count).toBe(2)  // both go to AI
+    expect(session.auto_count).toBe(0)
+    expect(session.review_count).toBe(2)
   })
 })
 
 describe('ImportService.getRows', () => {
   it('throws 409 when session is still PARSING', async () => {
-    const buf = Buffer.from('csv content')
-    const { sessionId } = await importService.createSession(buf, 'test.csv', 'text/csv', demoUser)
-    // Session is PARSING immediately after creation (before pipeline completes)
+    const buf = Buffer.from('%PDF-1.4 fake')
+    const { sessionId } = await importService.createSession(buf, 'statement.pdf', 'application/pdf', demoUser)
     const store = getMockStore()
     const session = store.import_sessions.find(s => s.id === sessionId)
-    // Force session to stay PARSING
     if (session) (session as Record<string, unknown>).status = 'PARSING'
     await expect(importService.getRows(sessionId, demoUser)).rejects.toThrow('still parsing')
   })
@@ -89,8 +91,8 @@ describe('ImportService.getRows', () => {
 
 describe('ImportService.confirmRow', () => {
   it('creates an expense and marks row CONFIRMED', async () => {
-    const buf = Buffer.from('csv content')
-    const { sessionId } = await importService.createSession(buf, 'test.csv', 'text/csv', demoUser)
+    const buf = Buffer.from('%PDF-1.4 fake')
+    const { sessionId } = await importService.createSession(buf, 'statement.pdf', 'application/pdf', demoUser)
     await flushPipeline()
     const rows = await importService.getRows(sessionId, demoUser)
     const row = rows[0]

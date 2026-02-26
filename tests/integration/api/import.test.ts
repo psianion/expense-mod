@@ -3,14 +3,18 @@ import { NextRequest } from 'next/server'
 import { clearMockStore, getMockStore, getDemoUserContext } from '../../setup'
 
 // Must mock before importing routes that pull in the service pipeline
-vi.mock('@server/import/file-parser', () => ({
-  parseFile: vi.fn(async () => ({
-    format: 'HDFC',
-    rows: [
-      { raw_data: {}, amount: 450, datetime: '2026-02-15T00:00:00', type: 'EXPENSE', narration: 'Zomato' },
-      { raw_data: {}, amount: 200, datetime: '2026-02-14T00:00:00', type: 'EXPENSE', narration: 'Unknown vendor' },
-    ],
-  })),
+vi.mock('@server/import/pdf-extractor', () => ({
+  extractPdfText: vi.fn(async () => 'fake pdf text content'),
+  PdfPasswordError: class PdfPasswordError extends Error {
+    constructor(public code: string) { super(code) }
+  },
+}))
+
+vi.mock('@server/import/ai-row-extractor', () => ({
+  extractRowsFromText: vi.fn(async () => ([
+    { raw_data: {}, amount: 450, datetime: '2026-02-15T00:00:00', type: 'EXPENSE', narration: 'Zomato' },
+    { raw_data: {}, amount: 200, datetime: '2026-02-14T00:00:00', type: 'EXPENSE', narration: 'Unknown vendor' },
+  ])),
 }))
 
 vi.mock('@server/import/rule-classifier', () => ({
@@ -93,14 +97,14 @@ describe('POST /api/import/sessions', () => {
     expect(res.status).toBe(400)
   })
 
-  it('returns 422 for unsupported file type (.pdf)', async () => {
-    const file = new File(['pdf content'], 'report.pdf', { type: 'application/pdf' })
+  it('returns 422 for non-PDF file type (.csv)', async () => {
+    const file = new File(['csv content'], 'report.csv', { type: 'text/csv' })
     const res = await postSession(makeFormDataRequest(file))
     expect(res.status).toBe(422)
   })
 
-  it('returns sessionId for a valid CSV upload', async () => {
-    const file = new File(['date,amount\n2026-02-15,450'], 'hdfc.csv', { type: 'text/csv' })
+  it('returns sessionId for a valid PDF upload', async () => {
+    const file = new File(['%PDF-1.4 fake'], 'statement.pdf', { type: 'application/pdf' })
     const res = await postSession(makeFormDataRequest(file))
     const body = await res.json()
     expect(res.status).toBe(200)
@@ -120,7 +124,7 @@ describe('GET /api/import/sessions/[id]', () => {
   })
 
   it('returns session data for a known session', async () => {
-    const file = new File(['date,amount'], 'hdfc.csv', { type: 'text/csv' })
+    const file = new File(['%PDF-1.4 fake'], 'statement.pdf', { type: 'application/pdf' })
     const postRes = await postSession(makeFormDataRequest(file))
     const { data: { sessionId } } = await postRes.json()
 
@@ -137,7 +141,7 @@ describe('GET /api/import/sessions/[id]', () => {
 // ────────────────────────────────────────────────────────────
 describe('GET /api/import/sessions/[id]/rows', () => {
   it('returns 409 while session is still PARSING', async () => {
-    const file = new File(['date,amount'], 'hdfc.csv', { type: 'text/csv' })
+    const file = new File(['%PDF-1.4 fake'], 'statement.pdf', { type: 'application/pdf' })
     const postRes = await postSession(makeFormDataRequest(file))
     const { data: { sessionId } } = await postRes.json()
 
@@ -152,7 +156,7 @@ describe('GET /api/import/sessions/[id]/rows', () => {
   })
 
   it('returns rows after pipeline completes', async () => {
-    const file = new File(['date,amount'], 'hdfc.csv', { type: 'text/csv' })
+    const file = new File(['%PDF-1.4 fake'], 'statement.pdf', { type: 'application/pdf' })
     const postRes = await postSession(makeFormDataRequest(file))
     const { data: { sessionId } } = await postRes.json()
     await flushPipeline()
@@ -181,7 +185,7 @@ describe('PATCH /api/import/sessions/[id]/rows/[rowId]', () => {
   })
 
   it('confirms a row and returns updated row', async () => {
-    const file = new File(['date,amount'], 'hdfc.csv', { type: 'text/csv' })
+    const file = new File(['%PDF-1.4 fake'], 'statement.pdf', { type: 'application/pdf' })
     const postRes = await postSession(makeFormDataRequest(file))
     const { data: { sessionId } } = await postRes.json()
     await flushPipeline()
@@ -218,7 +222,7 @@ describe('POST /api/import/sessions/[id]/confirm-all', () => {
   })
 
   it('imports all pending rows and returns count', async () => {
-    const file = new File(['date,amount'], 'hdfc.csv', { type: 'text/csv' })
+    const file = new File(['%PDF-1.4 fake'], 'statement.pdf', { type: 'application/pdf' })
     const postRes = await postSession(makeFormDataRequest(file))
     const { data: { sessionId } } = await postRes.json()
     await flushPipeline()

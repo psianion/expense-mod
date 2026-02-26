@@ -11,9 +11,10 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export const importApi = {
-  async uploadFile(file: File): Promise<{ sessionId: string }> {
+  async uploadFile(file: File, password?: string): Promise<{ sessionId: string }> {
     const form = new FormData()
     form.append('file', file)
+    if (password) form.append('password', password)
     const res = await fetch('/api/import/sessions', { method: 'POST', body: form })
     return handleResponse<{ sessionId: string }>(res)
   },

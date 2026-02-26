@@ -1,12 +1,13 @@
 'use client'
 
-import { useRef } from 'react'
-import { Upload, FileText } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Upload, FileText, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useUploadStatement } from '@/lib/query/hooks/useUploadStatement'
-import { useState } from 'react'
 
 interface Props {
   onSuccess: (sessionId: string) => void
@@ -14,34 +15,59 @@ interface Props {
 
 export function ImportStage1Upload({ onSuccess }: Props) {
   const [dragging, setDragging] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [password, setPassword] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const { mutate: upload, isPending: uploading } = useUploadStatement()
 
-  const handleFile = (file: File) => {
-    upload(file, {
-      onSuccess: ({ sessionId }) => onSuccess(sessionId),
-      onError: (e) => toast.error(e instanceof Error ? e.message : 'Upload failed'),
-    })
+  const handleUpload = (file: File, pwd?: string) => {
+    upload(
+      { file, password: pwd || undefined },
+      {
+        onSuccess: ({ sessionId }) => onSuccess(sessionId),
+        onError: (e) => {
+          const msg = e instanceof Error ? e.message : 'Upload failed'
+          if (msg === 'PASSWORD_REQUIRED') {
+            toast.error('This PDF is password-protected. Enter the password below.')
+          } else if (msg === 'WRONG_PASSWORD') {
+            toast.error('Incorrect password. Please try again.')
+          } else {
+            toast.error(msg)
+          }
+        },
+      }
+    )
+  }
+
+  const pickFile = (file: File) => {
+    setSelectedFile(file)
+    setPassword('')
   }
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragging(false)
     const file = e.dataTransfer.files[0]
-    if (file) handleFile(file)
+    if (file) pickFile(file)
+  }
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (selectedFile) handleUpload(selectedFile, password || undefined)
   }
 
   return (
     <div className="p-8 flex flex-col items-center gap-6">
       <div className="text-center">
         <h2 className="text-lg font-semibold">Import Bank Statement</h2>
-        <p className="text-sm text-muted-foreground mt-1">CSV or Excel from HDFC, ICICI, Axis, SBI, Kotak</p>
+        <p className="text-sm text-muted-foreground mt-1">Upload a PDF statement from any bank</p>
       </div>
 
       <div
         className={cn(
           'w-full border-2 border-dashed rounded-xl p-12 flex flex-col items-center gap-3 cursor-pointer transition-colors',
           dragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50',
+          selectedFile && 'border-primary/40 bg-primary/5',
         )}
         onDragOver={e => { e.preventDefault(); setDragging(true) }}
         onDragLeave={() => setDragging(false)}
@@ -49,25 +75,54 @@ export function ImportStage1Upload({ onSuccess }: Props) {
         onClick={() => inputRef.current?.click()}
       >
         <div className="rounded-full bg-muted p-4">
-          {uploading ? <FileText className="h-6 w-6 animate-pulse" /> : <Upload className="h-6 w-6 text-muted-foreground" />}
+          <FileText className="h-6 w-6 text-muted-foreground" />
         </div>
         <p className="text-sm text-muted-foreground">
-          {uploading ? 'Uploading...' : 'Drop your file here or click to browse'}
+          {selectedFile ? selectedFile.name : 'Drop your PDF here or click to browse'}
         </p>
-        <p className="text-xs text-muted-foreground/60">.csv, .xlsx, .xls</p>
+        <p className="text-xs text-muted-foreground/60">.pdf</p>
       </div>
 
       <input
         ref={inputRef}
         type="file"
-        accept=".csv,.xlsx,.xls"
+        accept=".pdf"
         className="hidden"
-        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+        onChange={e => { const f = e.target.files?.[0]; if (f) pickFile(f) }}
       />
 
-      <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" disabled>
-        Supports HDFC · ICICI · Axis · SBI · Kotak
-      </Button>
+      {selectedFile && (
+        <form onSubmit={onSubmit} className="w-full flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="pdf-password" className="flex items-center gap-1.5 text-sm">
+              <Lock className="h-3.5 w-3.5" />
+              Password
+              <span className="text-muted-foreground font-normal">(leave blank if not required)</span>
+            </Label>
+            <Input
+              id="pdf-password"
+              type="password"
+              placeholder="Statement password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+          <Button type="submit" disabled={uploading} className="w-full">
+            {uploading ? (
+              <span className="flex items-center gap-2">
+                <Upload className="h-4 w-4 animate-pulse" />
+                Uploading…
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Import Statement
+              </span>
+            )}
+          </Button>
+        </form>
+      )}
     </div>
   )
 }

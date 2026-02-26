@@ -10,10 +10,10 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request)
     const raw = Object.fromEntries(await request.formData())
-    const { file } = fileUploadSchema.parse(raw)
+    const { file, password } = fileUploadSchema.parse(raw)
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const { sessionId } = await importService.createSession(buffer, file.name, file.type, user)
+    const { sessionId } = await importService.createSession(buffer, file.name, file.type, user, password)
     return successResponse({ sessionId })
   } catch (error) {
     return handleApiError(error)

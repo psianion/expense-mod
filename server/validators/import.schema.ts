@@ -5,6 +5,7 @@ import type { ConfirmRowInput, ConfirmAllInput } from '@/types/import'
 // File upload — validates presence and basic metadata at the route boundary
 export const fileUploadSchema = z.object({
   file: z.unknown().refine((f): f is File => f instanceof File, { message: 'No file provided' }),
+  password: z.string().optional(),
 })
 
 export const confirmRowSchema: z.ZodType<ConfirmRowInput> = z.object({

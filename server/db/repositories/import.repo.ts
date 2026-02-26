@@ -21,9 +21,11 @@ export const importRepo = {
 
   async updateSession(id: string, patch: Partial<{
     status: string
+    row_count: number
     auto_count: number
     review_count: number
     progress_done: number
+    progress_total: number
   }>): Promise<void> {
     const { error } = await supabase.from('import_sessions').update(patch).eq('id', id)
     if (error) throw new Error(`Failed to update session ${id}: ${error.message}`)

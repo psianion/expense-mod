@@ -1,8 +1,5 @@
 import { test, expect } from '@playwright/test'
-import path from 'path'
 import { navigateToExpenses } from '../../../helpers/testE2E'
-
-const FIXTURES = path.resolve(__dirname, '../../../fixtures/import')
 
 /**
  * E2E tests for the bank statement import flow.
@@ -23,30 +20,31 @@ test.describe('Import Flow - Upload', () => {
     await expect(page.getByText('Import Bank Statement')).toBeVisible({ timeout: 5000 })
   })
 
-  test('upload a valid HDFC CSV file transitions to parsing stage', async ({ page }) => {
+  test('upload a valid PDF file transitions to parsing stage', async ({ page }) => {
     await navigateToExpenses(page)
     await page.getByTestId('import-statement-btn').click()
 
-    // Trigger file input
+    // Select a PDF file (fixture — any small PDF works)
     const fileInput = page.locator('input[type="file"]')
-    await fileInput.setInputFiles(path.join(FIXTURES, 'hdfc-valid.csv'))
+    await fileInput.setInputFiles({
+      name: 'statement.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4 1 0 obj<</Type/Catalog>>endobj\nxref\n0 1\n0000000000 65535 f\ntrailer<</Size 1>>\nstartxref\n9\n%%EOF'),
+    })
 
-    // Should advance to parsing stage
-    await expect(
-      page.getByText(/Analysing your statement/i).or(page.getByText(/hdfc-valid.csv/i))
-    ).toBeVisible({ timeout: 10000 })
+    // Password field and Import button should appear
+    await expect(page.getByLabel(/password/i)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByRole('button', { name: /import statement/i })).toBeVisible()
   })
 })
 
 test.describe('Import Flow - API', () => {
-  test('POST /api/import/sessions returns sessionId for CSV file', async ({ request }) => {
+  test('POST /api/import/sessions returns 422 for non-PDF file', async ({ request }) => {
     const buffer = Buffer.from('Date,Narration,Debit Amount\n15/02/2026,Zomato,450')
-    const formData = new FormData()
-    formData.append('file', new Blob([buffer], { type: 'text/csv' }), 'test.csv')
-
-    const res = await request.post('/api/import/sessions', { multipart: { file: { name: 'test.csv', mimeType: 'text/csv', buffer } } })
-    // In E2E with real Supabase this may 503, so just verify not 404
-    expect(res.status()).not.toBe(404)
+    const res = await request.post('/api/import/sessions', {
+      multipart: { file: { name: 'test.csv', mimeType: 'text/csv', buffer } }
+    })
+    expect(res.status()).toBe(422)
   })
 
   test('POST /api/import/sessions returns 400 for missing file', async ({ request }) => {

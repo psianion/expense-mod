@@ -1,6 +1,6 @@
 // types/import.ts
 
-export type BankFormatId = 'HDFC' | 'ICICI' | 'AXIS' | 'SBI' | 'KOTAK' | 'GENERIC'
+export type BankFormatId = 'PDF'
 export type ImportSessionStatus = 'PARSING' | 'REVIEWING' | 'COMPLETE' | 'FAILED'
 export type ImportRowStatus = 'PENDING' | 'CONFIRMED' | 'SKIPPED'
 export type ClassifiedBy = 'RULE' | 'AI' | 'MANUAL'

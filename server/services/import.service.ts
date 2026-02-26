@@ -1,14 +1,13 @@
 // server/services/import.service.ts
 import { importRepo } from '@server/db/repositories/import.repo'
-import { parseFile } from '@server/import/file-parser'
+import { extractPdfText, PdfPasswordError } from '@server/import/pdf-extractor'
+import { extractRowsFromText } from '@server/import/ai-row-extractor'
 import { classifyRows } from '@server/import/rule-classifier'
 import { aiClassificationQueue } from '@server/queue/ai-classification-queue'
 import type { UserContext } from '@server/auth/context'
 import type { ClassifiedRow, ConfirmRowInput, ImportRow, ImportSession } from '@/types/import'
 
 const AUTO_THRESHOLD = 0.80
-const SUPPORTED_EXTENSIONS = /\.(csv|xlsx|xls)$/i
-const SUPPORTED_MIME = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel']
 
 function isAutoImport(row: ClassifiedRow): boolean {
   const c = row.confidence
@@ -26,29 +25,37 @@ class ImportService {
   async createSession(
     buffer: Buffer,
     filename: string,
-    fileMime: string,
+    _fileMime: string,
     user: UserContext,
+    password?: string,
   ): Promise<{ sessionId: string }> {
-    // Validate file type (domain rule — belongs in service)
-    if (!SUPPORTED_MIME.includes(fileMime) && !SUPPORTED_EXTENSIONS.test(filename)) {
-      throw Object.assign(new Error('Unsupported file type. Upload CSV or XLSX.'), { status: 422 })
+    if (!filename.toLowerCase().endsWith('.pdf')) {
+      throw Object.assign(new Error('Only PDF files are supported.'), { status: 422 })
     }
 
-    // 1. Parse file
-    const { format, rows: rawRows } = await parseFile(buffer, filename)
+    // Extract text — may throw PdfPasswordError
+    let text: string
+    try {
+      text = await extractPdfText(buffer, password)
+    } catch (err) {
+      if (err instanceof PdfPasswordError) {
+        throw Object.assign(new Error(err.code), { status: 422 })
+      }
+      throw err
+    }
 
-    // 2. Create session record immediately
+    // Create session record
     const session = await importRepo.createSession({
       user_id: user.userId,
       source_file: filename,
-      bank_format: format,
-      row_count: rawRows.length,
-      progress_total: rawRows.length,
+      bank_format: 'PDF',
+      row_count: 0,
+      progress_total: 0,
     })
     const sessionId = session.id
 
-    // 3. Run pipeline async (do not await)
-    this.runPipeline(sessionId, rawRows, user).catch(async (err: unknown) => {
+    // Run pipeline async (do not await)
+    this.runPipeline(sessionId, text, user).catch(async (err: unknown) => {
       console.error('[ImportService] Pipeline failed', {
         sessionId,
         userId: user.userId,
@@ -56,7 +63,7 @@ class ImportService {
         stack: err instanceof Error ? err.stack : undefined,
       })
       await importRepo.updateSession(sessionId, { status: 'FAILED' }).catch((updateErr: unknown) => {
-        console.error('[ImportService] CRITICAL: Could not mark session FAILED — session is stuck in PARSING', {
+        console.error('[ImportService] CRITICAL: Could not mark session FAILED', {
           sessionId,
           updateError: updateErr instanceof Error ? updateErr.message : String(updateErr),
         })
@@ -66,24 +73,39 @@ class ImportService {
     return { sessionId }
   }
 
-  private async runPipeline(
-    sessionId: string,
-    rawRows: Awaited<ReturnType<typeof parseFile>>['rows'],
-    _user: UserContext,
-  ): Promise<void> {
-    // 4. Rule classify all rows
-    const classified = classifyRows(rawRows)
+  private async runPipeline(sessionId: string, text: string, _user: UserContext): Promise<void> {
+    // 1. AI extracts raw rows from PDF text
+    const rawRows = await extractRowsFromText(text)
 
-    // 5. Split into auto and fallback queues
+    if (rawRows.length === 0) {
+      await importRepo.updateSession(sessionId, {
+        status: 'REVIEWING',
+        row_count: 0,
+        progress_total: 0,
+        progress_done: 0,
+        auto_count: 0,
+        review_count: 0,
+      })
+      return
+    }
+
+    // 2. Update session with actual row count
+    await importRepo.updateSession(sessionId, {
+      row_count: rawRows.length,
+      progress_total: rawRows.length,
+    })
+
+    // 3. Rule classify
+    const classified = classifyRows(rawRows)
     const autoRows = classified.filter(isAutoImport)
     const fallbackRows = classified.filter(r => !isAutoImport(r))
 
-    // 6. Persist rule-classified rows
+    // 4. Persist rows
     const insertedRows = await importRepo.insertRows(
       classified.map(r => ({ ...r, session_id: sessionId }))
     )
 
-    // 7. AI classify fallback rows
+    // 5. AI classify fallback rows
     if (fallbackRows.length > 0) {
       const dbFallbackRows = insertedRows
         .filter(r => r.classified_by === 'RULE')
@@ -95,10 +117,7 @@ class ImportService {
       for (let i = 0; i < aiResults.length; i++) {
         const aiRow = aiResults[i]
         const dbRow = dbFallbackRows[i]
-        if (!dbRow) {
-          console.error('[ImportService] AI result index mismatch — no matching DB row', { sessionId, aiIndex: i })
-          continue
-        }
+        if (!dbRow) continue
         await importRepo.updateRow(dbRow.id, {
           category: aiRow.category,
           platform: aiRow.platform,
@@ -116,7 +135,7 @@ class ImportService {
       }
     }
 
-    // 8. Mark session as REVIEWING
+    // 6. Mark REVIEWING
     await importRepo.updateSession(sessionId, {
       status: 'REVIEWING',
       auto_count: autoRows.length,
@@ -130,7 +149,6 @@ class ImportService {
   }
 
   async getRows(sessionId: string, user: UserContext): Promise<ImportRow[]> {
-    // V7 fix: domain rule belongs in service, not route
     const session = await this.getSession(sessionId, user)
     if (session.status === 'PARSING') {
       throw Object.assign(new Error('Session is still parsing'), { status: 409 })
@@ -141,8 +159,6 @@ class ImportService {
   async confirmRow(rowId: string, input: ConfirmRowInput, user: UserContext): Promise<ImportRow> {
     const row = await importRepo.getRow(rowId)
     if (!row) throw Object.assign(new Error('Row not found'), { status: 404 })
-
-    // Authorization: verify the row belongs to the authenticated user
     await this.getSession(row.session_id, user)
 
     if (input.action === 'SKIP') {
@@ -150,10 +166,7 @@ class ImportService {
       return { ...row, status: 'SKIPPED' } as ImportRow
     }
 
-    // Merge field overrides
     const merged = { ...row, ...input.fields }
-
-    // Write to expenses
     const expense = await importRepo.insertExpense({
       user_id: user.userId,
       amount: merged.amount,
@@ -179,7 +192,6 @@ class ImportService {
 
   async confirmAll(sessionId: string, scope: 'AUTO' | 'ALL', user: UserContext): Promise<{ imported: number }> {
     await this.getSession(sessionId, user)
-
     const rows = await importRepo.getPendingRows(sessionId, scope)
     if (!rows.length) return { imported: 0 }
 
@@ -207,7 +219,6 @@ class ImportService {
     }
 
     await importRepo.updateSession(sessionId, { status: 'COMPLETE' })
-
     return { imported: rows.length }
   }
 }
