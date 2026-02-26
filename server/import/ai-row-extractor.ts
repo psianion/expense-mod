@@ -50,7 +50,7 @@ function detectTypeFromText(text: string, amount: number, _narration: string): '
 
 export async function extractRowsFromText(text: string): Promise<RawImportRow[]> {
   const response = await openRouter.chat.send({
-    model: 'mistralai/devstral-2512',
+    model: 'arcee-ai/trinity-large-preview:free',
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: text },

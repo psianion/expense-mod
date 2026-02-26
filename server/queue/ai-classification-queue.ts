@@ -46,7 +46,7 @@ async function aiHandler(batch: RawImportRow[]): Promise<ClassifiedRow[]> {
 
   try {
     const response = await openRouter.chat.send({
-      model: 'mistralai/devstral-2512',
+      model: 'arcee-ai/trinity-large-preview:free',
       messages: [
         { role: 'system', content: BATCH_SYSTEM_PROMPT },
         { role: 'user', content: JSON.stringify(input) },
