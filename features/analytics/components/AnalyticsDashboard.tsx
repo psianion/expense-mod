@@ -5,7 +5,7 @@ import { TrendPeriod, getCategoryTotals, getCategoryTrend, getAvailableCategorie
 import { Expense } from '@/types'
 import { Button } from '@components/ui/button'
 import { formatPrice } from '@/lib/formatPrice'
-import { getUserPreferences } from '@/lib/userPreferences'
+import { getUserPreferences, getDefaultPreferences } from '@/lib/userPreferences'
 import { AnimatedButton } from '@components/animations'
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card'
 import { CategoryPieChart } from '@features/analytics/components/CategoryPieChart'
@@ -116,8 +116,11 @@ export function AnalyticsDashboard({ expenses, isLoading, currency, filters }: A
     ]
   }, [summary, expenses, availableCategories])
 
-  // Credit card analytics
-  const creditCards = React.useMemo(() => getUserPreferences().creditCards, [])
+  // Credit card analytics — use empty defaults on first render (matches SSR), load real prefs after hydration
+  const [creditCards, setCreditCards] = React.useState(getDefaultPreferences().creditCards)
+  React.useEffect(() => {
+    setCreditCards(getUserPreferences().creditCards)
+  }, [])
   const creditCardComparison = React.useMemo(() =>
     creditCards.length > 0 ? getCreditCardComparison(expenses, creditCards.map(card => card.name)) : [],
     [expenses, creditCards]

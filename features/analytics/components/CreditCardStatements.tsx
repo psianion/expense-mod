@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { CreditCard as CreditCardIcon, Calendar, TrendingUp, DollarSign } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 
 import type { Expense } from '@/types'
-import { getUserPreferences } from '@/lib/userPreferences'
+import { getUserPreferences, getDefaultPreferences } from '@/lib/userPreferences'
 import { getCurrentStatementPeriod, formatStatementPeriod } from '@/lib/creditCardUtils'
 import { getCreditCardPeriodExpenses } from '@/lib/analytics'
 import { getCreditCardAnalytics } from '@/lib/analytics'
@@ -19,7 +19,11 @@ interface CreditCardStatementsProps {
 }
 
 export function CreditCardStatements({ expenses }: CreditCardStatementsProps) {
-  const creditCards = getUserPreferences().creditCards
+  // Use empty defaults on first render (matches SSR), load real prefs after hydration
+  const [creditCards, setCreditCards] = React.useState(getDefaultPreferences().creditCards)
+  React.useEffect(() => {
+    setCreditCards(getUserPreferences().creditCards)
+  }, [])
 
   const creditCardData = useMemo(() => {
     if (creditCards.length === 0) return []

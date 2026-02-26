@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@components/ui/button'
 import { Input } from '@components/ui/input'
 import { Textarea } from '@components/ui/textarea'
@@ -11,6 +11,7 @@ import dayjs from 'dayjs'
 import { cn } from '@lib/utils'
 import { getLocalISO, localISOToDate, dateToLocalISO } from '@lib/datetime'
 import { getCombinedCategories, getCombinedPlatforms, getCombinedPaymentMethods } from '@lib/userPreferences'
+import { DEFAULT_CATEGORIES, DEFAULT_PLATFORMS, DEFAULT_PAYMENT_METHODS } from '@lib/constants'
 
 interface ManualExpenseFormProps {
   onSave: (expense: {
@@ -26,6 +27,16 @@ interface ManualExpenseFormProps {
 }
 
 export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps) {
+  // Use static defaults on first render (matches SSR), load localStorage prefs after hydration
+  const [categories, setCategories] = useState<string[]>([...DEFAULT_CATEGORIES])
+  const [platforms, setPlatforms] = useState<string[]>([...DEFAULT_PLATFORMS])
+  const [paymentMethods, setPaymentMethods] = useState<string[]>([...DEFAULT_PAYMENT_METHODS])
+  useEffect(() => {
+    setCategories(getCombinedCategories())
+    setPlatforms(getCombinedPlatforms())
+    setPaymentMethods(getCombinedPaymentMethods())
+  }, [])
+
   const [formData, setFormData] = useState({
     amount: '',
     datetime: getLocalISO(),
@@ -93,7 +104,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
-              {getCombinedCategories().map((category) => (
+              {categories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
                 </SelectItem>
@@ -109,7 +120,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
               <SelectValue placeholder="Select platform" />
             </SelectTrigger>
             <SelectContent>
-              {getCombinedPlatforms().map((platform) => (
+              {platforms.map((platform) => (
                 <SelectItem key={platform} value={platform}>
                   {platform}
                 </SelectItem>
@@ -125,7 +136,7 @@ export function ManualExpenseForm({ onSave, isLoading }: ManualExpenseFormProps)
               <SelectValue placeholder="Select payment method" />
             </SelectTrigger>
             <SelectContent>
-              {getCombinedPaymentMethods().map((method) => (
+              {paymentMethods.map((method) => (
                 <SelectItem key={method} value={method}>
                   {method}
                 </SelectItem>
