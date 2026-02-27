@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { billService } from '@server/services/bill.service'
 import { getCronUserContext } from '@server/auth/context'
+import { withApiHandler } from '../../middleware'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: NextRequest) {
+export const POST = withApiHandler(async (request: NextRequest) => {
   const headerSecret = request.headers.get('x-cron-secret')
   const querySecret = request.nextUrl.searchParams.get('secret')
   const secret = headerSecret || querySecret
@@ -16,5 +17,4 @@ export async function POST(request: NextRequest) {
   const cronUser = getCronUserContext()
   const results = await billService.processBillInstances(cronUser)
   return NextResponse.json({ results })
-}
-
+})

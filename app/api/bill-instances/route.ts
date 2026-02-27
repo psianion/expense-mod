@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { successResponse, handleApiError } from '../middleware'
+import { successResponse, withApiHandler } from '../middleware'
 import { z } from 'zod'
 import dayjs from 'dayjs'
 
@@ -90,141 +90,128 @@ const fetchInstanceWithBill = async (client: SupabaseClient, id: string, userId?
   return normalizeInstance(data) as BillInstance & { bill: Bill }
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const user = await requireAuth(request)
-    const { client, userId } = getClient(user)
-    const statusFilterInput = request.nextUrl.searchParams
-      .get('status')
-      ?.split(',')
-      .map((value) => value?.toString?.().toUpperCase())
-      .filter((value) => value && value !== 'ALL')
-    const statusFilter = statusFilterInput as BillInstance['status'][] | undefined
-    let query = client.from('bill_instances').select('*, bill:bills(*)').order('due_date', { ascending: true })
-    if (userId) query = query.eq('user_id', userId)
-    if (statusFilter && statusFilter.length > 0) {
-      query = query.in('status', statusFilter)
-    }
-
-    const { data, error } = await query
-    if (error) throwOnSupabaseError(error)
-
-    const normalized = (data || []).map(normalizeInstance)
-    return successResponse({ instances: normalized as BillInstance[] })
-  } catch (error) {
-    return handleApiError(error)
+export const GET = withApiHandler(async (request: NextRequest) => {
+  const user = await requireAuth(request)
+  const { client, userId } = getClient(user)
+  const statusFilterInput = request.nextUrl.searchParams
+    .get('status')
+    ?.split(',')
+    .map((value) => value?.toString?.().toUpperCase())
+    .filter((value) => value && value !== 'ALL')
+  const statusFilter = statusFilterInput as BillInstance['status'][] | undefined
+  let query = client.from('bill_instances').select('*, bill:bills(*)').order('due_date', { ascending: true })
+  if (userId) query = query.eq('user_id', userId)
+  if (statusFilter && statusFilter.length > 0) {
+    query = query.in('status', statusFilter)
   }
-}
 
-export async function POST(request: NextRequest) {
-  try {
-    const user = await requireAuth(request)
-    const { client, userId } = getClient(user)
-    const payload = createSchema.parse(await request.json())
-    let billQ = client.from('bills').select('*').eq('id', payload.billId)
-    if (userId) billQ = billQ.eq('user_id', userId)
-    const { data: bill, error: billError } = await billQ.single()
-    if (billError || !bill) {
-      throw new Error(billError?.message || 'Bill not found')
-    }
+  const { data, error } = await query
+  if (error) throwOnSupabaseError(error)
 
-    const normalizedBill = normalizeBill(bill)
-    const existing = await findInstanceForPeriod(normalizedBill, normalizedBill.frequency, dayjs())
-    if (existing) {
-      const error = new Error('Instance already exists for current period')
-      ;(error as any).status = 409
-      throw error
-    }
+  const normalized = (data || []).map(normalizeInstance)
+  return successResponse({ instances: normalized as BillInstance[] })
+})
 
-    const dueDate =
-      payload.due_date && dayjs(payload.due_date).isValid()
-        ? dayjs(payload.due_date)
-        : computeDueDateForPeriod(normalizedBill, dayjs())
-    const lastAmount = await fetchLastInstanceAmount(client, normalizedBill.id, userId ?? undefined)
-    const amount = payload.amount ?? normalizedBill.amount ?? lastAmount ?? 0
-
-    const created = await createInstanceRecord(normalizedBill, dueDate, {
-      amount,
-      status: 'DUE',
-      user_id: userId ?? null,
-    })
-
-    if (!created) {
-      throw new Error('Failed to create bill instance')
-    }
-
-    let instanceQ = client.from('bill_instances').select('*, bill:bills(*)').eq('id', created.id)
-    if (userId) instanceQ = instanceQ.eq('user_id', userId)
-    const { data: instanceWithBill } = await instanceQ.single()
-
-    const instance = normalizeInstance(instanceWithBill ?? created)
-    return successResponse({ instance })
-  } catch (error) {
-    return handleApiError(error)
+export const POST = withApiHandler(async (request: NextRequest) => {
+  const user = await requireAuth(request)
+  const { client, userId } = getClient(user)
+  const payload = createSchema.parse(await request.json())
+  let billQ = client.from('bills').select('*').eq('id', payload.billId)
+  if (userId) billQ = billQ.eq('user_id', userId)
+  const { data: bill, error: billError } = await billQ.single()
+  if (billError || !bill) {
+    throw new Error(billError?.message || 'Bill not found')
   }
-}
 
-export async function PATCH(request: NextRequest) {
-  try {
-    const user = await requireAuth(request)
-    const { client, userId } = getClient(user)
-    const parsed = updateSchema.parse(await request.json())
-    const instance = await fetchInstanceWithBill(client, parsed.id, userId ?? undefined)
+  const normalizedBill = normalizeBill(bill)
+  const existing = await findInstanceForPeriod(normalizedBill, normalizedBill.frequency, dayjs())
+  if (existing) {
+    const error = new Error('Instance already exists for current period')
+    ;(error as any).status = 409
+    throw error
+  }
 
-    if (!instance?.bill) {
-      throw new Error('Bill not found for instance')
-    }
+  const dueDate =
+    payload.due_date && dayjs(payload.due_date).isValid()
+      ? dayjs(payload.due_date)
+      : computeDueDateForPeriod(normalizedBill, dayjs())
+  const lastAmount = await fetchLastInstanceAmount(client, normalizedBill.id, userId ?? undefined)
+  const amount = payload.amount ?? normalizedBill.amount ?? lastAmount ?? 0
 
-    if (parsed.action === 'skip') {
-      let q = client.from('bill_instances').update({ status: 'SKIPPED' }).eq('id', parsed.id)
-      if (userId) q = q.eq('user_id', userId)
-      const { data, error } = await q.select().single()
+  const created = await createInstanceRecord(normalizedBill, dueDate, {
+    amount,
+    status: 'DUE',
+    user_id: userId ?? null,
+  })
 
-      if (error) throwOnSupabaseError(error)
+  if (!created) {
+    throw new Error('Failed to create bill instance')
+  }
 
-      return successResponse({ instance: normalizeInstance(data) })
-    }
+  let instanceQ = client.from('bill_instances').select('*, bill:bills(*)').eq('id', created.id)
+  if (userId) instanceQ = instanceQ.eq('user_id', userId)
+  const { data: instanceWithBill } = await instanceQ.single()
 
-    if (parsed.action === 'update') {
-      let q = client.from('bill_instances').update({ amount: parsed.amount }).eq('id', parsed.id)
-      if (userId) q = q.eq('user_id', userId)
-      const { data, error } = await q.select().single()
+  const instance = normalizeInstance(instanceWithBill ?? created)
+  return successResponse({ instance })
+})
 
-      if (error) throwOnSupabaseError(error)
+export const PATCH = withApiHandler(async (request: NextRequest) => {
+  const user = await requireAuth(request)
+  const { client, userId } = getClient(user)
+  const parsed = updateSchema.parse(await request.json())
+  const instance = await fetchInstanceWithBill(client, parsed.id, userId ?? undefined)
 
-      return successResponse({ instance: normalizeInstance(data) })
-    }
+  if (!instance?.bill) {
+    throw new Error('Bill not found for instance')
+  }
 
-    const amount = parsed.amount ?? instance.amount
-    if (!amount || amount <= 0) {
-      throw new Error('Amount is required to confirm')
-    }
-
-    const expensePayload = { ...buildExpensePayload(instance.bill, instance, amount), user_id: user.userId }
-    const { data: expense, error: expenseError } = await client
-      .from('expenses')
-      .insert([expensePayload])
-      .select()
-      .single()
-
-    if (expenseError) throwOnSupabaseError(expenseError)
-
-    let updateQ = client
-      .from('bill_instances')
-      .update({
-        amount,
-        status: 'PAID',
-        posted_expense_id: expense?.id,
-      })
-      .eq('id', parsed.id)
-    if (userId) updateQ = updateQ.eq('user_id', userId)
-    const { data, error } = await updateQ.select().single()
+  if (parsed.action === 'skip') {
+    let q = client.from('bill_instances').update({ status: 'SKIPPED' }).eq('id', parsed.id)
+    if (userId) q = q.eq('user_id', userId)
+    const { data, error } = await q.select().single()
 
     if (error) throwOnSupabaseError(error)
 
     return successResponse({ instance: normalizeInstance(data) })
-  } catch (error) {
-    return handleApiError(error)
   }
-}
 
+  if (parsed.action === 'update') {
+    let q = client.from('bill_instances').update({ amount: parsed.amount }).eq('id', parsed.id)
+    if (userId) q = q.eq('user_id', userId)
+    const { data, error } = await q.select().single()
+
+    if (error) throwOnSupabaseError(error)
+
+    return successResponse({ instance: normalizeInstance(data) })
+  }
+
+  const amount = parsed.amount ?? instance.amount
+  if (!amount || amount <= 0) {
+    throw new Error('Amount is required to confirm')
+  }
+
+  const expensePayload = { ...buildExpensePayload(instance.bill, instance, amount), user_id: user.userId }
+  const { data: expense, error: expenseError } = await client
+    .from('expenses')
+    .insert([expensePayload])
+    .select()
+    .single()
+
+  if (expenseError) throwOnSupabaseError(expenseError)
+
+  let updateQ = client
+    .from('bill_instances')
+    .update({
+      amount,
+      status: 'PAID',
+      posted_expense_id: expense?.id,
+    })
+    .eq('id', parsed.id)
+  if (userId) updateQ = updateQ.eq('user_id', userId)
+  const { data, error } = await updateQ.select().single()
+
+  if (error) throwOnSupabaseError(error)
+
+  return successResponse({ instance: normalizeInstance(data) })
+})

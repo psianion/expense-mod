@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { ParseExpenseRequest } from '@/types'
 import { aiService } from '@server/ai/ai.service'
-import { successResponse, handleApiError } from '../../middleware'
+import { successResponse, withApiHandler } from '../../middleware'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +24,7 @@ function mockParseResult(text: string) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withApiHandler(async (request: NextRequest) => {
   let text: string | undefined
   try {
     const body: ParseExpenseRequest = await request.json()
@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
     if (typeof text === 'string' && text.length > 0) {
       return successResponse(mockParseResult(text))
     }
-    return handleApiError(error)
+    throw error
   }
-}
-
+})
