@@ -1,12 +1,14 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@server/auth/context'
-import { getServiceRoleClientIfAvailable } from '@server/db/supabase'
+import { profileService } from '@server/services/profile.service'
 import { successResponse, handleApiError, errorResponse } from '../../middleware'
 
 export const dynamic = 'force-dynamic'
 
 /**
- * Returns current user context for the client, including displayName and needsOnboarding.
+ * Returns current user context including displayName and needsOnboarding.
+ * Requires SUPABASE_SERVICE_ROLE_KEY to resolve profile fields — both
+ * default to null/false when the key is absent.
  * Returns 401 if not authenticated.
  */
 export async function GET(request: NextRequest) {
@@ -22,16 +24,13 @@ export async function GET(request: NextRequest) {
     if (user.isDemo) {
       displayName = 'Demo User'
     } else {
-      const service = getServiceRoleClientIfAvailable()
-      if (service) {
-        const { data: profile } = await service
-          .from('profiles')
-          .select('display_name')
-          .eq('id', user.userId)
-          .single()
-
+      try {
+        const profile = await profileService.getProfile(user.userId)
         displayName = profile?.display_name ?? null
         needsOnboarding = !displayName
+      } catch (profileErr) {
+        // Log but don't block auth — client-side guards still apply.
+        console.error('[api/auth/me] profile lookup failed:', profileErr)
       }
     }
 
