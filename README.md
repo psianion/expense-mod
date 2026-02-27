@@ -25,6 +25,8 @@ A modern, AI-powered expense tracking application built with Next.js, TypeScript
 - **Drag & Drop Interface**: Intuitive expense reordering and management
 - **Comprehensive Data**: Track amount, currency, date/time, category, platform, payment method, expense type, events, and notes
 - **Pending Confirmations**: Review bill instances, edit amounts, confirm or skip, with traceability back to expenses
+- **User Onboarding**: New users are guided through a profile setup flow after first sign-in; auth callback detects missing profiles and redirects accordingly
+- **Profile Management**: Users can set and update their display name via the profile API, with Zod validation
 - **Performance Optimization**: Intelligent caching with React Query provides instant loading and 10x faster cached experiences
 
 ## 📁 Project Structure
@@ -33,11 +35,14 @@ A modern, AI-powered expense tracking application built with Next.js, TypeScript
 expense-tracker/
 ├── app/                    # Next.js App Router pages and API routes
 │   ├── analytics/          # Analytics dashboard page
+│   ├── auth/              # Auth callback (PKCE code exchange, onboarding redirect)
 │   ├── bills/             # Bills management page
 │   ├── dashboard/         # Main dashboard page
 │   ├── expenses/          # Expenses list page
+│   ├── login/             # Login page (PUBLIC/MASTER modes)
+│   ├── onboarding/        # New-user profile setup page
 │   ├── settings/          # Settings page
-│   ├── api/               # API routes (AI parsing, analytics, bills, expenses)
+│   ├── api/               # API routes (auth, AI parsing, analytics, bills, expenses)
 │   └── layout.tsx         # Root layout with providers
 ├── components/            # React components
 │   ├── ui/               # shadcn/ui components
@@ -59,9 +64,10 @@ expense-tracker/
 │   └── recurring.ts      # Recurring bill helpers
 ├── server/               # Server-side business logic
 │   ├── ai/              # AI services (parsing, providers)
-│   ├── db/              # Database repositories
+│   ├── auth/            # Auth context resolution (DEMO/PUBLIC/MASTER)
+│   ├── db/              # Database repositories (expenses, bills, profiles)
 │   ├── services/        # Business logic services
-│   └── validators/      # Input validation schemas
+│   └── validators/      # Input validation schemas (Zod)
 ├── hooks/               # Custom React hooks
 ├── types/               # TypeScript type definitions
 ├── sql/                 # Database schema and migrations
@@ -83,8 +89,8 @@ expense-tracker/
 ### Auth & app modes
 
 - **DEMO**: Single fixed user, no login. Good for tryout and tests.
-- **PUBLIC**: Multi-tenant; sign in with email magic link or Google. RLS and roles apply.
-- **MASTER**: Single-tenant; first signed-in user gets full access.
+- **PUBLIC**: Multi-tenant; sign in with email magic link or Google. New users are redirected to onboarding to set their display name. RLS and roles apply.
+- **MASTER**: Single-tenant; first signed-in user gets full access. Onboarding applies on first login.
 
 See [docs/auth-setup.md](docs/auth-setup.md) and [docs/app-modes.md](docs/app-modes.md).
 
@@ -99,7 +105,8 @@ See [docs/auth-setup.md](docs/auth-setup.md) and [docs/app-modes.md](docs/app-mo
 - **AI Expense Parsing**: Advanced prompt engineering with structured output, few-shot examples, and post-processing validation using OpenRouter
 - **Intelligent Data Management**: TanStack React Query v5 with 60-80% API call reduction, 1-minute stale time, and instant optimistic updates
 - **Layered Architecture**: Clean separation between UI (components), data management (React Query hooks), business logic (services), and data access (repositories)
-- **Auth-Ready Schema**: `user_id` column prepared for future authentication with RLS support
+- **Auth & Onboarding**: Supabase Auth with PKCE flow, automatic onboarding detection, and profile management via layered service stack
+- **Auth-Ready Schema**: `user_id` column prepared for Row-Level Security
 - **Type Safety**: Full TypeScript coverage with Zod validation schemas and aligned database types
 - **Component Architecture**: Modular, reusable components with Radix UI for accessibility and Motion for animations
 - **Feature-Driven Development**: Organized by features (analytics, bills, expenses) with dedicated components and types
@@ -127,7 +134,7 @@ See [docs/auth-setup.md](docs/auth-setup.md) and [docs/app-modes.md](docs/app-mo
 - Smart Budget Tracking with Alerts
 - Advanced Search & Filtering System
 - AI-Powered Expense Insights and Recommendations
-- Multi-user Support with Authentication ✅ *Implemented (Supabase Auth + app modes)*
+- Multi-user Support with Authentication ✅ *Implemented (Supabase Auth + app modes + onboarding)*
 - Expense Export/Import functionality
 - Mobile App companion
 
