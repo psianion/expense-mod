@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { getServiceRoleClientIfAvailable } from '@server/db/supabase'
+import { profileRepository } from '@server/db/repositories/profile.repo'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl
@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
 
   // Use the proxy URL if set — must match what the browser client uses so the
   // PKCE code verifier cookie key prefix (derived from the URL) is identical.
+  // If the prefixes differ, exchangeCodeForSession fails with pkce_code_verifier_not_found.
   const supabaseUrl =
     process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -35,35 +36,37 @@ export async function GET(request: NextRequest) {
     },
   })
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code)
-
-  if (error) {
-    console.error('[auth/callback] exchangeCodeForSession failed:', error.message)
+  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+  if (exchangeError) {
+    console.error('[auth/callback] exchangeCodeForSession failed:', exchangeError.message)
     return NextResponse.redirect(`${origin}/login?error=auth_failed`)
   }
 
-  // Check if user needs onboarding using the service role client (direct, reliable).
-  // Only redirect when the profile is confirmed to have no display_name — if the
-  // query fails for any reason we default to letting the user through to home.
-  const { data: { user } } = await supabase.auth.getUser()
-  if (user) {
-    const service = getServiceRoleClientIfAvailable()
-    if (service) {
-      const { data: profile, error: profileError } = await service
-        .from('profiles')
-        .select('display_name')
-        .eq('id', user.id)
-        .single()
+  // Check if user needs onboarding via service role (direct, reliable).
+  // Fail-open: if the lookup errors for any reason other than "no row", let the user through.
+  const { data: { user }, error: getUserError } = await supabase.auth.getUser()
+  if (getUserError) {
+    console.error('[auth/callback] getUser() failed after session exchange:', getUserError.message)
+    return response
+  }
 
-      if (!profileError && !profile?.display_name) {
+  if (user) {
+    try {
+      const profile = await profileRepository.getProfile(user.id)
+      const needsOnboarding = !profile?.display_name
+
+      if (needsOnboarding) {
         const onboardingUrl = new URL('/onboarding', origin)
         const redirectResponse = NextResponse.redirect(onboardingUrl)
-        // Copy auth cookies to the redirect response (preserving all cookie options)
-        response.cookies.getAll().forEach((cookie) => {
-          redirectResponse.cookies.set(cookie.name, cookie.value)
+        // Copy auth cookies to the onboarding redirect, preserving all cookie options.
+        response.cookies.getAll().forEach(({ name, value, ...options }) => {
+          redirectResponse.cookies.set(name, value, options)
         })
         return redirectResponse
       }
+    } catch (profileErr) {
+      // Log but default to letting the user through — client-side guards still apply.
+      console.error('[auth/callback] profile lookup failed, defaulting to home:', profileErr)
     }
   }
 
