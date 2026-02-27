@@ -84,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         displayName: supabaseUser.user_metadata?.full_name ?? supabaseUser.user_metadata?.name ?? null,
         isMaster: false,
         isDemo: false,
-        needsOnboarding: true, // Will be overwritten when serverUser loads
+        needsOnboarding: true, // Optimistic default; overwritten when /api/auth/me responds successfully
         roles: ['user'],
       }
     }
@@ -104,7 +104,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       }
       setServerUser(null)
-    } catch {
+    } catch (err) {
+      console.error('[AuthProvider] fetchMe failed, falling back to supabaseUser state:', err)
       setServerUser(null)
     }
   }, [])
