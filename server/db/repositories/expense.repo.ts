@@ -1,5 +1,8 @@
 import { supabase, getServiceRoleClient, DB_UNAVAILABLE_MESSAGE } from '../supabase'
 import { Expense, ExpenseSource } from '@/types'
+import { createServiceLogger } from '@/server/lib/logger'
+import { AppError } from '@/server/lib/errors'
+const log = createServiceLogger('ExpenseRepo')
 
 export interface RepoAuthContext {
   userId: string
@@ -57,7 +60,8 @@ export class ExpenseRepository {
       .single()
 
     if (error) {
-      throw new Error(error.message)
+      log.error({ method: 'createExpense', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
     }
 
     return expense as Expense
@@ -114,7 +118,8 @@ export class ExpenseRepository {
       if (msg === 'fetch failed' || (error.name === 'TypeError' && msg.includes('fetch'))) {
         throw new Error(DB_UNAVAILABLE_MESSAGE)
       }
-      throw new Error(error.message)
+      log.error({ method: 'getExpenses', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
     }
 
     return { expenses: data as Expense[], total: count ?? 0 }
@@ -161,7 +166,8 @@ export class ExpenseRepository {
 
     if (error) {
       if (error.code === 'PGRST116') return null // Not found
-      throw new Error(error.message)
+      log.error({ method: 'getExpenseById', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
     }
 
     return data as Expense
@@ -176,7 +182,8 @@ export class ExpenseRepository {
     const { data, error } = await query.select().single()
 
     if (error) {
-      throw new Error(error.message)
+      log.error({ method: 'updateExpense', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
     }
 
     return data as Expense
@@ -191,7 +198,8 @@ export class ExpenseRepository {
     const { error } = await query
 
     if (error) {
-      throw new Error(error.message)
+      log.error({ method: 'deleteExpense', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
     }
   }
 }

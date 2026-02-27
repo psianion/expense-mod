@@ -1,6 +1,8 @@
 import { Expense } from '@/types'
 import { expenseRepository } from '../db/repositories/expense.repo'
 import { fromUTC } from '../../lib/datetime'
+import { createServiceLogger } from '@/server/lib/logger'
+const log = createServiceLogger('AnalyticsService')
 
 // Re-export utility functions from lib/analytics.ts
 export {
@@ -30,6 +32,7 @@ function toRepoAuth(user: UserContext): RepoAuthContext {
 // Business logic for analytics can be added here as needed
 export class AnalyticsService {
   async getAnalyticsData(user: UserContext) {
+    log.debug({ method: 'getAnalyticsData', userId: user.userId }, 'Fetching analytics data')
     const auth = toRepoAuth(user)
     // Get recent expenses for analytics (last 100 for performance)
     const { expenses } = await expenseRepository.getExpenses({ limit: 100 }, auth)

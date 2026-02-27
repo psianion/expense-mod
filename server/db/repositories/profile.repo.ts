@@ -1,4 +1,7 @@
 import { getServiceRoleClient } from '../supabase'
+import { createServiceLogger } from '@/server/lib/logger'
+import { AppError } from '@/server/lib/errors'
+const log = createServiceLogger('ProfileRepo')
 
 export interface ProfileRow {
   id: string
@@ -22,7 +25,10 @@ export class ProfileRepository {
       .single()
 
     if (error?.code === 'PGRST116') return null
-    if (error) throw new Error(error.message)
+    if (error) {
+      log.error({ method: 'getProfile', userId, err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
+    }
     return data as ProfileRow
   }
 
@@ -44,7 +50,10 @@ export class ProfileRepository {
       .select('id, email, display_name, avatar_url, created_at')
       .single()
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      log.error({ method: 'upsertDisplayName', userId, err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
+    }
     return data as ProfileRow
   }
 }
