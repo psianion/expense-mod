@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
+import { createServiceLogger, requestContext, generateRequestId } from '@/server/lib/logger'
+import { AppError } from '@/server/lib/errors'
+
+const apiLogger = createServiceLogger('API')
 
 // Standard API response interface
 export interface ApiResponse<T = any> {
@@ -24,6 +28,7 @@ export function successResponse<T>(data: T, status = 200): NextResponse<ApiRespo
       data,
       meta: {
         timestamp: new Date().toISOString(),
+        requestId: requestContext.getStore()?.requestId,
       },
     },
     { status }
@@ -46,6 +51,7 @@ export function errorResponse(
     },
     meta: {
       timestamp: new Date().toISOString(),
+      requestId: requestContext.getStore()?.requestId,
     },
   }
 
@@ -58,6 +64,11 @@ const DB_UNAVAILABLE_MSG =
 
 // Handle API errors consistently
 export function handleApiError(error: any): NextResponse<ApiResponse> {
+  // AppError — structured errors from services
+  if (error instanceof AppError) {
+    return errorResponse(error.message, error.statusCode, error.code, error.details)
+  }
+
   // Auth errors
   if (error?.code === 'AUTH_REQUIRED' || error?.status === 401) {
     return errorResponse('Authentication required', 401, 'UNAUTHORIZED')
@@ -127,10 +138,49 @@ export function withApiHandler(
   handler: (request: Request, context?: any) => Promise<Response>
 ) {
   return async (request: Request, context?: any) => {
-    try {
-      return await handler(request, context)
-    } catch (error) {
-      return handleApiError(error)
-    }
+    const requestId = generateRequestId()
+    const start = Date.now()
+    const method = request.method
+    const path = new URL(request.url).pathname
+
+    return requestContext.run({ requestId }, async () => {
+      apiLogger.info({ method, path }, 'Request received')
+
+      try {
+        const response = await handler(request, context)
+        const duration_ms = Date.now() - start
+
+        if (duration_ms > 1000) {
+          apiLogger.warn({ method, path, duration_ms }, 'Slow request')
+        }
+
+        apiLogger.info({ method, path, status: response.status, duration_ms }, 'Request completed')
+
+        // Clone response to add header
+        const headers = new Headers(response.headers)
+        headers.set('X-Request-Id', requestId)
+        return new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers,
+        })
+      } catch (error) {
+        const duration_ms = Date.now() - start
+        const res = handleApiError(error)
+
+        apiLogger.error(
+          { method, path, status: res.status, duration_ms, err: error },
+          `${method} ${path} failed`
+        )
+
+        const headers = new Headers(res.headers)
+        headers.set('X-Request-Id', requestId)
+        return new Response(res.body, {
+          status: res.status,
+          statusText: res.statusText,
+          headers,
+        })
+      }
+    })
   }
 }
