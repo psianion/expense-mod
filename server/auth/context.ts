@@ -34,7 +34,10 @@ export async function getCurrentUser(request: NextRequest): Promise<UserContext 
     }
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  // Prefer proxy URL to match the cookie name prefix used by the browser client.
+  // On Vercel production this var is unset so it falls back to the direct URL.
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseAnonKey) {
     return null

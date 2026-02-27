@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, useCallback } from 'react'
+import { Suspense, useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -21,24 +21,15 @@ function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const returnTo = searchParams.get('returnTo') || '/'
+  const errorParam = searchParams.get('error')
 
-  if (APP_MODE === 'DEMO' || isDemo) {
-    router.replace(returnTo)
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
-  }
+  const shouldRedirect = APP_MODE === 'DEMO' || isDemo || isAuthenticated
 
-  if (isAuthenticated) {
-    router.replace(returnTo)
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (shouldRedirect) {
+      router.replace(returnTo)
+    }
+  }, [shouldRedirect, returnTo, router])
 
   const handleMagicLink = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,6 +61,14 @@ function LoginContent() {
     }
   }, [signInWithGoogle])
 
+  if (shouldRedirect) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-sm shadow-lg">
@@ -80,6 +79,19 @@ function LoginContent() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {errorParam && !message && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {errorParam === 'auth_failed'
+                  ? 'Sign-in failed. Please try again.'
+                  : errorParam === 'missing_code'
+                    ? 'Invalid sign-in link. Please request a new one.'
+                    : 'An error occurred. Please try again.'}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {message && (
             <Alert variant={message.type === 'error' ? 'destructive' : 'default'}>
               <AlertCircle className="h-4 w-4" />

@@ -13,5 +13,7 @@ describe('GET /api/auth/me', () => {
     expect(body.data.user.userId).toBeDefined()
     expect(body.data.user.isDemo).toBe(true)
     expect(body.data.user.email).toBe('demo@expense-tracker.app')
+    expect(body.data.user.displayName).toBe('Demo User')
+    expect(body.data.user.needsOnboarding).toBe(false)
   })
 })
