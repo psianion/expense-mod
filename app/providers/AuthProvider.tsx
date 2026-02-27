@@ -19,8 +19,10 @@ const DEMO_EMAIL = 'demo@expense-tracker.app'
 export interface AuthUser {
   userId: string
   email: string | null
+  displayName: string | null
   isMaster: boolean
   isDemo: boolean
+  needsOnboarding: boolean
   roles: string[]
 }
 
@@ -31,6 +33,7 @@ interface AuthContextValue {
   isAuthenticated: boolean
   isMaster: boolean
   isDemo: boolean
+  needsOnboarding: boolean
   signInWithOtp: (email: string) => Promise<{ error: Error | null }>
   signInWithGoogle: () => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
@@ -66,8 +69,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return {
         userId: DEMO_USER_ID,
         email: DEMO_EMAIL,
+        displayName: 'Demo User',
         isMaster: false,
         isDemo: true,
+        needsOnboarding: false,
         roles: ['user'],
       }
     }
@@ -76,8 +81,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return {
         userId: supabaseUser.id,
         email: supabaseUser.email ?? null,
+        displayName: supabaseUser.user_metadata?.full_name ?? supabaseUser.user_metadata?.name ?? null,
         isMaster: false,
         isDemo: false,
+        needsOnboarding: true, // Will be overwritten when serverUser loads
         roles: ['user'],
       }
     }
@@ -142,7 +149,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!supabase) return { error: new Error('Supabase not configured') as Error }
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined },
+      options: { emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined },
     })
     return { error: error as Error | null }
   }, [])
@@ -152,7 +159,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!supabase) return { error: new Error('Supabase not configured') as Error }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined },
+      options: { redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined },
     })
     return { error: error as Error | null }
   }, [])
@@ -173,6 +180,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isAuthenticated,
       isMaster: mergedUser?.isMaster ?? false,
       isDemo: mergedUser?.isDemo ?? false,
+      needsOnboarding: mergedUser?.needsOnboarding ?? false,
       signInWithOtp,
       signInWithGoogle,
       signOut,
