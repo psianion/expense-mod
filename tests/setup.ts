@@ -11,13 +11,14 @@ process.env.DEMO_USER_ID = process.env.DEMO_USER_ID ?? '00000000-0000-0000-0000-
 process.env.DEMO_USER_EMAIL = process.env.DEMO_USER_EMAIL ?? 'demo@expense-tracker.app'
 
 // Inline mock for @server/db/supabase (vi.mock is hoisted and require() cannot resolve .ts)
-type TableName = 'expenses' | 'bills' | 'bill_instances' | 'import_sessions' | 'import_rows'
+type TableName = 'expenses' | 'bills' | 'bill_instances' | 'import_sessions' | 'import_rows' | 'profiles'
 const store: Record<TableName, Record<string, unknown>[]> = {
   expenses: [],
   bills: [],
   bill_instances: [],
   import_sessions: [],
   import_rows: [],
+  profiles: [],
 }
 function generateId(): string {
   return crypto.randomUUID?.() ?? `mock-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -250,7 +251,7 @@ const mockSupabaseClient = {
 vi.mock('@server/db/supabase', () => ({
   supabase: mockSupabaseClient,
   getServiceRoleClient: () => mockSupabaseClient,
-  getServiceRoleClientIfAvailable: () => null,
+  getServiceRoleClientIfAvailable: () => mockSupabaseClient,
   DB_UNAVAILABLE_MESSAGE: 'Database unavailable.',
 }))
 
@@ -261,6 +262,7 @@ export function clearMockStore() {
   store.bill_instances.length = 0
   store.import_sessions.length = 0
   store.import_rows.length = 0
+  store.profiles.length = 0
 }
 export function getMockStore() {
   return store
