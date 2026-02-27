@@ -26,6 +26,7 @@ export class AppError extends Error {
 
   constructor(code: ErrorCode, message: string, details?: Record<string, unknown>) {
     super(message)
+    Object.setPrototypeOf(this, new.target.prototype)
     this.name = 'AppError'
     this.code = code
     this.statusCode = HTTP_STATUS_MAP[code]
