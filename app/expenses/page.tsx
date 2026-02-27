@@ -1,6 +1,7 @@
 "use client"
 
 import { Suspense, useState } from 'react'
+import { toast } from 'sonner'
 import { AppLayoutClient } from '@components/layout/AppLayoutClient'
 import { PreviewModal } from '@features/expenses/components/PreviewModal'
 import { ExpensesDataTable } from '@features/expenses/components/ExpensesDataTable'
@@ -10,6 +11,7 @@ import { BillMatchCandidate, ExpenseSource, ExpenseType, ParsedExpense } from '@
 import { getLocalISO } from '@/lib/datetime'
 import { Button } from '@components/ui/button'
 import { Upload } from 'lucide-react'
+import { getUserFriendlyMessage } from '@/lib/errors'
 
 export default function ExpensesPage() {
   const createExpenseMutation = useCreateExpenseMutation()
@@ -21,7 +23,7 @@ export default function ExpensesPage() {
 
   const handleSave = async (expense: ParsedExpense) => {
     if (!expense.amount || expense.amount <= 0) {
-      alert('Please enter a valid amount.')
+      toast.error('Please enter a valid amount.')
       return
     }
     const payload = {
@@ -49,7 +51,7 @@ export default function ExpensesPage() {
       },
       onError: (error) => {
         console.error('Unexpected error saving expense:', error)
-        alert(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        toast.error(getUserFriendlyMessage(error))
       },
     })
   }

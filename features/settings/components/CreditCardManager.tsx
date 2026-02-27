@@ -19,6 +19,7 @@ import type { CreditCard } from '@/lib/constants'
 import { getUserPreferences, addCreditCard, updateCreditCard, removeCreditCard, getCombinedPaymentMethods } from '@/lib/userPreferences'
 import { getCurrentStatementPeriod, getNextStatementPeriod, formatStatementPeriod } from '@/lib/creditCardUtils'
 import { toast } from 'sonner'
+import { getUserFriendlyMessage } from '@/lib/errors'
 
 const creditCardSchema = z.object({
   name: z.string().min(1, 'Card name is required'),
@@ -131,7 +132,7 @@ export function CreditCardManager({ onCreditCardsChange }: CreditCardManagerProp
 
       onCreditCardsChange?.()
     } catch (error) {
-      alert('Failed to delete credit card.')
+      toast.error(getUserFriendlyMessage(error))
     }
   }
 
