@@ -1,5 +1,8 @@
 import { NextRequest } from 'next/server'
 import { successResponse, withApiHandler } from '../middleware'
+import { createServiceLogger } from '@/server/lib/logger'
+
+const log = createServiceLogger('BillInstancesRoute')
 import { z } from 'zod'
 import dayjs from 'dayjs'
 
@@ -72,7 +75,7 @@ const fetchLastInstanceAmount = async (
   const { data, error } = await q.single()
 
   if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching last bill instance', error)
+    log.error({ method: 'fetchLastInstanceAmount', billId, err: error }, 'Error fetching last bill instance')
   }
 
   return data?.amount ?? null

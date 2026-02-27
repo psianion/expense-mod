@@ -85,7 +85,7 @@ export function handleApiError(error: any): NextResponse<ApiResponse> {
     (error?.name === 'TypeError' && msg.includes('fetch'))
 
   if (msg === 'Invalid API key' || msg.includes('Invalid API key')) {
-    console.warn('API: Supabase returned Invalid API key (check .env keys match project).')
+    apiLogger.warn('API: Supabase returned Invalid API key (check .env keys match project).')
     return errorResponse(
       'Invalid Supabase API key. In .env set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY from the same project (Dashboard → Settings → API). Use the anon public key, not the service_role key.',
       503,
@@ -94,7 +94,7 @@ export function handleApiError(error: any): NextResponse<ApiResponse> {
   }
 
   if (isConfigOrNetwork) {
-    console.warn('API: Database unavailable (check .env and Supabase connectivity).')
+    apiLogger.warn('API: Database unavailable (check .env and Supabase connectivity).')
     return errorResponse(
       msg.includes('Missing Supabase') ? msg : DB_UNAVAILABLE_MSG,
       503,
@@ -102,9 +102,9 @@ export function handleApiError(error: any): NextResponse<ApiResponse> {
     )
   }
 
-  // Zod validation errors — must be checked before console.error to avoid
+  // Zod validation errors — must be checked before apiLogger.error to avoid
   // ZodError internal serialisation crashing with "Cannot read properties of
-  // undefined (reading 'value')" when console tries to format the error object.
+  // undefined (reading 'value')" when the logger tries to format the error object.
   if (error instanceof ZodError) {
     return errorResponse(
       'Validation failed',
@@ -114,7 +114,7 @@ export function handleApiError(error: any): NextResponse<ApiResponse> {
     )
   }
 
-  console.error('API Error:', error)
+  apiLogger.error({ err: error }, 'API Error')
 
   // Known error types
   if (error?.code === 'PGRST116') {
