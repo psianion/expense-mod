@@ -7,6 +7,8 @@ import { Bill, BillMatchCandidate, Expense } from '@/types'
 import { toUTC, getLocalISO } from '@lib/datetime'
 import { billToExpenseType, findInstanceForPeriod } from '@lib/recurring'
 import { findCreditCardByPaymentMethod } from '@lib/userPreferences'
+import { createServiceLogger } from '@/server/lib/logger'
+const log = createServiceLogger('ExpenseService')
 
 function toRepoAuth(user: UserContext): RepoAuthContext {
   return { userId: user.userId, useMasterAccess: user.isMaster }
@@ -14,6 +16,8 @@ function toRepoAuth(user: UserContext): RepoAuthContext {
 
 export class ExpenseService {
   async createExpense(input: CreateExpenseInput, user: UserContext): Promise<{ expense: Expense; matchedBillId: string | null; creditCardId: string | null }> {
+    log.info({ method: 'createExpense', userId: user.userId }, 'Creating expense')
+    log.debug({ method: 'createExpense', input }, 'Expense input')
     const { expense: expenseInput, billMatch: billHint, source, raw_text } = input
     const auth = toRepoAuth(user)
 
@@ -70,6 +74,7 @@ export class ExpenseService {
       }
     }
 
+    log.info({ method: 'createExpense', expenseId: expense.id, matchedBillId }, 'Expense created')
     return { expense, matchedBillId, creditCardId: creditCardBillId }
   }
 
@@ -77,6 +82,7 @@ export class ExpenseService {
     filters?: ExpenseFilters,
     user?: UserContext
   ): Promise<{ expenses: Expense[]; total: number }> {
+    log.debug({ method: 'getExpenses', filters }, 'Fetching expenses')
     const auth = user ? toRepoAuth(user) : undefined
     return expenseRepository.getExpenses(filters, auth)
   }
@@ -91,11 +97,13 @@ export class ExpenseService {
   }
 
   async updateExpense(id: string, updates: UpdateExpenseInput, user: UserContext): Promise<Expense> {
+    log.info({ method: 'updateExpense', expenseId: id, userId: user.userId }, 'Updating expense')
     const auth = toRepoAuth(user)
     return expenseRepository.updateExpense(id, updates, auth)
   }
 
   async deleteExpense(id: string, user: UserContext): Promise<void> {
+    log.info({ method: 'deleteExpense', expenseId: id, userId: user.userId }, 'Deleting expense')
     const auth = toRepoAuth(user)
     return expenseRepository.deleteExpense(id, auth)
   }
