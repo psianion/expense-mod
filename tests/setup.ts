@@ -65,9 +65,16 @@ function createQueryBuilder(table: TableName) {
     else if (limitVal !== null) result = result.slice(0, limitVal)
     return result
   }
+  let upsertRows: Row[] | null = null
+  let upsertOnConflict: string | null = null
   const chain = {
     insert(rows: Row[] | Row) {
       insertRows = Array.isArray(rows) ? rows : [rows]
+      return chain
+    },
+    upsert(rows: Row[] | Row, opts: { onConflict?: string } = {}) {
+      upsertRows = Array.isArray(rows) ? rows : [rows]
+      upsertOnConflict = opts.onConflict ?? 'id'
       return chain
     },
     select(_cols = '*', opts: { count?: 'exact' } = {}) {
@@ -142,6 +149,35 @@ function createQueryBuilder(table: TableName) {
     then(resolve: (value: { data: unknown; error: unknown; count: number | null }) => void) {
       const tableData = store[table] as Row[]
       try {
+        if (upsertRows) {
+          const conflictCol = upsertOnConflict ?? 'id'
+          const results: Row[] = []
+          for (const row of upsertRows) {
+            const conflictVal = (row as Record<string, unknown>)[conflictCol]
+            const idx = tableData.findIndex((r) => r[conflictCol] === conflictVal)
+            if (idx !== -1) {
+              // Update existing row
+              tableData[idx] = {
+                ...tableData[idx],
+                ...row,
+                updated_at: (row as { updated_at?: string }).updated_at ?? new Date().toISOString(),
+              }
+              results.push(tableData[idx])
+            } else {
+              // Insert new row
+              const toInsert = {
+                ...row,
+                id: (row as { id?: string }).id ?? generateId(),
+                created_at: (row as { created_at?: string }).created_at ?? new Date().toISOString(),
+                updated_at: (row as { updated_at?: string }).updated_at ?? new Date().toISOString(),
+              }
+              tableData.push(toInsert)
+              results.push(toInsert)
+            }
+          }
+          resolve({ data: singleMode ? results[0] : results, error: null, count: null })
+          return Promise.resolve(undefined as never)
+        }
         if (insertRows) {
           const toInsert = insertRows.map((row) => ({
             ...row,
