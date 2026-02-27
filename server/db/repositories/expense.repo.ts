@@ -116,7 +116,8 @@ export class ExpenseRepository {
     if (error) {
       const msg = error.message ?? ''
       if (msg === 'fetch failed' || (error.name === 'TypeError' && msg.includes('fetch'))) {
-        throw new Error(DB_UNAVAILABLE_MESSAGE)
+        log.error({ method: 'getExpenses', err: error }, 'Database unavailable')
+        throw new AppError('DB_ERROR', DB_UNAVAILABLE_MESSAGE, { code: 'NETWORK_ERROR' })
       }
       log.error({ method: 'getExpenses', err: error }, 'Database operation failed')
       throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
