@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
+import { frontendLogger } from '@/lib/logger'
 
 // Base API configuration
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
@@ -8,6 +9,7 @@ export interface ApiError {
   message: string
   status: number
   code?: string
+  requestId?: string
 }
 
 // Response wrapper type
@@ -63,20 +65,20 @@ apiClient.interceptors.response.use(
     return response
   },
   (error: AxiosError) => {
-    // Transform errors to our ApiError format
+    const requestId = error.response?.headers?.['x-request-id']
     const apiError: ApiError = {
       message: (error.response?.data as any)?.error?.message ||
-               (error.response?.data as any)?.error ||
                error.message ||
                'An unexpected error occurred',
       status: error.response?.status || 500,
-      code: error.code,
+      code: (error.response?.data as any)?.error?.code || error.code,
+      requestId,
     }
 
-    // Log errors in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('API Error:', apiError)
-    }
+    frontendLogger.error(
+      { requestId, status: apiError.status, code: apiError.code },
+      `API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url} → ${apiError.message}`
+    )
 
     return Promise.reject(apiError)
   }
