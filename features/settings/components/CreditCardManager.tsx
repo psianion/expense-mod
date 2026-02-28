@@ -80,7 +80,7 @@ export function CreditCardManager({ onCreditCardsChange }: CreditCardManagerProp
       resetForm()
       onCreditCardsChange?.()
     } catch (error) {
-      toast.error('Failed to add credit card.')
+      toast.error(getUserFriendlyMessage(error))
     }
   }
 
@@ -118,7 +118,7 @@ export function CreditCardManager({ onCreditCardsChange }: CreditCardManagerProp
       resetForm()
       onCreditCardsChange?.()
     } catch (error) {
-      toast.error('Failed to update credit card.')
+      toast.error(getUserFriendlyMessage(error))
     }
   }
 

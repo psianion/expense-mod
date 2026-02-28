@@ -1,6 +1,9 @@
 // server/import/ai-row-extractor.ts
 import { openRouter } from '@server/ai/providers/openrouter'
 import type { RawImportRow } from '@/types/import'
+import { createServiceLogger } from '@/server/lib/logger'
+
+const log = createServiceLogger('AiRowExtractor')
 
 const SYSTEM_PROMPT = `You are a bank statement parser. Extract all financial transactions from the raw text of a bank statement PDF.
 
@@ -49,16 +52,24 @@ function detectTypeFromText(text: string, amount: number, _narration: string): '
 }
 
 export async function extractRowsFromText(text: string): Promise<RawImportRow[]> {
-  const response = await openRouter.chat.send({
-    model: 'arcee-ai/trinity-large-preview:free',
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: text },
-    ],
-    temperature: 0.0,
-    maxTokens: 8000,
-    stream: false,
-  })
+  log.info({ method: 'extractRowsFromText', textLength: text.length }, 'Extracting rows from PDF text')
+
+  let response: Awaited<ReturnType<typeof openRouter.chat.send>>
+  try {
+    response = await openRouter.chat.send({
+      model: 'arcee-ai/trinity-large-preview:free',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: text },
+      ],
+      temperature: 0.0,
+      maxTokens: 8000,
+      stream: false,
+    })
+  } catch (err) {
+    log.error({ method: 'extractRowsFromText', err }, 'AI row extraction failed')
+    throw err
+  }
 
   const content = response.choices[0]?.message?.content ?? '[]'
   const raw = typeof content === 'string' ? content : '[]'
@@ -67,7 +78,7 @@ export async function extractRowsFromText(text: string): Promise<RawImportRow[]>
   const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
   const parsed: AiTransaction[] = JSON.parse(cleaned)
 
-  return parsed
+  const rows = parsed
     .filter(tx => tx.date && tx.amount != null && tx.amount > 0)
     .map(tx => {
       // Deterministic override: check if the original text has "CR" near this amount.
@@ -87,4 +98,7 @@ export async function extractRowsFromText(text: string): Promise<RawImportRow[]>
         narration: tx.narration,
       }
     })
+
+  log.info({ method: 'extractRowsFromText', rowCount: rows.length }, 'Row extraction complete')
+  return rows
 }

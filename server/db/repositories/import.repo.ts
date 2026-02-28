@@ -49,7 +49,7 @@ export const importRepo = {
       .single()
     if (error || !data) {
       log.error({ method: 'getSession', sessionId: id, err: error }, 'Session not found or DB error')
-      throw Object.assign(new AppError('NOT_FOUND', 'Session not found'), { status: 404 })
+      throw new AppError('NOT_FOUND', 'Session not found')
     }
     return data as ImportSession
   },

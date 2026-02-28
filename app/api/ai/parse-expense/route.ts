@@ -3,6 +3,7 @@ import { ParseExpenseRequest } from '@/types'
 import { aiService } from '@server/ai/ai.service'
 import { successResponse, withApiHandler } from '../../middleware'
 import { createServiceLogger } from '@/server/lib/logger'
+import { AppError } from '@/server/lib/errors'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +35,7 @@ export const POST = withApiHandler(async (request: NextRequest) => {
     text = body.text
 
     if (!text || typeof text !== 'string') {
-      throw new Error('Text is required and must be a string')
+      throw new AppError('VALIDATION_ERROR', 'Text is required and must be a string')
     }
 
     if (process.env.E2E_MOCK_AI_PARSE === 'true') {

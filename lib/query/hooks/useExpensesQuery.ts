@@ -4,6 +4,8 @@ import { queryKeys } from '../queryKeys'
 import { fromUTC } from '@/lib/datetime'
 import type { ExpenseFilters, CreateExpenseRequest } from '@/lib/api/types'
 import type { Expense, ExpenseType, ExpenseSource } from '@/types'
+import { toast } from 'sonner'
+import { getUserFriendlyMessage } from '@/lib/errors'
 
 const normalizeExpense = (expense: Expense): Expense => ({
   ...expense,
@@ -83,12 +85,13 @@ export function useCreateExpenseMutation() {
 
       return { previousQueriesData }
     },
-    onError: (_err, _variables, context) => {
+    onError: (err, _variables, context) => {
       if (context?.previousQueriesData) {
         for (const [queryKey, data] of context.previousQueriesData) {
           queryClient.setQueryData(queryKey, data)
         }
       }
+      toast.error(getUserFriendlyMessage(err))
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all })

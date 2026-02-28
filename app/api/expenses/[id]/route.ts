@@ -3,6 +3,7 @@ import { expenseService } from '@server/services/expense.service'
 import { updateExpenseSchema } from '@server/validators/expense.schema'
 import { requireAuth } from '@server/auth/context'
 import { successResponse, withApiHandler } from '../../middleware'
+import { AppError } from '@/server/lib/errors'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,7 @@ export const PATCH = withApiHandler(async (
   const user = await requireAuth(request)
   const { id } = await context.params
   if (!id) {
-    throw Object.assign(new Error('Expense id is required'), { status: 400 })
+    throw new AppError('VALIDATION_ERROR', 'Expense id is required')
   }
   const input = updateExpenseSchema.parse(await request.json())
   const expense = await expenseService.updateExpense(id, input, user)
@@ -27,7 +28,7 @@ export const DELETE = withApiHandler(async (
   const user = await requireAuth(request)
   const { id } = await context.params
   if (!id) {
-    throw Object.assign(new Error('Expense id is required'), { status: 400 })
+    throw new AppError('VALIDATION_ERROR', 'Expense id is required')
   }
   await expenseService.deleteExpense(id, user)
   return successResponse({ deleted: true })

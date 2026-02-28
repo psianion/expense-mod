@@ -100,7 +100,7 @@ describe('POST /api/import/sessions', () => {
   it('returns 422 for non-PDF file type (.csv)', async () => {
     const file = new File(['csv content'], 'report.csv', { type: 'text/csv' })
     const res = await postSession(makeFormDataRequest(file))
-    expect(res.status).toBe(422)
+    expect(res.status).toBe(400)
   })
 
   it('returns sessionId for a valid PDF upload', async () => {

@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { billInstancesApi } from '@/lib/api'
 import { queryKeys } from '../queryKeys'
 import type { BillInstance } from '@/types'
+import { toast } from 'sonner'
+import { getUserFriendlyMessage } from '@/lib/errors'
 
 export function useBillInstancesQuery(status?: string[]) {
   return useQuery({
@@ -50,6 +52,7 @@ export function useUpdateBillInstanceMutation() {
       if (context?.previousInstances) {
         queryClient.setQueryData(queryKeys.billInstances.list(['DUE', 'PAID']), context.previousInstances)
       }
+      toast.error(getUserFriendlyMessage(err))
     },
     onSettled: () => {
       // Always refetch after error or success

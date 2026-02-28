@@ -5,6 +5,7 @@ import { ReviewRow } from './ReviewRow'
 import { useConfirmAll } from '@/lib/query/hooks/useConfirmAll'
 import type { ImportRow, ImportSession } from '@/types/import'
 import { toast } from 'sonner'
+import { getUserFriendlyMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -28,7 +29,7 @@ export function ImportStage3Review({ session, rows, onDone }: Props) {
         toast.success(`${imported} transactions imported`)
         onDone()
       },
-      onError: () => toast.error('Failed to import transactions'),
+      onError: (err) => toast.error(getUserFriendlyMessage(err)),
     })
   }
 
@@ -53,7 +54,7 @@ export function ImportStage3Review({ session, rows, onDone }: Props) {
             variant="outline"
             className="h-8 text-xs"
             onClick={() => confirmAll('AUTO', {
-              onError: () => toast.error('Failed to confirm auto-classified transactions'),
+              onError: (err) => toast.error(getUserFriendlyMessage(err)),
             })}
             disabled={isPending}
           >

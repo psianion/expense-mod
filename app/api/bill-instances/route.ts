@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { successResponse, withApiHandler } from '../middleware'
 import { createServiceLogger } from '@/server/lib/logger'
+import { AppError } from '@/server/lib/errors'
 import { z } from 'zod'
 import dayjs from 'dayjs'
 import { getServiceRoleClientIfAvailable, supabase, DB_UNAVAILABLE_MESSAGE } from '@server/db/supabase'
@@ -21,9 +22,9 @@ function getClient(user: { userId: string; isMaster: boolean }): { client: Supab
 function throwOnSupabaseError(error: { message?: string; name?: string }): never {
   const msg = error.message ?? ''
   if (msg === 'fetch failed' || (error.name === 'TypeError' && msg.includes('fetch'))) {
-    throw new Error(DB_UNAVAILABLE_MESSAGE)
+    throw new AppError('SERVICE_UNAVAILABLE', DB_UNAVAILABLE_MESSAGE)
   }
-  throw new Error(msg)
+  throw new AppError('DB_ERROR', msg)
 }
 
 const normalizeBill = (bill: any): Bill => ({
@@ -122,15 +123,13 @@ export const POST = withApiHandler(async (request: NextRequest) => {
   if (userId) billQ = billQ.eq('user_id', userId)
   const { data: bill, error: billError } = await billQ.single()
   if (billError || !bill) {
-    throw new Error(billError?.message || 'Bill not found')
+    throw new AppError('NOT_FOUND', billError?.message || 'Bill not found')
   }
 
   const normalizedBill = normalizeBill(bill)
   const existing = await findInstanceForPeriod(normalizedBill, normalizedBill.frequency, dayjs())
   if (existing) {
-    const error = new Error('Instance already exists for current period')
-    ;(error as any).status = 409
-    throw error
+    throw new AppError('DUPLICATE_ENTRY', 'Instance already exists for current period')
   }
 
   const dueDate =
@@ -147,7 +146,7 @@ export const POST = withApiHandler(async (request: NextRequest) => {
   })
 
   if (!created) {
-    throw new Error('Failed to create bill instance')
+    throw new AppError('INTERNAL_ERROR', 'Failed to create bill instance')
   }
 
   let instanceQ = client.from('bill_instances').select('*, bill:bills(*)').eq('id', created.id)
@@ -165,7 +164,7 @@ export const PATCH = withApiHandler(async (request: NextRequest) => {
   const instance = await fetchInstanceWithBill(client, parsed.id, userId ?? undefined)
 
   if (!instance?.bill) {
-    throw new Error('Bill not found for instance')
+    throw new AppError('NOT_FOUND', 'Bill not found for instance')
   }
 
   if (parsed.action === 'skip') {
@@ -190,7 +189,7 @@ export const PATCH = withApiHandler(async (request: NextRequest) => {
 
   const amount = parsed.amount ?? instance.amount
   if (!amount || amount <= 0) {
-    throw new Error('Amount is required to confirm')
+    throw new AppError('VALIDATION_ERROR', 'Amount is required to confirm')
   }
 
   const expensePayload = { ...buildExpensePayload(instance.bill, instance, amount), user_id: user.userId }

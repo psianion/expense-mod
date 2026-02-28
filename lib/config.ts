@@ -31,9 +31,16 @@ export function validateAuthConfig(): void {
   }
 
   if (appMode === 'MASTER' && !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn(
-      'MASTER mode without SUPABASE_SERVICE_ROLE_KEY: Will use anon key (limited access)'
-    )
+    // Use dynamic import to avoid pulling Pino into client bundles.
+    // validateAuthConfig() is only called server-side from API routes.
+    import('@/server/lib/logger').then(({ createServiceLogger }) => {
+      createServiceLogger('Config').warn(
+        { method: 'validateAuthConfig', appMode },
+        'MASTER mode without SUPABASE_SERVICE_ROLE_KEY: Will use anon key (limited access)'
+      )
+    }).catch(() => {
+      // Fallback: logger import unavailable (e.g. edge runtime)
+    })
   }
 
   if (process.env.DEMO_USER_ID && !UUID_REGEX.test(process.env.DEMO_USER_ID)) {

@@ -60,7 +60,7 @@ describe('POST /api/bill-instances', () => {
         headers: { 'Content-Type': 'application/json' },
       })
     )
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(404)
   })
 })
 

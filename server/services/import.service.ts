@@ -7,6 +7,7 @@ import { aiClassificationQueue } from '@server/queue/ai-classification-queue'
 import type { UserContext } from '@server/auth/context'
 import type { ClassifiedRow, ConfirmRowInput, ImportRow, ImportSession } from '@/types/import'
 import { createServiceLogger } from '@/server/lib/logger'
+import { AppError } from '@/server/lib/errors'
 const log = createServiceLogger('ImportService')
 
 const AUTO_THRESHOLD = 0.80
@@ -33,7 +34,8 @@ class ImportService {
   ): Promise<{ sessionId: string }> {
     log.info({ method: 'createSession', userId: user.userId, filename }, 'Creating import session')
     if (!filename.toLowerCase().endsWith('.pdf')) {
-      throw Object.assign(new Error('Only PDF files are supported.'), { status: 422 })
+      log.warn({ method: 'createSession', filename }, 'Unsupported file type')
+      throw new AppError('VALIDATION_ERROR', 'Only PDF files are supported.')
     }
 
     // Extract text — may throw PdfPasswordError
@@ -42,8 +44,10 @@ class ImportService {
       text = await extractPdfText(buffer, password)
     } catch (err) {
       if (err instanceof PdfPasswordError) {
-        throw Object.assign(new Error(err.code), { status: 422 })
+        log.warn({ method: 'createSession', code: err.code }, 'PDF password error')
+        throw new AppError('VALIDATION_ERROR', err.code)
       }
+      log.error({ method: 'createSession', err }, 'PDF extraction failed')
       throw err
     }
 
@@ -153,7 +157,7 @@ class ImportService {
     log.debug({ method: 'getRows', sessionId }, 'Fetching rows')
     const session = await this.getSession(sessionId, user)
     if (session.status === 'PARSING') {
-      throw Object.assign(new Error('Session is still parsing'), { status: 409 })
+      throw new AppError('DUPLICATE_ENTRY', 'Session is still parsing')
     }
     return importRepo.getRowsBySession(sessionId)
   }
@@ -161,7 +165,7 @@ class ImportService {
   async confirmRow(rowId: string, input: ConfirmRowInput, user: UserContext): Promise<ImportRow> {
     log.info({ method: 'confirmRow', rowId, action: input.action, userId: user.userId }, 'Confirming row')
     const row = await importRepo.getRow(rowId)
-    if (!row) throw Object.assign(new Error('Row not found'), { status: 404 })
+    if (!row) throw new AppError('NOT_FOUND', 'Row not found')
     await this.getSession(row.session_id, user)
 
     if (input.action === 'SKIP') {

@@ -6,6 +6,7 @@ import type { UserContext } from '../auth/context'
 import { Bill, BillType } from '@/types'
 import { ensureInstanceForCurrentPeriod } from '@lib/recurring'
 import { createServiceLogger } from '@/server/lib/logger'
+import { AppError } from '@/server/lib/errors'
 const log = createServiceLogger('BillService')
 
 function toRepoAuth(user: UserContext): RepoAuthContext {
@@ -44,7 +45,8 @@ export class BillService {
   async updateBill(input: UpdateBillInput, user: UserContext): Promise<Bill> {
     const { id, ...updates } = input
     if (!id) {
-      throw new Error('Bill id is required for update')
+      log.warn({ method: 'updateBill' }, 'updateBill called without bill id')
+      throw new AppError('VALIDATION_ERROR', 'Bill id is required for update')
     }
     log.info({ method: 'updateBill', billId: id, userId: user.userId }, 'Updating bill')
     const auth = toRepoAuth(user)

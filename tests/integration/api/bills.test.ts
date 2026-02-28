@@ -123,6 +123,6 @@ describe('DELETE /api/bills', () => {
 
   it('returns error when id missing', async () => {
     const res = await DELETE(new NextRequest('http://localhost/api/bills'))
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(400)
   })
 })

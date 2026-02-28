@@ -4,6 +4,7 @@ import { createBillSchema, updateBillSchema } from '@server/validators/bill.sche
 import { requireAuth } from '@server/auth/context'
 import { BillType } from '@/types'
 import { successResponse, withApiHandler } from '../middleware'
+import { AppError } from '@/server/lib/errors'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,7 +31,7 @@ export const PUT = withApiHandler(async (request: NextRequest) => {
   const user = await requireAuth(request)
   const input = updateBillSchema.parse(await request.json())
   if (!input.id) {
-    throw new Error('Bill id is required for update')
+    throw new AppError('VALIDATION_ERROR', 'Bill id is required for update')
   }
 
   const bill = await billService.updateBill(input, user)
@@ -41,7 +42,7 @@ export const DELETE = withApiHandler(async (request: NextRequest) => {
   const user = await requireAuth(request)
   const id = request.nextUrl.searchParams.get('id')
   if (!id) {
-    throw new Error('Bill id is required')
+    throw new AppError('VALIDATION_ERROR', 'Bill id is required')
   }
 
   const result = await billService.deleteBill(id, user)

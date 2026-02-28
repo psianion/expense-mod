@@ -1,9 +1,9 @@
-export async function GET() {
-  return Response.json({ message: 'Test route works' })
-}
+import { successResponse, withApiHandler } from '../middleware'
 
-export async function POST() {
-  return Response.json({ message: 'POST test works' })
-}
+export const GET = withApiHandler(async () => {
+  return successResponse({ message: 'Test route works' })
+})
 
-
+export const POST = withApiHandler(async () => {
+  return successResponse({ message: 'POST test works' })
+})

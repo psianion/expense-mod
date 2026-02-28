@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { getUserFriendlyMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 import { useUploadStatement } from '@/lib/query/hooks/useUploadStatement'
 
@@ -32,7 +33,7 @@ export function ImportStage1Upload({ onSuccess }: Props) {
           } else if (msg === 'WRONG_PASSWORD') {
             toast.error('Incorrect password. Please try again.')
           } else {
-            toast.error(msg)
+            toast.error(getUserFriendlyMessage(e))
           }
         },
       }

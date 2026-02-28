@@ -1,6 +1,11 @@
 // server/import/pdf-extractor.ts
 // Runs server-side only. Uses pdfjs-dist (legacy build) to extract raw text from PDFs.
 
+import { AppError } from '@/server/lib/errors'
+import { createServiceLogger } from '@/server/lib/logger'
+
+const log = createServiceLogger('PdfExtractor')
+
 export class PdfPasswordError extends Error {
   constructor(public readonly code: 'PASSWORD_REQUIRED' | 'WRONG_PASSWORD') {
     super(code)
@@ -10,7 +15,8 @@ export class PdfPasswordError extends Error {
 
 export async function extractPdfText(buffer: Buffer, password?: string): Promise<string> {
   if (!buffer || buffer.length === 0) {
-    throw new Error('PDF buffer is empty')
+    log.warn({ method: 'extractPdfText' }, 'PDF buffer is empty')
+    throw new AppError('VALIDATION_ERROR', 'PDF buffer is empty')
   }
 
   // Use legacy build for Node.js compatibility (no DOMMatrix).
