@@ -35,8 +35,9 @@ describe('POST /api/cron/bills', () => {
     )
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.results).toBeDefined()
-    expect(Array.isArray(body.results)).toBe(true)
+    expect(body.success).toBe(true)
+    expect(body.data.results).toBeDefined()
+    expect(Array.isArray(body.data.results)).toBe(true)
   })
 
   it('accepts secret in query param', async () => {

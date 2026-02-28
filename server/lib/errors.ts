@@ -7,6 +7,8 @@ export type ErrorCode =
   | 'DB_ERROR'
   | 'EXTERNAL_SERVICE_ERROR'
   | 'INTERNAL_ERROR'
+  | 'SERVICE_UNAVAILABLE'
+  | 'CONSTRAINT_VIOLATION'
 
 export const HTTP_STATUS_MAP: Record<ErrorCode, number> = {
   VALIDATION_ERROR: 400,
@@ -17,6 +19,8 @@ export const HTTP_STATUS_MAP: Record<ErrorCode, number> = {
   DB_ERROR: 500,
   EXTERNAL_SERVICE_ERROR: 502,
   INTERNAL_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503,
+  CONSTRAINT_VIOLATION: 400,
 }
 
 export class AppError extends Error {

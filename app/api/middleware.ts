@@ -114,8 +114,6 @@ export function handleApiError(error: any): NextResponse<ApiResponse> {
     )
   }
 
-  apiLogger.error({ err: error }, 'API Error')
-
   // Known error types
   if (error?.code === 'PGRST116') {
     return errorResponse('Resource not found', 404, 'NOT_FOUND')

@@ -59,8 +59,8 @@ export async function GET(request: NextRequest) {
         const onboardingUrl = new URL('/onboarding', origin)
         const redirectResponse = NextResponse.redirect(onboardingUrl)
         // Copy auth cookies to the redirect response (preserving all cookie options)
-        response.cookies.getAll().forEach((cookie) => {
-          redirectResponse.cookies.set(cookie.name, cookie.value)
+        response.cookies.getAll().forEach(({ name, value, ...options }) => {
+          redirectResponse.cookies.set(name, value, options)
         })
         return redirectResponse
       }

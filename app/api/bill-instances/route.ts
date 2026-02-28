@@ -1,11 +1,8 @@
 import { NextRequest } from 'next/server'
 import { successResponse, withApiHandler } from '../middleware'
 import { createServiceLogger } from '@/server/lib/logger'
-
-const log = createServiceLogger('BillInstancesRoute')
 import { z } from 'zod'
 import dayjs from 'dayjs'
-
 import { getServiceRoleClientIfAvailable, supabase, DB_UNAVAILABLE_MESSAGE } from '@server/db/supabase'
 import { requireAuth } from '@server/auth/context'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -13,6 +10,8 @@ import { BillInstance, Bill } from '@/types'
 import { buildExpensePayload, computeDueDateForPeriod, createInstanceRecord, findInstanceForPeriod } from '@/lib/recurring'
 
 export const dynamic = 'force-dynamic'
+
+const log = createServiceLogger('BillInstancesRoute')
 
 function getClient(user: { userId: string; isMaster: boolean }): { client: SupabaseClient; userId: string | undefined } {
   const client = getServiceRoleClientIfAvailable() ?? supabase

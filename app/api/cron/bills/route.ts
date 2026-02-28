@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { billService } from '@server/services/bill.service'
 import { getCronUserContext } from '@server/auth/context'
-import { withApiHandler } from '../../middleware'
+import { withApiHandler, successResponse, errorResponse } from '../../middleware'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,10 +11,10 @@ export const POST = withApiHandler(async (request: NextRequest) => {
   const secret = headerSecret || querySecret
 
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return errorResponse('Unauthorized', 401, 'UNAUTHORIZED')
   }
 
   const cronUser = getCronUserContext()
   const results = await billService.processBillInstances(cronUser)
-  return NextResponse.json({ results })
+  return successResponse({ results })
 })

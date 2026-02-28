@@ -8,6 +8,7 @@ import { toUTC, getLocalISO } from '@lib/datetime'
 import { billToExpenseType, findInstanceForPeriod } from '@lib/recurring'
 import { findCreditCardByPaymentMethod } from '@lib/userPreferences'
 import { createServiceLogger } from '@/server/lib/logger'
+import { AppError } from '@/server/lib/errors'
 const log = createServiceLogger('ExpenseService')
 
 function toRepoAuth(user: UserContext): RepoAuthContext {
@@ -169,7 +170,7 @@ export class ExpenseService {
   ): Promise<void> {
     const { getServiceRoleClientIfAvailable, supabase } = await import('../db/supabase')
     const client = auth?.useMasterAccess ? (getServiceRoleClientIfAvailable() ?? supabase) : supabase
-    await client
+    const { error } = await client
       .from('bill_instances')
       .update({
         status,
@@ -177,6 +178,13 @@ export class ExpenseService {
         amount,
       })
       .eq('id', instanceId)
+
+    if (error) {
+      throw new AppError('DB_ERROR', `Failed to update bill instance ${instanceId} status`, {
+        instanceId,
+        cause: error.message,
+      })
+    }
   }
 }
 
