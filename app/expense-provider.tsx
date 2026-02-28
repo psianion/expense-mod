@@ -47,7 +47,6 @@ export function ExpenseProvider({ children }: ExpenseProviderProps) {
       await createExpenseMutation.mutateAsync(payload)
       setManualDrawerOpen(false)
     } catch (error) {
-      console.error('Unexpected error saving manual expense:', error)
       toast.error(getUserFriendlyMessage(error))
     }
   }

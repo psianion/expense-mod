@@ -50,7 +50,6 @@ export default function ExpensesPage() {
         setRawText('')
       },
       onError: (error) => {
-        console.error('Unexpected error saving expense:', error)
         toast.error(getUserFriendlyMessage(error))
       },
     })

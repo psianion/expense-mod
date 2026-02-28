@@ -1,5 +1,6 @@
 import apiClient from './client'
 import type { BillInstance } from '@/types'
+import { frontendLogger } from '@/lib/logger'
 
 // Bill Instances API module
 export const billInstancesApi = {
@@ -25,7 +26,7 @@ export const billInstancesApi = {
       const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
 
       if (!instances || !Array.isArray(instances)) {
-        console.warn('getUpcomingBills: instances is not an array:', instances)
+        frontendLogger.warn({ component: 'billInstancesApi', instances }, 'getUpcomingBills: instances is not an array')
         return []
       }
 
@@ -34,7 +35,7 @@ export const billInstancesApi = {
         .sort((a, b) => a.due_date.localeCompare(b.due_date))
         .slice(0, limit)
     } catch (error) {
-      console.error('Error fetching upcoming bills:', error)
+      frontendLogger.error({ component: 'billInstancesApi', err: error }, 'Error fetching upcoming bills')
       return []
     }
   },

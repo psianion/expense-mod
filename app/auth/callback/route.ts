@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { profileRepository } from '@server/db/repositories/profile.repo'
+import { createServiceLogger } from '@/server/lib/logger'
+
+const log = createServiceLogger('AuthCallback')
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl
@@ -38,7 +41,7 @@ export async function GET(request: NextRequest) {
 
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
   if (exchangeError) {
-    console.error('[auth/callback] exchangeCodeForSession failed:', exchangeError.message)
+    log.error({ method: 'GET', err: exchangeError }, 'exchangeCodeForSession failed')
     return NextResponse.redirect(`${origin}/login?error=auth_failed`)
   }
 
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
   // Fail-open: if the lookup errors for any reason other than "no row", let the user through.
   const { data: { user }, error: getUserError } = await supabase.auth.getUser()
   if (getUserError) {
-    console.error('[auth/callback] getUser() failed after session exchange:', getUserError.message)
+    log.error({ method: 'GET', err: getUserError }, 'getUser() failed after session exchange')
     return response
   }
 
@@ -66,7 +69,7 @@ export async function GET(request: NextRequest) {
       }
     } catch (profileErr) {
       // Log but default to letting the user through — client-side guards still apply.
-      console.error('[auth/callback] profile lookup failed, defaulting to home:', profileErr)
+      log.error({ method: 'GET', err: profileErr }, 'Profile lookup failed, defaulting to home')
     }
   }
 

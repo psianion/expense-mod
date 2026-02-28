@@ -2,6 +2,9 @@ import dayjs, { Dayjs } from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 
 import { supabase } from '@server/db/supabase'
+import { createServiceLogger } from '@/server/lib/logger'
+
+const log = createServiceLogger('Recurring')
 import { toUTC } from './datetime'
 import { Bill, BillFrequency, BillInstance, BillInstanceStatus, BillType, Expense, ExpenseType, ExpenseSource } from '@/types'
 
@@ -88,7 +91,7 @@ export const instanceExistsForPeriod = async (
     .limit(1)
 
   if (error) {
-    console.error('Error checking bill_instances window', error)
+    log.error({ method: 'instanceExistsForPeriod', err: error }, 'Error checking bill_instances window')
     return true
   }
 
@@ -113,7 +116,7 @@ export const findInstanceForPeriod = async (
 
   if (error) {
     if (error.code !== 'PGRST116') {
-      console.error('Error fetching bill_instances window', error)
+      log.error({ method: 'findInstanceForPeriod', err: error }, 'Error fetching bill_instances window')
     }
     return null
   }
@@ -150,7 +153,7 @@ export const createInstanceRecord = async (
     .single()
 
   if (error) {
-    console.error('Error creating bill instance', error)
+    log.error({ method: 'createInstanceRecord', err: error }, 'Error creating bill instance')
     return null
   }
 
@@ -196,7 +199,7 @@ export const createExpenseForInstance = async (
     .single()
 
   if (error) {
-    console.error('Error creating expense for bill instance', error)
+    log.error({ method: 'createExpenseForInstance', err: error }, 'Error creating expense for bill instance')
     return null
   }
 
@@ -214,7 +217,7 @@ export const markBillGenerated = async (bill: Bill, dueDate: Dayjs) => {
     .eq('id', bill.id)
 
   if (error) {
-    console.error('Error updating bill metadata', error)
+    log.error({ method: 'markBillGenerated', err: error }, 'Error updating bill metadata')
   }
 }
 

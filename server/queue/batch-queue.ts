@@ -1,4 +1,7 @@
 // server/queue/batch-queue.ts
+import { createServiceLogger } from '@/server/lib/logger'
+
+const log = createServiceLogger('BatchQueue')
 
 export interface BatchQueueConfig<TIn, TOut> {
   batchSize: number
@@ -64,9 +67,7 @@ export class BatchQueue<TIn, TOut> {
         lastError = err
         if (attempt < retries) {
           const delay = backoffMs * (attempt + 1)
-          console.warn(`[BatchQueue] Attempt ${attempt + 1}/${retries + 1} failed, retrying in ${delay}ms`, {
-            error: err instanceof Error ? err.message : String(err),
-          })
+          log.warn({ method: 'runWithRetry', attempt: attempt + 1, totalAttempts: retries + 1, delay_ms: delay, err }, 'Batch attempt failed, retrying')
           if (delay > 0) await new Promise(r => setTimeout(r, delay))
         }
       }

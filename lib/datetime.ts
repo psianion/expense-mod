@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
+import { frontendLogger } from '@/lib/logger'
 
 // Enable dayjs UTC plugin for timezone handling
 dayjs.extend(utc)
@@ -85,7 +86,7 @@ export function parseAIDateTime(aiDate: string | null, fallback?: Date): string 
     
     return null
   } catch (error) {
-    console.error('Error parsing AI datetime:', error)
+    frontendLogger.error({ component: 'parseAIDatetime', err: error }, 'Error parsing AI datetime')
     if (fallback) {
       return dayjs(fallback).format('YYYY-MM-DDTHH:mm:ss')
     }

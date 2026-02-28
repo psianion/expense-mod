@@ -20,6 +20,7 @@ import { useAnalyticsFilters } from '@features/analytics/hooks/useAnalyticsFilte
 import { exportToCSV } from '@features/analytics/utils/export'
 import type { Expense } from '@/types'
 import { toast } from 'sonner'
+import { getUserFriendlyMessage } from '@/lib/errors'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,8 +69,7 @@ export function FiltersPanel({
       await exportToCSV(expenses)
       toast.success('Exported to CSV successfully')
     } catch (error) {
-      toast.error('Failed to export CSV')
-      console.error(error)
+      toast.error(getUserFriendlyMessage(error))
     }
   }
 

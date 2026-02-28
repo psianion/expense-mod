@@ -33,7 +33,6 @@ export default function Page() {
       setBillMatch(data.bill_match ?? null)
       setPreviewDrawerOpen(true)
     } catch (error) {
-      console.error('Error parsing expense:', error)
       toast.error(getUserFriendlyMessage(error))
     } finally {
       setIsParsing(false)
@@ -71,7 +70,6 @@ export default function Page() {
       setBillMatch(null)
       setRawText('')
     } catch (error) {
-      console.error('Unexpected error saving expense:', error)
       toast.error(getUserFriendlyMessage(error))
     }
   }

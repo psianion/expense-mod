@@ -2,6 +2,9 @@
 import { openRouter } from '@server/ai/providers/openrouter'
 import { BatchQueue } from './batch-queue'
 import type { RawImportRow, ClassifiedRow } from '@/types/import'
+import { createServiceLogger } from '@/server/lib/logger'
+
+const log = createServiceLogger('AIClassificationQueue')
 
 const BATCH_SYSTEM_PROMPT = `You are a financial transaction classifier. Given a JSON array of bank transactions, return a JSON array of classifications in the same order.
 
@@ -86,10 +89,7 @@ async function aiHandler(batch: RawImportRow[]): Promise<ClassifiedRow[]> {
     // Rethrow so BatchQueue.runWithRetry can retry the batch.
     // The service's .catch handler will mark the session FAILED and surface the error.
     // Do NOT silently fall back here — the user must know if AI classification failed.
-    console.error('[AIClassificationQueue] AI classification error', {
-      batchSize: batch.length,
-      error: err instanceof Error ? err.message : String(err),
-    })
+    log.error({ method: 'classifyBatch', batchSize: batch.length, err }, 'AI classification error')
     throw err
   }
 }
