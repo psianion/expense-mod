@@ -1,6 +1,9 @@
 import { supabase, getServiceRoleClient } from '../supabase'
 import type { RepoAuthContext } from './expense.repo'
 import { Bill, BillType } from '@/types'
+import { createServiceLogger } from '@/server/lib/logger'
+import { AppError } from '@/server/lib/errors'
+const log = createServiceLogger('BillRepo')
 
 function getClient(auth?: RepoAuthContext | null) {
   if (auth && process.env.SUPABASE_SERVICE_ROLE_KEY) return getServiceRoleClient()
@@ -39,7 +42,8 @@ export class BillRepository {
     const { data, error } = await query
 
     if (error) {
-      throw new Error(error.message)
+      log.error({ method: 'getBills', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
     }
 
     return (data || []).map(this.normalizeBill) as Bill[]
@@ -62,7 +66,8 @@ export class BillRepository {
       .single()
 
     if (error) {
-      throw new Error(error.message)
+      log.error({ method: 'createBill', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
     }
 
     return this.normalizeBill(bill) as Bill
@@ -81,7 +86,8 @@ export class BillRepository {
     const { data: bill, error } = await query.select().single()
 
     if (error) {
-      throw new Error(error.message)
+      log.error({ method: 'updateBill', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
     }
 
     return this.normalizeBill(bill) as Bill
@@ -96,7 +102,8 @@ export class BillRepository {
     const { error } = await query
 
     if (error) {
-      throw new Error(error.message)
+      log.error({ method: 'deleteBill', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
     }
   }
 
@@ -110,7 +117,8 @@ export class BillRepository {
 
     if (error) {
       if (error.code === 'PGRST116') return null // Not found
-      throw new Error(error.message)
+      log.error({ method: 'getBillById', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
     }
 
     return this.normalizeBill(data) as Bill

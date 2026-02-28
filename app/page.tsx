@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { QuickAdd } from '@features/expenses/components/QuickAdd'
 import { PreviewModal } from '@features/expenses/components/PreviewModal'
 import { ExpensesPreviewCard } from '@/components/common/ExpensesPreviewCard'
@@ -11,6 +12,7 @@ import { BillMatchCandidate, ExpenseSource, ExpenseType, ParsedExpense } from '@
 import { getLocalISO } from '@/lib/datetime'
 import { useCreateExpenseMutation } from '@/lib/query/hooks'
 import { StaggerContainer, StaggerItem } from '@/components/animations'
+import { getUserFriendlyMessage } from '@/lib/errors'
 
 export default function Page() {
   const [isParsing, setIsParsing] = useState(false)
@@ -32,7 +34,7 @@ export default function Page() {
       setPreviewDrawerOpen(true)
     } catch (error) {
       console.error('Error parsing expense:', error)
-      alert('Failed to parse expense. Please try again.')
+      toast.error(getUserFriendlyMessage(error))
     } finally {
       setIsParsing(false)
     }
@@ -41,7 +43,7 @@ export default function Page() {
   const handleSave = async (expense: ParsedExpense) => {
     try {
       if (!expense.amount || expense.amount <= 0) {
-        alert('Please enter a valid amount.')
+        toast.error('Please enter a valid amount.')
         return
       }
 
@@ -70,7 +72,7 @@ export default function Page() {
       setRawText('')
     } catch (error) {
       console.error('Unexpected error saving expense:', error)
-      alert(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      toast.error(getUserFriendlyMessage(error))
     }
   }
 

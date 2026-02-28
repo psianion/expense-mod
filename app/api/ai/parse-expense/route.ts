@@ -1,9 +1,12 @@
 import { NextRequest } from 'next/server'
 import { ParseExpenseRequest } from '@/types'
 import { aiService } from '@server/ai/ai.service'
-import { successResponse, handleApiError } from '../../middleware'
+import { successResponse, withApiHandler } from '../../middleware'
+import { createServiceLogger } from '@/server/lib/logger'
 
 export const dynamic = 'force-dynamic'
+
+const log = createServiceLogger('AiParseExpenseRoute')
 
 /** Mock parse result for E2E/UI tests when OPENROUTER_API_KEY is not set or to avoid real API calls. */
 function mockParseResult(text: string) {
@@ -24,7 +27,7 @@ function mockParseResult(text: string) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withApiHandler(async (request: NextRequest) => {
   let text: string | undefined
   try {
     const body: ParseExpenseRequest = await request.json()
@@ -47,9 +50,9 @@ export async function POST(request: NextRequest) {
     return successResponse(result)
   } catch (error) {
     if (typeof text === 'string' && text.length > 0) {
+      log.warn({ err: error }, 'AI parse failed, falling back to mock result')
       return successResponse(mockParseResult(text))
     }
-    return handleApiError(error)
+    throw error
   }
-}
-
+})

@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
+import { frontendLogger } from '@/lib/logger'
 import type { User } from '@supabase/supabase-js'
 
 const APP_MODE = (process.env.NEXT_PUBLIC_APP_MODE || 'PUBLIC') as string
@@ -105,7 +106,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       setServerUser(null)
     } catch (err) {
-      console.error('[AuthProvider] fetchMe failed, falling back to supabaseUser state:', err)
+      frontendLogger.error({ component: 'AuthProvider' }, 'fetchMe failed', err)
       setServerUser(null)
     }
   }, [])

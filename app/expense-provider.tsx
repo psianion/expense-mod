@@ -1,11 +1,13 @@
 "use client"
 
 import { createContext, useContext, useState, type ReactNode } from 'react'
+import { toast } from 'sonner'
 import { ManualExpenseForm } from '@features/expenses/components/ManualExpenseForm'
 import { Drawer } from '@/components/ui/drawer'
 import { ExpenseSource, ExpenseType } from '@/types'
 import { getLocalISO } from '@/lib/datetime'
 import { useCreateExpenseMutation } from '@/lib/query/hooks'
+import { getUserFriendlyMessage } from '@/lib/errors'
 
 interface ExpenseProviderContextType {
   openExpenseDrawer: () => void
@@ -46,7 +48,7 @@ export function ExpenseProvider({ children }: ExpenseProviderProps) {
       setManualDrawerOpen(false)
     } catch (error) {
       console.error('Unexpected error saving manual expense:', error)
-      alert(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      toast.error(getUserFriendlyMessage(error))
     }
   }
 

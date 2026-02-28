@@ -1,6 +1,9 @@
 // server/db/repositories/import.repo.ts
 import { supabase } from '../supabase'
 import type { ImportSession, ImportRow, ClassifiedRow, BankFormatId } from '@/types/import'
+import { createServiceLogger } from '@/server/lib/logger'
+import { AppError } from '@/server/lib/errors'
+const log = createServiceLogger('ImportRepo')
 
 export const importRepo = {
   async createSession(data: {
@@ -15,7 +18,10 @@ export const importRepo = {
       .insert({ ...data, status: 'PARSING' })
       .select('id')
       .single()
-    if (error || !session) throw new Error(`Failed to create import session: ${error?.message ?? 'no data returned'}`)
+    if (error || !session) {
+      log.error({ method: 'createSession', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error?.message ?? 'no data returned', { code: error?.code, hint: error?.hint })
+    }
     return session as { id: string }
   },
 
@@ -28,7 +34,10 @@ export const importRepo = {
     progress_total: number
   }>): Promise<void> {
     const { error } = await supabase.from('import_sessions').update(patch).eq('id', id)
-    if (error) throw new Error(`Failed to update session ${id}: ${error.message}`)
+    if (error) {
+      log.error({ method: 'updateSession', sessionId: id, err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
+    }
   },
 
   async getSession(id: string, userId: string): Promise<ImportSession> {
@@ -38,7 +47,10 @@ export const importRepo = {
       .eq('id', id)
       .eq('user_id', userId)
       .single()
-    if (error || !data) throw Object.assign(new Error('Session not found'), { status: 404 })
+    if (error || !data) {
+      log.error({ method: 'getSession', sessionId: id, err: error }, 'Session not found or DB error')
+      throw Object.assign(new AppError('NOT_FOUND', 'Session not found'), { status: 404 })
+    }
     return data as ImportSession
   },
 
@@ -61,13 +73,19 @@ export const importRepo = {
         classified_by: r.classified_by,
       }))
     ).select('id, classified_by, amount, status')
-    if (error) throw new Error(`Failed to insert import rows: ${error.message}`)
+    if (error) {
+      log.error({ method: 'insertRows', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
+    }
     return (data ?? []) as Array<{ id: string; classified_by: string; amount: number | null }>
   },
 
   async updateRow(id: string, patch: Record<string, unknown>): Promise<void> {
     const { error } = await supabase.from('import_rows').update(patch).eq('id', id)
-    if (error) throw new Error(`Failed to update row ${id}: ${error.message}`)
+    if (error) {
+      log.error({ method: 'updateRow', rowId: id, err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
+    }
   },
 
   async getRow(id: string): Promise<ImportRow | null> {
@@ -78,7 +96,8 @@ export const importRepo = {
       .single()
     if (error) {
       if (error.code === 'PGRST116') return null // row genuinely not found
-      throw new Error(`Failed to fetch import row ${id}: ${error.message}`)
+      log.error({ method: 'getRow', rowId: id, err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
     }
     return data as ImportRow
   },
@@ -89,7 +108,10 @@ export const importRepo = {
       .select('*')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true })
-    if (error) throw new Error('Failed to fetch import rows')
+    if (error) {
+      log.error({ method: 'getRowsBySession', sessionId, err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
+    }
     return (data ?? []) as ImportRow[]
   },
 
@@ -105,19 +127,28 @@ export const importRepo = {
     }
 
     const { data, error } = await query
-    if (error) throw new Error(`Failed to fetch pending rows for session ${sessionId}: ${error.message}`)
+    if (error) {
+      log.error({ method: 'getPendingRows', sessionId, err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
+    }
     return (data ?? []) as ImportRow[]
   },
 
   async insertExpense(expense: Record<string, unknown>): Promise<{ id: string } | null> {
     const { data, error } = await supabase.from('expenses').insert(expense).select('id').single()
-    if (error) throw new Error(`Failed to insert expense: ${error.message}`)
+    if (error) {
+      log.error({ method: 'insertExpense', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
+    }
     return data as { id: string } | null
   },
 
   async insertExpenses(expenses: Record<string, unknown>[]): Promise<Array<{ id: string }>> {
     const { data, error } = await supabase.from('expenses').insert(expenses).select('id')
-    if (error) throw new Error(`Failed to insert expenses: ${error.message}`)
+    if (error) {
+      log.error({ method: 'insertExpenses', err: error }, 'Database operation failed')
+      throw new AppError('DB_ERROR', error.message, { code: error.code, hint: error.hint })
+    }
     return (data ?? []) as Array<{ id: string }>
   },
 }

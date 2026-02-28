@@ -6,6 +6,8 @@ import { classifyRows } from '@server/import/rule-classifier'
 import { aiClassificationQueue } from '@server/queue/ai-classification-queue'
 import type { UserContext } from '@server/auth/context'
 import type { ClassifiedRow, ConfirmRowInput, ImportRow, ImportSession } from '@/types/import'
+import { createServiceLogger } from '@/server/lib/logger'
+const log = createServiceLogger('ImportService')
 
 const AUTO_THRESHOLD = 0.80
 
@@ -29,6 +31,7 @@ class ImportService {
     user: UserContext,
     password?: string,
   ): Promise<{ sessionId: string }> {
+    log.info({ method: 'createSession', userId: user.userId, filename }, 'Creating import session')
     if (!filename.toLowerCase().endsWith('.pdf')) {
       throw Object.assign(new Error('Only PDF files are supported.'), { status: 422 })
     }
@@ -53,20 +56,13 @@ class ImportService {
       progress_total: 0,
     })
     const sessionId = session.id
+    log.info({ method: 'createSession', sessionId }, 'Import session created, starting pipeline')
 
     // Run pipeline async (do not await)
     this.runPipeline(sessionId, text, user).catch(async (err: unknown) => {
-      console.error('[ImportService] Pipeline failed', {
-        sessionId,
-        userId: user.userId,
-        error: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : undefined,
-      })
+      log.error({ method: 'runPipeline', sessionId, userId: user.userId, err }, 'Pipeline failed')
       await importRepo.updateSession(sessionId, { status: 'FAILED' }).catch((updateErr: unknown) => {
-        console.error('[ImportService] CRITICAL: Could not mark session FAILED', {
-          sessionId,
-          updateError: updateErr instanceof Error ? updateErr.message : String(updateErr),
-        })
+        log.error({ method: 'runPipeline', sessionId, err: updateErr }, 'CRITICAL: Could not mark session FAILED')
       })
     })
 
@@ -74,6 +70,7 @@ class ImportService {
   }
 
   private async runPipeline(sessionId: string, text: string, _user: UserContext): Promise<void> {
+    log.info({ method: 'runPipeline', sessionId }, 'Pipeline started')
     // 1. AI extracts raw rows from PDF text
     const rawRows = await extractRowsFromText(text)
 
@@ -144,13 +141,16 @@ class ImportService {
       review_count: fallbackRows.length,
       progress_done: rawRows.length,
     })
+    log.info({ method: 'runPipeline', sessionId, rowCount: rawRows.length, autoCount: autoRows.length, reviewCount: fallbackRows.length }, 'Pipeline complete')
   }
 
   async getSession(sessionId: string, user: UserContext): Promise<ImportSession> {
+    log.debug({ method: 'getSession', sessionId, userId: user.userId }, 'Fetching session')
     return importRepo.getSession(sessionId, user.userId)
   }
 
   async getRows(sessionId: string, user: UserContext): Promise<ImportRow[]> {
+    log.debug({ method: 'getRows', sessionId }, 'Fetching rows')
     const session = await this.getSession(sessionId, user)
     if (session.status === 'PARSING') {
       throw Object.assign(new Error('Session is still parsing'), { status: 409 })
@@ -159,6 +159,7 @@ class ImportService {
   }
 
   async confirmRow(rowId: string, input: ConfirmRowInput, user: UserContext): Promise<ImportRow> {
+    log.info({ method: 'confirmRow', rowId, action: input.action, userId: user.userId }, 'Confirming row')
     const row = await importRepo.getRow(rowId)
     if (!row) throw Object.assign(new Error('Row not found'), { status: 404 })
     await this.getSession(row.session_id, user)
@@ -193,6 +194,7 @@ class ImportService {
   }
 
   async confirmAll(sessionId: string, scope: 'AUTO' | 'ALL', user: UserContext): Promise<{ imported: number }> {
+    log.info({ method: 'confirmAll', sessionId, scope, userId: user.userId }, 'Confirming all rows')
     await this.getSession(sessionId, user)
     const rows = await importRepo.getPendingRows(sessionId, scope)
     if (!rows.length) return { imported: 0 }
@@ -221,6 +223,7 @@ class ImportService {
     }
 
     await importRepo.updateSession(sessionId, { status: 'COMPLETE' })
+    log.info({ method: 'confirmAll', sessionId, imported: rows.length }, 'All rows confirmed')
     return { imported: rows.length }
   }
 }
