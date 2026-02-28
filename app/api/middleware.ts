@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { createServiceLogger, requestContext, generateRequestId } from '@/server/lib/logger'
 import { AppError } from '@/server/lib/errors'
@@ -133,9 +133,9 @@ export function handleApiError(error: any): NextResponse<ApiResponse> {
 
 // Wrapper for API route handlers
 export function withApiHandler(
-  handler: (request: Request, context?: any) => Promise<Response>
+  handler: (request: NextRequest, context?: any) => Promise<Response>
 ) {
-  return async (request: Request, context?: any) => {
+  return async (request: NextRequest, context?: any) => {
     const requestId = generateRequestId()
     const start = Date.now()
     const method = request.method

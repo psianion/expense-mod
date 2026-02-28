@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { ZodError, z } from 'zod'
+import { NextRequest } from 'next/server'
 import { withApiHandler, handleApiError, successResponse, errorResponse } from '@/app/api/middleware'
 import { AppError } from '@/server/lib/errors'
 
@@ -8,7 +9,7 @@ describe('withApiHandler', () => {
     const handler = withApiHandler(async () => {
       return successResponse({ ok: true })
     })
-    const req = new Request('http://localhost/api/test', { method: 'GET' })
+    const req = new NextRequest('http://localhost/api/test', { method: 'GET' })
     const res = await handler(req)
     const requestId = res.headers.get('X-Request-Id')
     expect(requestId).toMatch(/^req_/)
@@ -18,7 +19,7 @@ describe('withApiHandler', () => {
     const handler = withApiHandler(async () => {
       throw new Error('boom')
     })
-    const req = new Request('http://localhost/api/test', { method: 'GET' })
+    const req = new NextRequest('http://localhost/api/test', { method: 'GET' })
     const res = await handler(req)
     const body = await res.json()
     expect(body.meta?.requestId).toMatch(/^req_/)
